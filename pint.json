@@ -1,0 +1,23 @@
+{
+    "preset": "psr12",
+    "rules": {
+        "align_multiline_comment": {
+            "comment_type": "phpdocs_only"
+        },
+        "array_indentation": true,
+        "array_syntax": {
+            "syntax": "short"
+        },
+        "implode_call": true,
+        "indentation_type": true,
+        "no_trailing_whitespace": true,
+        "non_printable_character": {
+            "use_escape_sequences_in_strings": false
+        },
+        "return_type_declaration": {
+            "space_before": "none"
+        },
+        "declare_strict_types": true,
+        "strict_comparison": true
+    }
+}
