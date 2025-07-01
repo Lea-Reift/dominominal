@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Companies\Resources;
 
 use App\Enums\DocumentTypeEnum;
+use App\Forms\Components\PhoneRepeater;
 use App\Modules\Companies\Resources\CompanyResource\Pages;
 use App\Modules\Companies\Models\Company;
 use Filament\Forms;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -42,20 +42,7 @@ class CompanyResource extends Resource
                     ->label('Dirección')
                     ->required()
                     ->maxLength(255),
-                Repeater::make('phones')
-                    ->label('Teléfonos')
-                    ->addActionLabel('Añadir teléfono')
-                    ->columnSpanFull()
-                    ->schema([
-                        Forms\Components\TextInput::make('type')
-                            ->label('Tipo')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('number')
-                            ->label('Número')
-                            ->mask('+1 (999) 999-9999')
-                            ->required(),
-                    ])
+                PhoneRepeater::make('phones'),
             ]);
     }
 
@@ -67,8 +54,6 @@ class CompanyResource extends Resource
                     ->label('Nombre')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('document_type')
-                    ->formatStateUsing(fn (Company $record) => "{$record->document_type->getAcronym()}: {$record->document_number}")
-                    ->label('Documento')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('address')
                     ->label('Dirección')

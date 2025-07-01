@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Companies\Models;
 
-use App\Casts\AsValueObjectCollection;
+use App\Concerns\HasDocument;
+use App\Concerns\HasPhones;
 use App\Enums\DocumentTypeEnum;
 use App\Models\User;
 use App\Support\ValueObjects\Phone;
@@ -26,18 +27,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Company extends Model
 {
+    use HasPhones;
+    use HasDocument;
+
     protected $fillable = [
         'id',
         'name',
-        'document_type',
-        'document_number',
         'address',
-        'phones',
-    ];
-
-    protected $casts = [
-        'phones' => AsValueObjectCollection::class . ':' . Phone::class,
-        'document_type' => DocumentTypeEnum::class,
     ];
 
     public static function boot(): void
