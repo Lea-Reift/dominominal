@@ -13,6 +13,7 @@ class ExampleTest extends TestCase
      */
     public function test_that_true_is_true(): void
     {
-        $this->assertTrue((bool)rand(0, 1));
+        /** @phpstan-ignore-next-line */
+        $this->assertTrue(true);
     }
 }
