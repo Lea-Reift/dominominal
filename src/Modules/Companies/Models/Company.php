@@ -36,7 +36,7 @@ class Company extends Model
     ];
 
     protected $casts = [
-        'phones' => AsValueObjectCollection::class . ":" . Phone::class,
+        'phones' => AsValueObjectCollection::class . ':' . Phone::class,
         'document_type' => DocumentTypeEnum::class,
     ];
 

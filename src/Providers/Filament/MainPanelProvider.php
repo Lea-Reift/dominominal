@@ -43,12 +43,12 @@ class MainPanelProvider extends PanelProvider
                 continue;
             }
 
-            if (!is_dir($directoryResourcesPath = $directory->getRealPath().DIRECTORY_SEPARATOR."Resources")) {
+            if (!is_dir($directoryResourcesPath = $directory->getRealPath().DIRECTORY_SEPARATOR.'Resources')) {
                 mkdir($directoryResourcesPath);
             }
 
             $namespace = str($directory->getPath())
-                ->append("\\")
+                ->append('\\')
                 ->replace([app_path(), DIRECTORY_SEPARATOR], ['App', '\\'])
                 ->append("{$directory->getBasename()}\\Resources")
                 ->toString();

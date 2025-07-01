@@ -15,18 +15,18 @@ enum DocumentTypeEnum: int implements HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::RNC => "Registro Nacional de Contribuyentes (RNC)",
-            self::IDENTIFICATION => "Cédula de Identidad y Electoral",
-            self::PASSPORT => "Pasaporte"
+            self::RNC => 'Registro Nacional de Contribuyentes (RNC)',
+            self::IDENTIFICATION => 'Cédula de Identidad y Electoral',
+            self::PASSPORT => 'Pasaporte'
         };
     }
 
     public function getAcronym(): string
     {
         return match($this) {
-            self::RNC => "RNC",
-            self::IDENTIFICATION => "Cédula",
-            self::PASSPORT => "Pasaporte",
+            self::RNC => 'RNC',
+            self::IDENTIFICATION => 'Cédula',
+            self::PASSPORT => 'Pasaporte',
         };
     }
 }

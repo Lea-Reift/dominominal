@@ -16,11 +16,11 @@ return new class () extends Migration {
     {
         Schema::create('companies', function (Blueprint $table) {
             $table->id();
-            $table->string("name");
-            $table->tinyInteger("document_type")->default(DocumentTypeEnum::RNC);
-            $table->string("document_number");
-            $table->string("address");
-            $table->json("phones");
+            $table->string('name');
+            $table->tinyInteger('document_type')->default(DocumentTypeEnum::RNC);
+            $table->string('document_number');
+            $table->string('address');
+            $table->json('phones');
             $table->foreignIdFor(User::class);
             $table->timestamps();
         });

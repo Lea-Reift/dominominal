@@ -27,19 +27,19 @@ class CompanyResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
-                    ->label("Nombre")
+                    ->label('Nombre')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\Select::make('document_type')
-                    ->label("Tipo de documento")
+                    ->label('Tipo de documento')
                     ->options(DocumentTypeEnum::class)
                     ->required(),
                 Forms\Components\TextInput::make('document_number')
-                    ->label("Número de documento")
+                    ->label('Número de documento')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('address')
-                    ->label("Dirección")
+                    ->label('Dirección')
                     ->required()
                     ->maxLength(255),
                 Repeater::make('phones')
