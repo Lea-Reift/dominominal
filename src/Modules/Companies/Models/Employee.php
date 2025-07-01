@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Enums\DocumentTypeEnum;
 use App\Support\ValueObjects\Phone;
+use Illuminate\Support\Collection;
 
 /**
  *

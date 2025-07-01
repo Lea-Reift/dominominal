@@ -12,6 +12,7 @@ use App\Support\ValueObjects\Phone;
 use Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
 
 /**
  * @property int $id
