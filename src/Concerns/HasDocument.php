@@ -14,7 +14,8 @@ trait HasDocument
 {
     public function initializeHasDocument(): void
     {
-        $this->fillable = $this->fillable + [
+        $this->fillable = [
+            ...$this->fillable,
             'document_type',
             'document_number',
         ];
