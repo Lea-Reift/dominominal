@@ -5,17 +5,25 @@ declare(strict_types=1);
 namespace App\Modules\Companies\Resources;
 
 use App\Enums\DocumentTypeEnum;
+use App\Enums\SalaryDistributionFormatEnum;
 use App\Forms\Components\PhoneRepeater;
 use App\Modules\Companies\Resources\EmployeeResource\Pages;
 use App\Modules\Companies\Models\Employee;
 use App\Tables\Columns\DocumentColumn;
 use Filament\Forms;
+use Filament\Forms\Components\Fieldset;
+use Filament\Forms\Components\Group;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Support\Facades\Auth;
+use Filament\Support\RawJs;
 
 class EmployeeResource extends Resource
 {
@@ -40,6 +48,7 @@ class EmployeeResource extends Resource
                     ->maxLength(255),
                 Forms\Components\Select::make('company_id')
                     ->label('Compañía')
+                    ->native(false)
                     ->relationship(
                         'company',
                         'name',
@@ -48,6 +57,7 @@ class EmployeeResource extends Resource
                     ->required(),
                 Forms\Components\Select::make('document_type')
                     ->label('Tipo de documento')
+                    ->native(false)
                     ->options(DocumentTypeEnum::class)
                     ->default(DocumentTypeEnum::IDENTIFICATION),
                 Forms\Components\TextInput::make('document_number')
@@ -61,8 +71,60 @@ class EmployeeResource extends Resource
                 Forms\Components\TextInput::make('email')
                     ->email()
                     ->required()
+                    ->columnSpanFull()
                     ->maxLength(255),
-                PhoneRepeater::make('phones'),
+                PhoneRepeater::make('phones')
+                    ->columnSpan(1),
+                Fieldset::make('Salario')
+                    ->columnSpan(1)
+                    ->relationship('salary')
+                    ->schema([
+                        TextInput::make('amount')
+                            ->mask(RawJs::make('$money($input)'))
+                            ->stripCharacters(',')
+                            ->numeric()
+                            ->required()
+                            ->inputMode('decimal')
+                            ->minValue(0)
+                            ->columnSpanFull()
+                            ->label('valor'),
+                        Toggle::make('modify_distribution')
+                            ->live()
+                            ->label('Modificar distribución quincenal')
+                            ->inline()
+                            ->columnSpanFull()
+                            ->onColor('warning'),
+                        Group::make([
+                            Select::make('distribution_format')
+                                ->options(SalaryDistributionFormatEnum::class)
+                                ->label('Formato')
+                                ->required(fn (Get $get): bool => (bool)$get('modify_distribution'))
+                                ->placeholder(null)
+                                ->default(SalaryDistributionFormatEnum::PERCENTAGE->value)
+                                ->native(false)
+                                ->helperText(fn (?string $state) => match (SalaryDistributionFormatEnum::tryFrom(intval($state))) {
+                                    SalaryDistributionFormatEnum::ABSOLUTE => 'El valor ingresado será restado del total del salario',
+                                    SalaryDistributionFormatEnum::PERCENTAGE => 'El valor ingresado se calculará al total del salario',
+                                    default => '',
+                                })
+                                ->live(),
+                            TextInput::make('distribution_value')
+                                ->label('Valor de la primera quincena')
+                                ->prefix(fn (Get $get) => match (SalaryDistributionFormatEnum::tryFrom(intval($get('distribution_format')))) {
+                                    SalaryDistributionFormatEnum::ABSOLUTE => '0.0',
+                                    SalaryDistributionFormatEnum::PERCENTAGE => '%',
+                                    default => '',
+                                })
+                                ->default(50)
+                                ->required(fn (Get $get): bool => (bool)$get('modify_distribution'))
+                                ->helperText('El valor restante será usado en la segunda quincena')
+                                ->inputMode('decimal')
+                                ->numeric()
+                                ->minValue(0)
+                        ])
+                            ->visible(fn (Get $get): bool => (bool)$get('modify_distribution'))
+                            ->columnSpanFull()
+                    ])
             ]);
     }
 
