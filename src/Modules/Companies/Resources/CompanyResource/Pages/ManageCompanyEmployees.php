@@ -19,6 +19,7 @@ use Filament\Support\RawJs;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Group;
 use App\Enums\SalaryDistributionFormatEnum;
+use App\Modules\Companies\Models\Company;
 use App\Tables\Columns\DocumentColumn;
 use Filament\Forms\Get;
 
@@ -32,7 +33,9 @@ class ManageCompanyEmployees extends ManageRelatedRecords
 
     public function getTitle(): string
     {
-        return "Empleados de {$this->getRecord()->name}";
+        /** @var Company $record */
+        $record = $this->getRecord();
+        return "Empleados de {$record->name}";
     }
 
     public static function getNavigationLabel(): string

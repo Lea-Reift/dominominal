@@ -6,8 +6,6 @@ namespace App\Support;
 
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use Symfony\Polyfill\Php80\PhpToken;
-use Symfony\Component\ExpressionLanguage\SyntaxError;
-use TypeError;
 
 class SalaryAdjustmentParser
 {
@@ -22,7 +20,7 @@ class SalaryAdjustmentParser
         return new self();
     }
 
-    public function parse(array $vars = [], ?string $formula = null): mixed
+    public function parse(array $vars = [], ?string $formula = null): float
     {
         $vars = [...$vars, ...$this->cachedVars];
 
@@ -36,24 +34,13 @@ class SalaryAdjustmentParser
 
         if (!empty($vars)) {
             $this->sortVars($vars);
-            foreach ($vars as &$var) {
-                try {
-                    $var = $parser->evaluate($var, $vars);
-                } catch (SyntaxError) {
-                }
-            }
+            $vars = array_map(array: $vars, callback: fn (string $var) => $parser->evaluate($var, $vars));
         }
 
-        try {
-            return floatval($parser->evaluate($formula, $vars));
-        } catch (SyntaxError) {
-        } catch (TypeError) {
-        } finally {
-            return join('; ', $vars). $formula;
-        }
+        return floatval($parser->evaluate($formula, $vars));
     }
 
-    public function parseFromTextVariableInput(string $input, ?string $formula = null): mixed
+    public function parseFromTextVariableInput(string $input, ?string $formula = null): float
     {
         $tokens = PhpToken::tokenize("<?php {$input}");
 
