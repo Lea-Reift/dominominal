@@ -18,4 +18,14 @@ enum PayrollTypeEnum: int implements HasLabel
             self::BIWEEKLY => 'Quincenal'
         };
     }
+
+    public function isMonthly(): bool
+    {
+        return $this === self::MONTHLY;
+    }
+
+    public function isBiweekly(): bool
+    {
+        return $this === self::BIWEEKLY;
+    }
 }
