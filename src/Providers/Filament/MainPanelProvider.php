@@ -32,41 +32,15 @@ class MainPanelProvider extends PanelProvider
             ->login()
             ->colors([
                 'primary' => Color::Amber,
-            ]);
-
-        $modulesFolder = new DirectoryIterator(app_path('Modules'));
-
-        foreach ($modulesFolder as $directory) {
-            /** @var DirectoryIterator $directory */
-
-            if ($directory->isDot() || $directory->isFile()) {
-                continue;
-            }
-
-            if (!is_dir($directoryResourcesPath = $directory->getRealPath().DIRECTORY_SEPARATOR.'Resources')) {
-                mkdir($directoryResourcesPath);
-            }
-
-            $namespace = str($directory->getPath())
-                ->append('\\')
-                ->replace([app_path(), DIRECTORY_SEPARATOR], ['App', '\\'])
-                ->append("{$directory->getBasename()}\\Resources")
-                ->toString();
-
-            $panel->discoverResources($directoryResourcesPath, $namespace);
-        }
-
-        return $panel
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
+            ])
             ->pages([
                 Pages\Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
             ])
+            ->sidebarCollapsibleOnDesktop()
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -81,5 +55,29 @@ class MainPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
+
+        $modulesFolder = new DirectoryIterator(app_path('Modules'));
+
+        foreach ($modulesFolder as $directory) {
+            /** @var DirectoryIterator $directory */
+
+            if ($directory->isDot() || $directory->isFile()) {
+                continue;
+            }
+
+            if (!is_dir($directoryResourcesPath = $directory->getRealPath() . DIRECTORY_SEPARATOR . 'Resources')) {
+                mkdir($directoryResourcesPath);
+            }
+
+            $namespace = str($directory->getPath())
+                ->append('\\')
+                ->replace([app_path(), DIRECTORY_SEPARATOR], ['App', '\\'])
+                ->append("{$directory->getBasename()}\\Resources")
+                ->toString();
+
+            $panel->discoverResources($directoryResourcesPath, $namespace);
+        }
+
+        return $panel;
     }
 }
