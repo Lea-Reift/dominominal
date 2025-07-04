@@ -8,11 +8,14 @@ use App\Enums\DocumentTypeEnum;
 use App\Forms\Components\PhoneRepeater;
 use App\Modules\Companies\Resources\CompanyResource\Pages;
 use App\Modules\Companies\Models\Company;
+use App\Modules\Companies\Resources\CompanyResource\Pages\ManageCompanyEmployees;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
+use Filament\Pages\Page;
 
 class CompanyResource extends Resource
 {
@@ -67,6 +70,10 @@ class CompanyResource extends Resource
                 //
             ])
             ->actions([
+                Action::make('employees')
+                    ->label('Empleados')
+                    ->icon('heroicon-c-user-group')
+                    ->url(fn (Company $record) => ManageCompanyEmployees::getUrl(['record' => $record])),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
@@ -81,6 +88,14 @@ class CompanyResource extends Resource
     {
         return [
             'index' => Pages\ManageCompanies::route('/'),
+            'employees' => Pages\ManageCompanyEmployees::route('{record}/employees')
         ];
     }
+
+    // public static function getRecordSubNavigation(Page $page): array
+    // {
+    //     return $page->generateNavigationItems([
+    //         Pages\ManageCompanyEmployees::class,
+    //     ]);
+    // }
 }

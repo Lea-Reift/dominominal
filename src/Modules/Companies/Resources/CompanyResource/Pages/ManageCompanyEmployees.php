@@ -2,39 +2,45 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Companies\Resources;
+namespace App\Modules\Companies\Resources\CompanyResource\Pages;
 
-use App\Enums\DocumentTypeEnum;
-use App\Enums\SalaryDistributionFormatEnum;
-use App\Forms\Components\PhoneRepeater;
-use App\Modules\Companies\Resources\EmployeeResource\Pages;
-use App\Modules\Companies\Models\Employee;
-use App\Tables\Columns\DocumentColumn;
+use App\Modules\Companies\Resources\CompanyResource;
 use Filament\Forms;
-use Filament\Forms\Components\Fieldset;
-use Filament\Forms\Components\Group;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
-use Filament\Forms\Get;
-use Filament\Resources\Resource;
+use Filament\Resources\Pages\ManageRelatedRecords;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Contracts\Database\Query\Builder;
-use Illuminate\Support\Facades\Auth;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use App\Enums\DocumentTypeEnum;
+use App\Forms\Components\PhoneRepeater;
+use Filament\Forms\Components\Fieldset;
 use Filament\Support\RawJs;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Group;
+use App\Enums\SalaryDistributionFormatEnum;
+use App\Tables\Columns\DocumentColumn;
+use Filament\Forms\Get;
 
-class EmployeeResource extends Resource
+class ManageCompanyEmployees extends ManageRelatedRecords
 {
-    protected static ?string $model = Employee::class;
+    protected static string $resource = CompanyResource::class;
 
-    protected static ?string $navigationIcon = 'heroicon-c-user-group';
+    protected static string $relationship = 'employees';
 
-    protected static ?string $modelLabel = 'empleado';
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    public function getTitle(): string
+    {
+        return "Empleados de {$this->getRecord()->name}";
+    }
 
-    public static function form(Form $form): Form
+    public static function getNavigationLabel(): string
+    {
+        return 'Empleados';
+    }
+
+    public function form(Form $form): Form
     {
         return $form
             ->schema([
@@ -46,15 +52,6 @@ class EmployeeResource extends Resource
                     ->label('Apellidos')
                     ->required()
                     ->maxLength(255),
-                Forms\Components\Select::make('company_id')
-                    ->label('Compañía')
-                    ->native(false)
-                    ->relationship(
-                        'company',
-                        'name',
-                        fn (Builder $query) => $query->where('user_id', Auth::id())
-                    )
-                    ->required(),
                 Forms\Components\Select::make('document_type')
                     ->label('Tipo de documento')
                     ->native(false)
@@ -128,13 +125,10 @@ class EmployeeResource extends Resource
             ]);
     }
 
-    public static function table(Table $table): Table
+    public function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('company.name')
-                    ->label('Compañía')
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('full_name')
                     ->label('Empleado'),
                 DocumentColumn::make('document_type')
@@ -162,12 +156,5 @@ class EmployeeResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
-    }
-
-    public static function getPages(): array
-    {
-        return [
-            'index' => Pages\ManageEmployees::route('/'),
-        ];
     }
 }
