@@ -8,6 +8,7 @@ use App\Concerns\HasDocument;
 use App\Concerns\HasPhones;
 use App\Enums\DocumentTypeEnum;
 use App\Models\User;
+use App\Modules\Payroll\Models\Payroll;
 use App\Support\ValueObjects\Phone;
 use Auth;
 use Illuminate\Database\Eloquent\Model;
@@ -55,5 +56,10 @@ class Company extends Model
     public function employees(): HasMany
     {
         return $this->hasMany(Employee::class);
+    }
+
+    public function payrolls(): HasMany
+    {
+        return $this->hasMany(Payroll::class);
     }
 }
