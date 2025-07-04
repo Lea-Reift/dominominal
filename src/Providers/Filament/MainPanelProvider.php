@@ -69,13 +69,24 @@ class MainPanelProvider extends PanelProvider
                 mkdir($directoryResourcesPath);
             }
 
-            $namespace = str($directory->getPath())
+            if (!is_dir($directoryPagesPath = $directory->getRealPath() . DIRECTORY_SEPARATOR . 'Pages')) {
+                mkdir($directoryPagesPath);
+            }
+
+            $baseNamespace = str($directory->getPath())
                 ->append('\\')
-                ->replace([app_path(), DIRECTORY_SEPARATOR], ['App', '\\'])
+                ->replace([app_path(), DIRECTORY_SEPARATOR], ['App', '\\']);
+
+            $resourcesNamespace = $baseNamespace
                 ->append("{$directory->getBasename()}\\Resources")
                 ->toString();
 
-            $panel->discoverResources($directoryResourcesPath, $namespace);
+            $pagesNamespace = $baseNamespace
+                ->append("{$directory->getBasename()}\\Pages")
+                ->toString();
+
+            $panel->discoverResources($directoryResourcesPath, $resourcesNamespace);
+            $panel->discoverPages($directoryPagesPath, $pagesNamespace);
         }
 
         return $panel;
