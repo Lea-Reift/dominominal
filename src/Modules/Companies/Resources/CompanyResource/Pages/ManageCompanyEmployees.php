@@ -29,7 +29,7 @@ class ManageCompanyEmployees extends ManageRelatedRecords
 
     protected static string $relationship = 'employees';
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-s-user-group';
 
     public function getTitle(): string
     {
@@ -141,14 +141,13 @@ class ManageCompanyEmployees extends ManageRelatedRecords
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Fecha de creación')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 //
+            ])
+            ->headerActions([
+                Tables\Actions\CreateAction::make()
+                    ->modelLabel('empleado'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
