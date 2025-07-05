@@ -14,6 +14,8 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Forms\Components\ToggleButtons;
+use Filament\Forms\Get;
 
 class SalaryAdjustmentResource extends Resource
 {
@@ -39,25 +41,32 @@ class SalaryAdjustmentResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->label('Nombre')
                     ->required()
-                    ->live(true)
+                    ->live(debounce: 1000)
                     ->afterStateUpdated(function ($state, callable $set) {
                         $set('parser_alias', str($state)->slug('_')->upper());
                     })
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('parser_alias')
-                    ->label('Nombre de variable')
-                    ->helperText('Este sera el valor utilizado en las formulas de este y los demás ajustes')
-                    ->required()
                     ->maxLength(255),
                 Select::make('value_type')
                     ->label('Tipo de valor')
                     ->options(SalaryAdjustmentValueTypeEnum::class)
                     ->native(false)
                     ->required(),
-                Forms\Components\TextInput::make('value')
-                    ->columnSpanFull()
-                    ->label('Valor')
+                Forms\Components\TextInput::make('parser_alias')
+                    ->label('Nombre de variable')
+                    ->helperText('Este sera el valor utilizado en las formulas de este y los demás ajustes')
                     ->required()
+                    ->maxLength(255),
+                ToggleButtons::make('requires_custom_value')
+                    ->label('¿Requiere valor modificado?')
+                    ->helperText('El valor modificado se requerirá al momento de registrar el ajuste en una nómina')
+                    ->live()
+                    ->boolean()
+                    ->grouped(),
+                Forms\Components\TextInput::make('value')
+                    ->label('Valor')
+                    ->required(fn (Get $get) => !is_null($get('requires_custom_value')) && !((bool)$get('requires_custom_value')))
+                    ->visible(fn (Get $get) => !is_null($get('requires_custom_value')) && !((bool)$get('requires_custom_value')))
+                    ->disabled(fn (Get $get) => !is_null($get('requires_custom_value')) && ((bool)$get('requires_custom_value')))
                     ->maxLength(255),
             ]);
     }

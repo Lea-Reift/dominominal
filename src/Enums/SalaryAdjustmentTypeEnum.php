@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Enums;
 
 use Filament\Support\Contracts\HasLabel;
+use Illuminate\Support\Str;
 
 enum SalaryAdjustmentTypeEnum: int implements HasLabel
 {
@@ -17,5 +18,10 @@ enum SalaryAdjustmentTypeEnum: int implements HasLabel
             self::INCOME => 'Ingreso',
             self::DEDUCTION => 'Descuento',
         };
+    }
+
+    public function getKey(): string
+    {
+        return Str::slug($this->name, '_');
     }
 }

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Modules\Payroll\Models\PayrollDetail;
+use App\Modules\Payroll\Models\SalaryAdjustment;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,14 +14,10 @@ return new class () extends Migration {
      */
     public function up(): void
     {
-        Schema::create('salary_adjustments', function (Blueprint $table) {
+        Schema::create('payroll_detail_salary_adjustment', function (Blueprint $table) {
             $table->id();
-            $table->tinyInteger('type');
-            $table->string('name');
-            $table->string('parser_alias');
-            $table->tinyInteger('value_type');
-            $table->string('value')->nullable();
-            $table->boolean('requires_custom_value')->default(false);
+            $table->foreignIdFor(PayrollDetail::class);
+            $table->foreignIdFor(SalaryAdjustment::class);
             $table->timestamps();
         });
     }
@@ -29,6 +27,6 @@ return new class () extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('salary_adjustments');
+        Schema::dropIfExists('payroll_detail_salary_adjustment');
     }
 };

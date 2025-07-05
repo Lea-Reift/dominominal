@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property string $parser_alias
  * @property SalaryAdjustmentValueTypeEnum $value_type
  * @property string $value
+ * @property bool $requires_custom_value
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @method static SalaryAdjustmentBuilder query()
@@ -29,11 +30,13 @@ class SalaryAdjustment extends Model
         'parser_alias',
         'value_type',
         'value',
+        'requires_custom_value',
     ];
 
     protected $casts = [
         'type' => SalaryAdjustmentTypeEnum::class,
         'value_type' => SalaryAdjustmentValueTypeEnum::class,
+        'requires_custom_value' => 'boolean'
     ];
 
     public function payrolls(): BelongsToMany
