@@ -7,6 +7,8 @@ namespace App\Modules\Payroll\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Enums\SalaryAdjustmentValueTypeEnum;
+use App\Modules\Payroll\QueryBuilders\SalaryAdjustmentBuilder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * @property int $id
@@ -17,6 +19,7 @@ use App\Enums\SalaryAdjustmentValueTypeEnum;
  * @property string $value
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @method static SalaryAdjustmentBuilder query()
  */
 class SalaryAdjustment extends Model
 {
@@ -32,4 +35,14 @@ class SalaryAdjustment extends Model
         'type' => SalaryAdjustmentTypeEnum::class,
         'value_type' => SalaryAdjustmentValueTypeEnum::class,
     ];
+
+    public function payrolls(): BelongsToMany
+    {
+        return $this->belongsToMany(Payroll::class);
+    }
+
+    public function newEloquentBuilder($query)
+    {
+        return new SalaryAdjustmentBuilder($query);
+    }
 }
