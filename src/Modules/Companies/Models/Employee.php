@@ -14,6 +14,7 @@ use App\Support\ValueObjects\Phone;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
@@ -27,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string $document_number
  * @property string $address
  * @property string $email
+ * @property-read string $full_name
  * @property Collection<int, Phone> $phones
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -67,5 +69,10 @@ class Employee extends Model
         return Attribute::get(
             fn () => "{$this->getAttribute('name')} {$this->getAttribute('surname')}"
         );
+    }
+
+    public function payrolls(): BelongsToMany
+    {
+        return $this->belongsToMany(Payroll::class, 'payroll_details');
     }
 }
