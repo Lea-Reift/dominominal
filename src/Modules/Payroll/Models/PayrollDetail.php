@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Models;
 
+use App\Modules\Company\Models\Company;
 use App\Modules\Company\Models\Employee;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Modules\Company\Models\Salary;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Carbon;
 
 /**
@@ -36,6 +38,11 @@ class PayrollDetail extends Model
     public function payroll(): BelongsTo
     {
         return $this->belongsTo(Payroll::class);
+    }
+
+    public function company(): HasOneThrough
+    {
+        return $this->hasOneThrough(Company::class, Payroll::class);
     }
 
     public function salary(): BelongsTo
