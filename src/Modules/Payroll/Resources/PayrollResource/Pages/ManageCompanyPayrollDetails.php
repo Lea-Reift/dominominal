@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Resources\PayrollResource\Pages;
 
-use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Modules\Company\Models\Employee;
 use App\Modules\Company\Resources\CompanyResource;
 use App\Modules\Company\Resources\CompanyResource\Pages\ViewCompany;
 use App\Modules\Payroll\Resources\PayrollResource;
-use Filament\Forms\Form;
 use Filament\Resources\Pages\ManageRelatedRecords;
-use Filament\Tables;
 use Filament\Tables\Table;
 use App\Modules\Payroll\Models\Payroll;
-use App\Modules\Payroll\Models\SalaryAdjustment;
-use Filament\Forms\Components\Select;
-use Illuminate\Support\Collection;
+use App\Modules\Payroll\Models\PayrollDetail;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Notifications\Notification;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Tables\Columns\TextColumn;
 
 /**
  * @property Payroll $record
@@ -27,7 +27,8 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
     protected static string $relationship = 'details';
 
-    protected static string $modelLabel = 'registro';
+    protected static ?string $modelLabel = 'registro';
+    protected static ?string $title = 'Registro';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -52,54 +53,51 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
         return "Detalles de la nómina {$period} de {$this->record->company->name}";
     }
 
-    public function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Select::make('employee_id')
-                    ->options(fn () => $this->record->company->employees()->select(['name', 'surname', 'id'])->get()->pluck('full_name', 'id'))
-                    ->label('Empleado')
-                    ->native(false)
-                    ->required(),
-                Select::make('salary_adjustments')
-                    ->label('Ajustes Salariales')
-                    ->multiple()
-                    ->native(false)
-                    ->required()
-                    ->options(function () {
-                        $adjustments = SalaryAdjustment::all(['id', 'name', 'type'])
-                            ->groupBy('type')
-                            ->mapWithKeys(fn (Collection $adjustmentByType, int $key) => [
-                                SalaryAdjustmentTypeEnum::from($key)->getLabel() => $adjustmentByType->pluck('name', 'id'),
-                            ]);
-                        return $adjustments;
-                    })
-
-            ]);
-    }
-
     public function table(Table $table): Table
     {
         return $table
-            ->modelLabel(static::$modelLabel)
             ->recordTitleAttribute('employee_id')
             ->columns([
-                Tables\Columns\TextColumn::make('employee.full_name')
+                TextColumn::make('employee.full_name')
                     ->label('Empleado'),
-                Tables\Columns\TextColumn::make('salary.amount')
+                TextColumn::make('salary.amount')
                     ->label('Salario')
-                    ->money('DOP'),
+                    ->money()
+                    ->summarize(Sum::make()->money()),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
-                    ->modelLabel(static::$modelLabel)
-                    ->mutateFormDataUsing(function (array $data) {
-                        $data['salary_id'] = Employee::query()->with('salary')->findOrFail($data['employee_id'])->salary->id;
-                        return $data;
+                Action::make('add_employees')
+                    ->label('Añadir empleados')
+                    ->disabled(fn () => $this->record->company->employees()->count() === $this->record->employees()->count())
+                    ->form([
+                        CheckboxList::make('employees')
+                            ->hiddenLabel()
+                            ->options(
+                                fn () => $this->record->company->employees()
+                                    ->whereNotIn('id', $this->record->employees()->select('employees.id'))
+                                    ->get()
+                                    ->pluck('full_name', 'id')
+                            )
+                            ->bulkToggleable()
+                            ->searchable()
+                            ->columns(2)
+                            ->required()
+                            ->columnSpanFull()
+                    ])
+                    ->action(function (array $data) {
+                        $this->record->details()->saveMany(Employee::query()->whereIn('id', $data['employees'])->with('salary')->get()
+                            ->map(fn (Employee $employee) => new PayrollDetail([
+                                'employee_id' => $employee->id,
+                                'salary_id' => $employee->salary->id,
+                            ])));
+
+                        Notification::make()
+                            ->success()
+                            ->title('Empleados agregados con éxito')
+                            ->send();
                     }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
             ]);
     }
 }
