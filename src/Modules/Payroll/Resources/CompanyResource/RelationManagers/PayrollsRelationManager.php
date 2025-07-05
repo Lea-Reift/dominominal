@@ -103,10 +103,8 @@ class PayrollsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->deferLoading()
             ->recordTitleAttribute('period')
             ->recordUrl(fn (Payroll $record) => ManageCompanyPayrollDetails::getUrl(['record' => $record]))
-            ->openRecordUrlInNewTab()
             ->defaultGroup(
                 Group::make('type')
                     ->titlePrefixedWithLabel(false)
