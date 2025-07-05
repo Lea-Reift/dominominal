@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Company\Models;
 
 use App\Enums\SalaryDistributionFormatEnum;
+use App\Modules\Payroll\Models\PayrollDetail;
 use App\Support\ValueObjects\SalaryDistribution;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -49,5 +51,10 @@ class Salary extends Model
             get: fn () => SalaryDistribution::make($this->distribution_format, floatval($this->distribution_value)),
             set: fn (SalaryDistribution $distribution) => $distribution->toCastArray(),
         );
+    }
+
+    public function payrollDetails(): HasMany
+    {
+        return $this->hasMany(PayrollDetail::class);
     }
 }
