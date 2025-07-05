@@ -21,6 +21,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use DirectoryIterator;
 use Filament\Support\Enums\MaxWidth;
+use Filament\Tables\Table;
 
 class MainPanelProvider extends PanelProvider
 {
@@ -37,6 +38,7 @@ class MainPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
             ])
+            ->spa()
             ->widgets([
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
@@ -88,5 +90,11 @@ class MainPanelProvider extends PanelProvider
         }
 
         return $panel;
+    }
+
+    public function boot(): void
+    {
+        Table::$defaultCurrency = 'USD';
+        Table::$defaultNumberLocale = 'en';
     }
 }
