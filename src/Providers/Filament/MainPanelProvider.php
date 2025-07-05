@@ -20,6 +20,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use DirectoryIterator;
+use Filament\Support\Enums\MaxWidth;
 
 class MainPanelProvider extends PanelProvider
 {
@@ -54,7 +55,9 @@ class MainPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->maxContentWidth(MaxWidth::Full);
+
 
         $modulesFolder = new DirectoryIterator(app_path('Modules'));
 
