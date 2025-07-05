@@ -14,6 +14,7 @@ use Filament\Tables\Table;
 use Filament\Pages\SubNavigationPosition;
 use App\Enums\DocumentTypeEnum;
 use App\Forms\Components\PhoneRepeater;
+use App\Modules\Company\Resources\CompanyResource\RelationManagers\EmployeesRelationManager;
 use App\Modules\Payroll\Resources\CompanyResource\RelationManagers\PayrollsRelationManager;
 use App\Modules\Payroll\Resources\PayrollResource;
 use Filament\Tables\Actions\EditAction;
@@ -94,6 +95,7 @@ class CompanyResource extends Resource
     public static function getRelations(): array
     {
         return [
+            EmployeesRelationManager::class,
             PayrollsRelationManager::class,
         ];
     }
