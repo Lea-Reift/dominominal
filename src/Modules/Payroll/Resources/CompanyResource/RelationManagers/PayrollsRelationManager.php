@@ -52,6 +52,7 @@ class PayrollsRelationManager extends RelationManager
                     ->id('month-select')
                     ->format('Y-m-d')
                     ->monthPicker()
+                    ->default(now())
                     ->visible(fn (Get $get) => PayrollTypeEnum::tryFrom(intval($get('type'))) === PayrollTypeEnum::MONTHLY)
                     ->disabled(fn (Get $get) => PayrollTypeEnum::tryFrom(intval($get('type'))) !== PayrollTypeEnum::MONTHLY)
                     ->displayFormat('F-Y')
@@ -80,13 +81,19 @@ class PayrollsRelationManager extends RelationManager
                                     ->incomes()
                                     ->get()
                                     // @phpstan-ignore-next-line
-                                    ->mapWithKeys(fn (SalaryAdjustment $adjustment) => [
-                                        $adjustment->id => "{$adjustment->value_type->getLabel()}: " . match ($adjustment->value_type) {
+                                    ->mapWithKeys(function (SalaryAdjustment $adjustment) {
+                                        if ($adjustment->requires_custom_value) {
+                                            return [$adjustment->id => "{$adjustment->value_type->getLabel()}: Modificable"];
+                                        }
+
+                                        $description = "{$adjustment->value_type->getLabel()}: " . match ($adjustment->value_type) {
                                             SalaryAdjustmentValueTypeEnum::ABSOLUTE => Number::currency((float)$adjustment->value, 'DOP'),
                                             SalaryAdjustmentValueTypeEnum::PERCENTAGE => "{$adjustment->value}%",
                                             default => $adjustment->value
-                                        }
-                                    ])
+                                        };
+
+                                        return [$adjustment->id => $description];
+                                    })
                             )
                             ->getOptionLabelFromRecordUsing(fn (SalaryAdjustment $record) => Str::headline($record->name)),
 
