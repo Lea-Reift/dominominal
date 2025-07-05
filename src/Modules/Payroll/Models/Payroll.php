@@ -22,6 +22,8 @@ use Illuminate\Database\Eloquent\Collection;
  * @property Carbon $period
  * @property-read Company $company
  * @property-read Collection<int, SalaryAdjustment> $salaryAdjustments
+ * @property-read Collection<int, SalaryAdjustment> $incomes
+ * @property-read Collection<int, SalaryAdjustment> $deductions
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */

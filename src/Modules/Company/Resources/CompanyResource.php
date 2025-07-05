@@ -95,8 +95,8 @@ class CompanyResource extends Resource
     public static function getRelations(): array
     {
         return [
-            EmployeesRelationManager::class,
-            PayrollsRelationManager::class,
+            'employees' => EmployeesRelationManager::class,
+            'payrolls' => PayrollsRelationManager::class,
         ];
     }
 
