@@ -66,7 +66,12 @@ class CompanyResource extends Resource
                     ->label('Dirección')
                     ->required()
                     ->maxLength(255),
-                PhoneRepeater::make('phones'),
+                PhoneRepeater::make('phones')
+                    ->grid([
+                        'sm' => 2,
+                        'md' => 3,
+                        'xl' => 4,
+                    ]),
             ]);
     }
 

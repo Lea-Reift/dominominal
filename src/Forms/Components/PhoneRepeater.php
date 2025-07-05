@@ -17,11 +17,6 @@ class PhoneRepeater extends Repeater
             ->label('Teléfonos')
             ->addActionLabel('Añadir teléfono')
             ->columnSpanFull()
-            ->grid([
-                'sm' => 2,
-                'md' => 3,
-                'xl' => 4,
-            ])
             ->schema([
                 TextInput::make('type')
                     ->label('Tipo')
