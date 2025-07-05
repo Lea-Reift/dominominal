@@ -6,6 +6,8 @@ namespace App\Modules\Payroll\Resources\PayrollResource\Pages;
 
 use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Modules\Companies\Models\Employee;
+use App\Modules\Company\Resources\CompanyResource;
+use App\Modules\Company\Resources\CompanyResource\Pages\ViewCompany;
 use App\Modules\Payroll\Resources\PayrollResource;
 use Filament\Forms\Form;
 use Filament\Resources\Pages\ManageRelatedRecords;
@@ -28,6 +30,19 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
     protected static string $modelLabel = 'registro';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    public function getBreadcrumbs(): array
+    {
+        $resource = static::getResource();
+
+        $breadcrumbs = [
+            CompanyResource::getUrl() => CompanyResource::getBreadcrumb(),
+            ViewCompany::getUrl(['record' => $this->record->company_id]) => $this->record->company->name,
+            $resource::getUrl() => $resource::getBreadcrumb(),
+        ];
+
+        return $breadcrumbs;
+    }
 
     public function getTitle(): string
     {
