@@ -39,9 +39,9 @@ class SalaryAdjustmentResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->label('Nombre')
                     ->required()
-                    ->live()
+                    ->live(true)
                     ->afterStateUpdated(function ($state, callable $set) {
-                        $set('parser_alias', str($state)->slug()->upper());
+                        $set('parser_alias', str($state)->slug('_')->upper());
                     })
                     ->maxLength(255),
                 Forms\Components\TextInput::make('parser_alias')
