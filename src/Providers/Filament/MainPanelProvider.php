@@ -68,13 +68,8 @@ class MainPanelProvider extends PanelProvider
                 continue;
             }
 
-            if (!is_dir($directoryResourcesPath = $directory->getRealPath() . DIRECTORY_SEPARATOR . 'Resources')) {
-                mkdir($directoryResourcesPath);
-            }
-
-            if (!is_dir($directoryPagesPath = $directory->getRealPath() . DIRECTORY_SEPARATOR . 'Pages')) {
-                mkdir($directoryPagesPath);
-            }
+            $directoryResourcesPath = $directory->getRealPath() . DIRECTORY_SEPARATOR . 'Resources';
+            $directoryPagesPath = $directory->getRealPath() . DIRECTORY_SEPARATOR . 'Pages';
 
             $baseNamespace = str($directory->getPath())
                 ->append('\\')
