@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Companies\Models;
+namespace App\Modules\Company\Models;
 
 use App\Concerns\HasDocument;
 use App\Concerns\HasPhones;
@@ -16,6 +16,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Modules\Payroll\Models\Payroll;
 
 /**
  *

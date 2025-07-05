@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Company\Resources;
 
 use App\Modules\Company\Resources\CompanyResource\Pages;
-use App\Modules\Companies\Models\Company;
+use App\Modules\Company\Models\Company;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;

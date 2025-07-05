@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\PayrollTypeEnum;
-use App\Modules\Companies\Models\Company;
+use App\Modules\Company\Models\Company;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;

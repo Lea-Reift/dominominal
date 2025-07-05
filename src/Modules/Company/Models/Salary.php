@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Companies\Models;
+namespace App\Modules\Company\Models;
 
 use App\Enums\SalaryDistributionFormatEnum;
 use App\Support\ValueObjects\SalaryDistribution;

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Payroll\Models;
 
 use App\Enums\SalaryAdjustmentTypeEnum;
-use App\Modules\Companies\Models\Employee;
+use App\Modules\Company\Models\Employee;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use App\Modules\Companies\Models\Salary;
+use App\Modules\Company\Models\Salary;
 use Illuminate\Support\Carbon;
 
 /**

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Modules\Companies\Models\Employee;
-use App\Modules\Companies\Models\Salary;
+use App\Modules\Company\Models\Employee;
+use App\Modules\Company\Models\Salary;
 use App\Modules\Payroll\Models\Payroll;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;

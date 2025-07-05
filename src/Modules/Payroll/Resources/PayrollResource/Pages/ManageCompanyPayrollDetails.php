@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Payroll\Resources\PayrollResource\Pages;
 
 use App\Enums\SalaryAdjustmentTypeEnum;
-use App\Modules\Companies\Models\Employee;
+use App\Modules\Company\Models\Employee;
 use App\Modules\Company\Resources\CompanyResource;
 use App\Modules\Company\Resources\CompanyResource\Pages\ViewCompany;
 use App\Modules\Payroll\Resources\PayrollResource;

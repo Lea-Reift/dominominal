@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Models;
 
-use App\Modules\Companies\Models\Employee;
+use App\Modules\Company\Models\Employee;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
