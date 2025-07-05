@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Models;
 
-use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Modules\Company\Models\Employee;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Modules\Company\Models\Salary;
 use Illuminate\Support\Carbon;
 
@@ -43,20 +41,5 @@ class PayrollDetail extends Model
     public function salary(): BelongsTo
     {
         return $this->belongsTo(Salary::class);
-    }
-
-    public function salaryAdjustments(): BelongsToMany
-    {
-        return $this->belongsToMany(SalaryAdjustment::class);
-    }
-
-    public function incomes(): BelongsToMany
-    {
-        return $this->salaryAdjustments()->where('type', SalaryAdjustmentTypeEnum::INCOME);
-    }
-
-    public function deductions(): BelongsToMany
-    {
-        return $this->salaryAdjustments()->where('type', SalaryAdjustmentTypeEnum::DEDUCTION);
     }
 }
