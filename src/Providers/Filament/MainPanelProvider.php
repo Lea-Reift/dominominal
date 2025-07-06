@@ -99,6 +99,9 @@ class MainPanelProvider extends PanelProvider
         Table::$defaultCurrency = 'USD';
         Table::$defaultNumberLocale = 'en';
 
-        SalaryAdjustmentParser::setDefaultVariables(['SALARIO' => fn (PayrollDetail $detail) => $detail->salary->amount]);
+        SalaryAdjustmentParser::setDefaultVariables([
+            'SALARIO' => fn (PayrollDetail $detail) => $detail->salary->amount,
+            'SALARIO_QUINCENA' => fn (PayrollDetail $detail) => $detail->getParsedPayrollSalary($detail->salary),
+        ]);
     }
 }
