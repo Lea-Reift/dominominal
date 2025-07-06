@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property SalaryAdjustmentValueTypeEnum $value_type
  * @property string $value
  * @property bool $requires_custom_value
+ * @property ?PayrollDetailSalaryAdjustment $detailSalaryAdjustmentValue
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @method static SalaryAdjustmentBuilder query()
