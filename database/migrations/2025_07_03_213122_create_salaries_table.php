@@ -16,7 +16,7 @@ return new class () extends Migration {
     {
         Schema::create('salaries', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Employee::class);
+            $table->foreignIdFor(Employee::class)->constrained();
             $table->decimal('amount', 10);
             $table->tinyInteger('distribution_format')->default(SalaryDistributionFormatEnum::PERCENTAGE);
             $table->decimal('distribution_value')->default(50);
