@@ -17,6 +17,7 @@ use App\Modules\Payroll\QueryBuilders\PayrollDetailBuilder;
 use App\Support\ValueObjects\PayrollDisplay\DetailDisplay;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
+use App\Enums\SalaryDistributionFormatEnum;
 
 /**
  * @property int $id
@@ -39,6 +40,10 @@ class PayrollDetail extends Model
         'employee_id',
         'payroll_id',
         'salary_id',
+    ];
+
+    protected $with = [
+        'payroll'
     ];
 
     public function employee(): BelongsTo
@@ -87,5 +92,23 @@ class PayrollDetail extends Model
     public function newEloquentBuilder($query): PayrollDetailBuilder
     {
         return new PayrollDetailBuilder($query);
+    }
+
+    public function getParsedPayrollSalary(Salary $salary): float
+    {
+        if ($this->payroll->type->isMonthly()) {
+            return $salary->amount;
+        }
+
+        $firstBiweekSalary = match ($salary->distribution->format) {
+            SalaryDistributionFormatEnum::ABSOLUTE => $salary->distribution->value,
+            SalaryDistributionFormatEnum::PERCENTAGE =>  $salary->amount - (($salary->distribution->value * $salary->amount) / 100),
+        };
+
+        $secondBiweekSalary = $salary->amount - $firstBiweekSalary;
+
+        return $this->payroll->period->day > 15
+            ? $firstBiweekSalary
+            : $secondBiweekSalary;
     }
 }

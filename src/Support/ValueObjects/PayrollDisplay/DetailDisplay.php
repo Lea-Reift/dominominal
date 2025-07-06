@@ -27,7 +27,7 @@ readonly class DetailDisplay
 
         $this->name = $detail->employee->full_name;
         $this->document_number = $detail->employee->document_number;
-        $this->rawSalary = (float) $detail->salary->amount;
+        $this->rawSalary = (float) $detail->getParsedPayrollSalary($detail->salary);
         $adjustments = $detail->payroll->salaryAdjustments->keyBy('parser_alias');
 
         $adjustments = SalaryAdjustmentParser::make($detail)

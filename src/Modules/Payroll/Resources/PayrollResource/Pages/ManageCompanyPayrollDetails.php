@@ -18,7 +18,6 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Tables\Actions\Action;
-use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Str;
 use App\Enums\SalaryAdjustmentValueTypeEnum;
@@ -33,6 +32,7 @@ use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\HtmlString;
+use App\Modules\Company\Models\Salary;
 
 /**
  * @property Payroll $record
@@ -118,10 +118,13 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
             ->columns([
                 Stack::make([
                     TextColumn::make('employee.full_name'),
-                    TextColumn::make('salary.amount')
-                        ->money()
+                    // TextColumn::make('salary.amount')
+                    TextColumn::make('salary')
+                        ->formatStateUsing(fn (PayrollDetail $record, Salary $state) => Number::currency($record->getParsedPayrollSalary($state)))
+                        // ->money()
                         ->summarize(
-                            Sum::make()
+                            Summarizer::make()
+                                ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('rawSalary'))
                                 ->money()
                                 ->label('Total Salarios')
                         ),
