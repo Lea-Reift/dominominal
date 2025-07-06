@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Resources\PayrollResource\Pages;
 
+use App\Enums\PayrollTypeEnum;
 use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Modules\Company\Models\Employee;
 use App\Modules\Company\Resources\CompanyResource;
@@ -33,6 +34,12 @@ use Filament\Tables\Columns\Summarizers\Summarizer;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\HtmlString;
 use App\Modules\Company\Models\Salary;
+use App\Modules\Payroll\Exceptions\DuplicatedPayrollException;
+use Filament\Support\Enums\ActionSize;
+use Filament\Support\Enums\MaxWidth;
+use Filament\Support\Enums\Alignment;
+use Filament\Support\Exceptions\Halt;
+use Illuminate\Support\Arr;
 
 /**
  * @property Payroll $record
@@ -50,7 +57,17 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
     protected function resolveRecord(int | string $key): Payroll
     {
-        return Payroll::with(['salaryAdjustments', 'incomes', 'deductions'])->findOrFail($key);
+        return Payroll::query()
+            ->with([
+                'employees',
+                'salaryAdjustments',
+                'incomes',
+                'deductions',
+                'details' => [
+                    'salaryAdjustments',
+                ],
+            ])
+            ->findOrFail($key);
     }
 
     public function getBreadcrumbs(): array
@@ -76,7 +93,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
             $format = 'd \d\e F \d\e\l Y';
         }
 
-        $period = $connector. ' '. str($this->record->period->translatedFormat($format))->headline();
+        $period = $connector . ' ' . str($this->record->period->translatedFormat($format))->headline();
 
         return "Detalles de la nómina {$period} de {$this->record->company->name}";
     }
@@ -156,6 +173,47 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                 ])
             ])
             ->headerActions([
+                Action::make('secondary_payrolls')
+                    ->label('Generar nóminas secundarias')
+                    ->modalHeading('Generar nóminas al...')
+                    ->visible(fn () => $this->record->type->isMonthly())
+
+                    ->size(ActionSize::Small)
+                    ->modalIcon('heroicon-s-clipboard-document')
+                    ->databaseTransaction()
+                    ->form([
+                        CheckboxList::make('dates')
+                            ->label('')
+                            ->bulkToggleable()
+                            ->required()
+                            ->gridDirection('row')
+                            ->columns(2)
+                            ->options(Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->translatedFormat("{$day} \\d\\e F")]))
+                    ])
+                    ->color('success')
+                    ->modalWidth(MaxWidth::Small)
+                    ->modalFooterActionsAlignment(Alignment::Center)
+                    ->action(function (array $data) {
+                        foreach ($data['dates'] as $day) {
+                            try {
+                                $this->generateSecondaryPayroll(intval($day));
+                            } catch (DuplicatedPayrollException $e) {
+                                Notification::make()
+                                    ->title('Nóminas Secundarias')
+                                    ->danger()
+                                    ->body($e->getMessage())
+                                    ->send();
+
+                                throw new Halt();
+                            }
+                        }
+
+                        Notification::make()
+                            ->title('Nóminas Secundarias')
+                            ->success()
+                            ->body('nóminas generadas con éxito')
+                            ->send();
+                    }),
                 Action::make('add_employees')
                     ->label('Añadir empleados')
                     ->disabled(fn () => $this->record->company->employees()->count() === $this->record->employees()->count())
@@ -204,7 +262,15 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                             ->schema($tabs->toArray())
                     ])
                     ->action(function (array $data, PayrollDetail $record) {
-                        $data = collect($data[SalaryAdjustmentTypeEnum::INCOME->getKey()] + $data[SalaryAdjustmentTypeEnum::DEDUCTION->getKey()])
+                        $data = collect()
+                            ->when(
+                                data_get($data, SalaryAdjustmentTypeEnum::INCOME->getKey()),
+                                fn (Collection $collection, array $incomes) => $collection->union($incomes)
+                            )
+                            ->when(
+                                data_get($data, SalaryAdjustmentTypeEnum::DEDUCTION->getKey()),
+                                fn (Collection $collection, array $deductions) => $collection->union($deductions)
+                            )
                             ->mapWithKeys(fn (?string $customValue, int $adjustmentId) => [
                                 $adjustmentId => [
                                     'custom_value' => $customValue
@@ -220,5 +286,44 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                     })
             ])
             ->recordAction('adjustments');
+    }
+
+    public function generateSecondaryPayroll(int $day): void
+    {
+        $period = $this->record->period->clone()->setDay($day);
+
+        throw_if(
+            condition: Payroll::query()->where('period', $period)->exists(),
+            exception: DuplicatedPayrollException::make($period)
+        );
+
+        /** @var Payroll $payroll */
+        $payroll = tap($this->record->replicate()
+            ->unsetRelations()
+            ->fill([
+                'type' => PayrollTypeEnum::BIWEEKLY,
+                'period' => $period,
+            ]))
+            ->save();
+
+        // SalaryAdjustments
+        $payroll->salaryAdjustments()->sync($this->record->salaryAdjustments);
+
+        // Details
+        foreach ($this->record->details as $detail) {
+            /**
+             * @var PayrollDetail $newDetail
+             * @var PayrollDetail $detail
+             */
+            $newDetail = tap(
+                $detail->replicate()
+                    ->unsetRelations()
+                    ->fill([
+                        'payroll_id' => $payroll->id
+                    ])
+            )->save();
+
+            $newDetail->salaryAdjustments()->sync($detail->salaryAdjustments);
+        }
     }
 }

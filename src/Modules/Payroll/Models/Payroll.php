@@ -47,7 +47,8 @@ class Payroll extends Model
 
     public function employees(): BelongsToMany
     {
-        return $this->belongsToMany(Employee::class, 'payroll_details', 'payroll_id', 'employee_id');
+        return $this->belongsToMany(Employee::class, 'payroll_details', 'payroll_id', 'employee_id')
+            ->withPivot(['salary_id']);
     }
 
     public function details(): HasMany
