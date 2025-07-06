@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Modules\Payroll\Models\PayrollDetail;
+use App\Support\SalaryAdjustmentParser;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -96,5 +98,7 @@ class MainPanelProvider extends PanelProvider
     {
         Table::$defaultCurrency = 'USD';
         Table::$defaultNumberLocale = 'en';
+
+        SalaryAdjustmentParser::setDefaultVariables(['SALARIO' => fn (PayrollDetail $detail) => $detail->salary->amount]);
     }
 }

@@ -4,40 +4,115 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Enums\SalaryAdjustmentValueTypeEnum;
+use App\Modules\Payroll\Models\PayrollDetail;
+use App\Modules\Payroll\Models\SalaryAdjustment;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use Symfony\Polyfill\Php80\PhpToken;
 
 class SalaryAdjustmentParser
 {
-    protected array $cachedVars = [];
+    protected string $cacheKey = 'salary_adjustment_parser.variables';
 
-    public function __construct()
-    {
+    protected array $variables = [];
+
+    protected static array $defaultVariables = [];
+
+    public function __construct(
+        protected PayrollDetail $detail,
+        array $customVariables = [],
+    ) {
+        $this->cacheKey .= ".{$detail->id}";
+        $this->detail->loadMissing('salaryAdjustments', 'payroll.salaryAdjustments');
+        $this->parseDefaultVariables();
+        $this->parseVariablesFromPayrollDetail($customVariables);
     }
 
-    public static function make(): self
+    public function variables(): array
     {
-        return new self();
+        return $this->variables;
     }
 
-    public function parse(array $vars = [], ?string $formula = null): float
+    public function variablesAsCollection(): Collection
     {
-        $vars = [...$vars, ...$this->cachedVars];
+        return collect($this->variables);
+    }
 
-        if (empty($vars) && empty($formula)) {
+    public static function make(PayrollDetail $detail, array $customVariables = []): self
+    {
+        return new self(detail: $detail, customVariables: $customVariables);
+    }
+
+    public static function setDefaultVariables(array $defaultVariables): array
+    {
+        return static::$defaultVariables = array_merge(static::$defaultVariables, $defaultVariables);
+    }
+
+    protected function parseDefaultVariables(): void
+    {
+        $this->variables = [
+            ...$this->variables,
+            ...Arr::map(static::$defaultVariables, fn (mixed $variable) => is_callable($variable) ? $variable($this->detail) : $variable)
+        ];
+    }
+
+    protected function parse(string $formula): float
+    {
+        $variables = $this->variables;
+
+        if (empty($variables) && empty($formula)) {
             return 0;
         }
 
-        $parser = (new ExpressionLanguage());
+        $parser = new ExpressionLanguage();
 
-        $formula ??= '0';
+        return floatval($parser->evaluate($formula, $variables));
+    }
 
-        if (!empty($vars)) {
-            $this->sortVars($vars);
-            $vars = array_map(array: $vars, callback: fn (string $var) => $parser->evaluate($var, $vars));
+    public function parseVariablesFromPayrollDetail(array $customVariables): self
+    {
+        $variables = $this->detail->payroll->salaryAdjustments
+            ->map(fn (SalaryAdjustment $adjustment) => $this->detail->salaryAdjustments->firstWhere('id', $adjustment->id) ?? $adjustment)
+            ->mapWithKeys(function (SalaryAdjustment $adjustment) {
+                $value = $adjustment->requires_custom_value
+                    ? $adjustment->detailSalaryAdjustmentValue?->custom_value
+                    : $adjustment->value;
+
+                $value = match ($adjustment->value_type) {
+                    SalaryAdjustmentValueTypeEnum::PERCENTAGE => (floatval($value) * $this->detail->salary->amount) / 100,
+                    default => $value,
+                };
+
+                return [$adjustment->parser_alias => $value];
+            })
+            ->merge($customVariables)
+            ->pipe(fn (Collection $adjustments) => $this->sortVariables($adjustments));
+
+        foreach ($variables as $key => $variable) {
+            if (is_numeric($variable)) {
+                $this->variables[$key] = floatval($variable);
+                continue;
+            }
+
+            if (!is_string($variable)) {
+                continue;
+            }
+
+            preg_match_all('/\b[A-Z][A-Z0-9_]*[A-Z0-9]\b/', $variable, $matches);
+
+            if (!empty($matches[0])) {
+                $matches = collect($matches[0])
+                    ->mapWithKeys(fn (string $match) => [$match => $this->variables[$match] ?? 0]);
+
+                $variable = str_replace($matches->keys()->toArray(), $matches->values()->toArray(), $variable);
+            }
+
+            $this->variables[$key] = $this->parse($variable);
         }
 
-        return floatval($parser->evaluate($formula, $vars));
+        return $this;
     }
 
     public function parseFromTextVariableInput(string $input, ?string $formula = null): float
@@ -56,7 +131,7 @@ class SalaryAdjustmentParser
             return $carry;
         });
 
-        $vars = array_reduce(
+        $this->variables = array_reduce(
             array: $lines,
             initial: [],
             callback: function (array $carry, array $tokens) {
@@ -66,10 +141,10 @@ class SalaryAdjustmentParser
             }
         );
 
-        return $this->parse($vars, $formula);
+        return $this->parse($formula);
     }
 
-    protected function sortVars(array &$variables): void
+    protected function sortVariables(Collection $variables): Collection
     {
         $knownVars = [];
 
@@ -96,8 +171,8 @@ class SalaryAdjustmentParser
             $knownVars[] = $key;
         }
 
-        uksort($variables, function ($a, $b) use ($priorities) {
-            return $priorities[$a] <=> $priorities[$b];
+        return $variables->sortBy(function ($_, $key) use ($priorities) {
+            return $priorities[$key];
         });
     }
 }
