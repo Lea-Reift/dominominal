@@ -23,6 +23,8 @@ readonly class DetailDisplay
     public function __construct(
         PayrollDetail $detail
     ) {
+        $detail->loadMissing(['employee', 'salary', 'salaryAdjustments', 'payroll' => ['salaryAdjustments']]);
+
         $this->name = $detail->employee->full_name;
         $this->document_number = $detail->employee->document_number;
         $this->rawSalary = (float) $detail->salary->amount;
