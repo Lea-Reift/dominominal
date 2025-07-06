@@ -68,9 +68,16 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
     public function getTitle(): string
     {
-        $period = $this->record->type->isMonthly()
-            ? 'de ' . ucfirst($this->record->period->translatedFormat('F-Y'))
-            : 'al ' . $this->record->period->translatedFormat('d \d\e F \d\e\l Y');
+        if ($this->record->type->isMonthly()) {
+            $connector = 'de';
+            $format = 'F \d\e\l Y';
+        } else {
+            $connector = 'al';
+            $format = 'd \d\e F \d\e\l Y';
+        }
+
+        $period = $connector. ' '. str($this->record->period->translatedFormat($format))->headline();
+
         return "Detalles de la nómina {$period} de {$this->record->company->name}";
     }
 
