@@ -311,6 +311,10 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
         // Details
         foreach ($this->record->details as $detail) {
+            /**
+             * @var PayrollDetail $newDetail
+             * @var PayrollDetail $detail
+             */
             $newDetail = tap(
                 $detail->replicate()
                     ->unsetRelations()
