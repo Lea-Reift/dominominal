@@ -35,9 +35,9 @@ class Salary extends Model
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
+        'amount' => 'float',
         'distribution_format' => SalaryDistributionFormatEnum::class,
-        'distribution_value' => 'decimal:2',
+        'distribution_value' => 'float',
     ];
 
     public function employee(): BelongsTo

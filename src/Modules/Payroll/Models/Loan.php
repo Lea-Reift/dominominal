@@ -30,8 +30,8 @@ class Loan extends Model
     ];
 
     protected $casts = [
-        'total_amount' => 'decimal:2',
-        'installment_amount' => 'decimal:2',
+        'total_amount' => 'float',
+        'installment_amount' => 'float',
     ];
 
     public function employee(): BelongsTo
