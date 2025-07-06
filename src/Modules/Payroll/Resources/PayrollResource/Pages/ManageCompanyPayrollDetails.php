@@ -173,8 +173,14 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                     ])
                     ->action(function (array $data, PayrollDetail $record) {
                         $data = collect($data[SalaryAdjustmentTypeEnum::INCOME->getKey()] + $data[SalaryAdjustmentTypeEnum::DEDUCTION->getKey()])
-                            ->mapWithKeys(fn (string $customValue, $adjustmentId) => [$adjustmentId => ['custom_value' => $customValue]]);
+                            ->mapWithKeys(fn (?string $customValue, int $adjustmentId) => [
+                                $adjustmentId => [
+                                    'custom_value' => $customValue
+                                ]
+                            ]);
+
                         $record->salaryAdjustments()->sync($data);
+
                         Notification::make()
                             ->success()
                             ->title('Ajustes modificados con éxito')
