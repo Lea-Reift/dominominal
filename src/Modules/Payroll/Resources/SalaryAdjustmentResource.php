@@ -19,6 +19,7 @@ use Filament\Forms\Get;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Number;
 use Filament\Forms\Components\TextInput;
+use Illuminate\Support\Str;
 
 class SalaryAdjustmentResource extends Resource
 {
@@ -54,6 +55,7 @@ class SalaryAdjustmentResource extends Resource
                     ->afterStateUpdated(function ($state, callable $set) {
                         $set('parser_alias', str($state)->slug('_')->upper());
                     })
+                    ->formatStateUsing(fn (string $state) => Str::headline($state))
                     ->maxLength(255),
                 TextInput::make('parser_alias')
                     ->label('Nombre de variable')
@@ -91,7 +93,8 @@ class SalaryAdjustmentResource extends Resource
                     ->label('Nombre'),
                 TextColumn::make('parser_alias')
                     ->tooltip('Este sera el valor utilizado en las formulas de este y los demás ajustes')
-                    ->label('Nombre de variable'),
+                    ->label('Nombre de variable')
+                    ->hidden(),
                 TextColumn::make('value_type')
                     ->label('Tipo de valor')
                     ->sortable(),
