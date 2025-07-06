@@ -29,4 +29,13 @@ enum DocumentTypeEnum: int implements HasLabel
             self::PASSPORT => 'Pasaporte',
         };
     }
+
+    public function getMask(): string
+    {
+        return match($this) {
+            self::IDENTIFICATION => '999-9999999-9',
+            self::RNC => '999999999',
+            self::PASSPORT => '**********',
+        };
+    }
 }

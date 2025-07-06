@@ -49,9 +49,11 @@ class EmployeesRelationManager extends RelationManager
                     ->label('Tipo de documento')
                     ->native(false)
                     ->options(DocumentTypeEnum::class)
-                    ->default(DocumentTypeEnum::IDENTIFICATION),
+                    ->live()
+                    ->default(DocumentTypeEnum::IDENTIFICATION->value),
                 TextInput::make('document_number')
                     ->label('Número de documento')
+                    ->mask(fn (Get $get) => DocumentTypeEnum::tryFrom((int)$get('document_type'))?->getMask())
                     ->required()
                     ->maxLength(255),
                 TextInput::make('address')
@@ -61,7 +63,6 @@ class EmployeesRelationManager extends RelationManager
                 TextInput::make('email')
                     ->email()
                     ->required()
-                    ->columnSpanFull()
                     ->maxLength(255),
                 PhoneRepeater::make('phones')
                     ->columnSpan(1),
@@ -77,6 +78,7 @@ class EmployeesRelationManager extends RelationManager
                             ->inputMode('decimal')
                             ->minValue(0)
                             ->columnSpanFull()
+                            ->live()
                             ->label('valor'),
                         Toggle::make('modify_distribution')
                             ->live()
@@ -106,7 +108,12 @@ class EmployeesRelationManager extends RelationManager
                                     default => '',
                                 })
                                 ->default(50)
-                                ->required(fn (Get $get): bool => (bool)$get('modify_distribution'))
+                                ->required(fn (Get $get) => (bool)$get('modify_distribution'))
+                                ->maxValue(fn (Get $get) => match (SalaryDistributionFormatEnum::tryFrom(intval($get('distribution_format')))) {
+                                    SalaryDistributionFormatEnum::ABSOLUTE => (float)str_replace(',', '', $get('amount')),
+                                    SalaryDistributionFormatEnum::PERCENTAGE => 100,
+                                    default => PHP_INT_MAX,
+                                })
                                 ->helperText('El valor restante será usado en la segunda quincena')
                                 ->inputMode('decimal')
                                 ->numeric()
@@ -128,7 +135,8 @@ class EmployeesRelationManager extends RelationManager
                     ->searchable(),
                 TextColumn::make('address')
                     ->label('Dirección')
-                    ->searchable(),
+                    ->limit(25)
+                    ->tooltip(fn (TextColumn $column) => strlen($state = $column->getState()) <= $column->getCharacterLimit() ? null : $state),
             ])
             ->headerActions([
                 CreateAction::make(),
