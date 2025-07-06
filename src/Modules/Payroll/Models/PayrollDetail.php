@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Enums\SalaryAdjustmentTypeEnum;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * @property int $employee_id
@@ -21,6 +22,9 @@ use App\Enums\SalaryAdjustmentTypeEnum;
  * @property-read Employee $employee
  * @property-read Payroll $payroll
  * @property-read Salary $salary
+ * @property-read Collection<int, SalaryAdjustment> $salaryAdjustments
+ * @property-read Collection<int, SalaryAdjustment> $incomes
+ * @property-read Collection<int, SalaryAdjustment> $deductions
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -54,7 +58,9 @@ class PayrollDetail extends Model
 
     public function salaryAdjustments(): BelongsToMany
     {
-        return $this->belongsToMany(SalaryAdjustment::class);
+        return $this->belongsToMany(SalaryAdjustment::class)
+            ->as('detailSalaryAdjustmentValue')
+            ->withPivot(['custom_value']);
     }
 
     public function incomes(): BelongsToMany

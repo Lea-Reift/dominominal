@@ -18,6 +18,7 @@ return new class () extends Migration {
             $table->id();
             $table->foreignIdFor(PayrollDetail::class);
             $table->foreignIdFor(SalaryAdjustment::class);
+            $table->string('custom_value')->nullable();
             $table->timestamps();
         });
     }
