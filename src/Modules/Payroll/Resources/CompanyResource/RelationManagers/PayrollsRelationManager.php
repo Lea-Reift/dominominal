@@ -23,7 +23,12 @@ use Illuminate\Support\Number;
 use Illuminate\Support\Str;
 use App\Modules\Payroll\Resources\PayrollResource\Pages\ManageCompanyPayrollDetails;
 use Filament\Tables\Grouping\Group;
+use Illuminate\Validation\Rules\Unique;
+use App\Modules\Company\Models\Company;
 
+/**
+ * @property Company $ownerRecord
+ */
 class PayrollsRelationManager extends RelationManager
 {
     protected static string $relationship = 'payrolls';
@@ -52,6 +57,12 @@ class PayrollsRelationManager extends RelationManager
                     ->id('month-select')
                     ->format('Y-m-d')
                     ->monthPicker()
+                    ->unique(
+                        ignoreRecord: true,
+                        modifyRuleUsing: fn (Unique $rule) => $rule
+                            ->where('company_id', $this->ownerRecord->id)
+                            ->where('type', PayrollTypeEnum::MONTHLY)
+                    )
                     ->default(now())
                     ->visible(fn (Get $get) => PayrollTypeEnum::tryFrom(intval($get('type'))) === PayrollTypeEnum::MONTHLY)
                     ->disabled(fn (Get $get) => PayrollTypeEnum::tryFrom(intval($get('type'))) !== PayrollTypeEnum::MONTHLY)
@@ -62,7 +73,14 @@ class PayrollsRelationManager extends RelationManager
                 Flatpickr::make('period')
                     ->id('date-select')
                     ->label('Periodo')
+                    ->default(now())
                     ->format('Y-m-d')
+                    ->unique(
+                        ignoreRecord: true,
+                        modifyRuleUsing: fn (Unique $rule) => $rule
+                            ->where('company_id', $this->ownerRecord->id)
+                            ->where('type', PayrollTypeEnum::BIWEEKLY)
+                    )
                     ->visible(fn (Get $get) => PayrollTypeEnum::tryFrom(intval($get('type'))) === PayrollTypeEnum::BIWEEKLY)
                     ->disabled(fn (Get $get) => PayrollTypeEnum::tryFrom(intval($get('type'))) !== PayrollTypeEnum::BIWEEKLY)
                     ->displayFormat('d-m-Y')
