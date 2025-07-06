@@ -16,7 +16,7 @@ return new class () extends Migration {
             $table->id();
             $table->tinyInteger('type');
             $table->string('name');
-            $table->string('parser_alias');
+            $table->string('parser_alias')->unique();
             $table->tinyInteger('value_type');
             $table->string('value')->nullable();
             $table->boolean('requires_custom_value')->default(false);
