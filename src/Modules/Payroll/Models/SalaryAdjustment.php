@@ -49,4 +49,9 @@ class SalaryAdjustment extends Model
     {
         return new SalaryAdjustmentBuilder($query);
     }
+
+    public function payrollDetails(): BelongsToMany
+    {
+        return $this->belongsToMany(PayrollDetail::class);
+    }
 }

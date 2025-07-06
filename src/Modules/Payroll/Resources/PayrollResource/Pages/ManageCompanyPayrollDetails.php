@@ -25,10 +25,14 @@ use App\Enums\SalaryAdjustmentValueTypeEnum;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Number;
 use App\Modules\Payroll\Models\SalaryAdjustment;
+use App\Support\ValueObjects\PayrollDisplay\DetailDisplay;
 use Filament\Forms\Components\Fieldset;
 use Illuminate\Support\Collection;
 use Filament\Forms\Components\Grid;
 use Filament\Tables\Columns\Layout\Stack;
+use Filament\Tables\Columns\Summarizers\Summarizer;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\HtmlString;
 
 /**
  * @property Payroll $record
@@ -83,10 +87,10 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
                 false => Placeholder::make("{$adjustment->type->getKey()}.{$adjustment->id}")
                     ->label(Str::headline($adjustment->name))
-                    ->content("{$adjustment->value_type->getLabel()}: " . match ($adjustment->value_type) {
-                        SalaryAdjustmentValueTypeEnum::ABSOLUTE => Number::currency((float)$adjustment->value, 'DOP'),
-                        SalaryAdjustmentValueTypeEnum::PERCENTAGE => "{$adjustment->value}%",
-                        default => $adjustment->value
+                    ->content(match ($adjustment->value_type) {
+                        SalaryAdjustmentValueTypeEnum::ABSOLUTE => "{$adjustment->value_type->getLabel()}: " . Number::currency((float)$adjustment->value, 'DOP'),
+                        SalaryAdjustmentValueTypeEnum::PERCENTAGE => "{$adjustment->value_type->getLabel()}: {$adjustment->value}%",
+                        default => new HtmlString(strval(view('filament::components.badge', ['slot' => $adjustment->value]))),
                     }),
             });
 
@@ -120,6 +124,24 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                             Sum::make()
                                 ->money()
                                 ->label('Total Salarios')
+                        ),
+                    TextColumn::make('incomes')
+                        ->money()
+                        ->state(fn (PayrollDetail $record) => 'Ingresos: ' . Number::currency((new DetailDisplay($record))->incomeTotal))
+                        ->summarize(
+                            Summarizer::make()
+                                ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('incomeTotal'))
+                                ->money()
+                                ->label('Total Ingresos')
+                        ),
+                    TextColumn::make('deductions')
+                        ->money()
+                        ->state(fn (PayrollDetail $record) => 'Deducciones: ' . Number::currency((new DetailDisplay($record))->deductionTotal))
+                        ->summarize(
+                            Summarizer::make()
+                                ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('deductionTotal'))
+                                ->money()
+                                ->label('Total Deducciones')
                         ),
                 ])
             ])
