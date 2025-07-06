@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Enums\SalaryAdjustmentTypeEnum;
+use App\Modules\Payroll\QueryBuilders\PayrollDetailBuilder;
 use App\Support\ValueObjects\PayrollDisplay\DetailDisplay;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
@@ -30,6 +31,7 @@ use Illuminate\Database\Eloquent\Collection;
  * @property-read Collection<int, SalaryAdjustment> $deductions
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @method static PayrollDetailBuilder query()
  */
 class PayrollDetail extends Model
 {
@@ -80,5 +82,10 @@ class PayrollDetail extends Model
     public function display(): Attribute
     {
         return Attribute::get(fn () => new DetailDisplay($this));
+    }
+
+    public function newEloquentBuilder($query): PayrollDetailBuilder
+    {
+        return new PayrollDetailBuilder($query);
     }
 }
