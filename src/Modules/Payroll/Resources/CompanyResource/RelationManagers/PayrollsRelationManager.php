@@ -102,6 +102,25 @@ class PayrollsRelationManager extends RelationManager
                             ->relationship('deductions', 'name')
                             ->bulkToggleable()
                             ->required()
+                            ->descriptions(
+                                fn () => SalaryAdjustment::query()
+                                    ->deductions()
+                                    ->get()
+                                    // @phpstan-ignore-next-line
+                                    ->mapWithKeys(function (SalaryAdjustment $adjustment) {
+                                        if ($adjustment->requires_custom_value) {
+                                            return [$adjustment->id => "{$adjustment->value_type->getLabel()}: Modificable"];
+                                        }
+
+                                        $description = "{$adjustment->value_type->getLabel()}: " . match ($adjustment->value_type) {
+                                            SalaryAdjustmentValueTypeEnum::ABSOLUTE => Number::currency((float)$adjustment->value, 'DOP'),
+                                            SalaryAdjustmentValueTypeEnum::PERCENTAGE => "{$adjustment->value}%",
+                                            default => $adjustment->value
+                                        };
+
+                                        return [$adjustment->id => $description];
+                                    })
+                            )
                             ->getOptionLabelFromRecordUsing(fn (SalaryAdjustment $record) => Str::headline($record->name)),
                     ])
             ]);

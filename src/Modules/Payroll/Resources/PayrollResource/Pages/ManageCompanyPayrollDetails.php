@@ -78,7 +78,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
                 true => TextInput::make("{$adjustment->type->getKey()}.{$adjustment->id}")
                     ->label(Str::headline($adjustment->name))
-                    ->required()
+                    ->default(0)
                     ->placeholder($adjustment->value),
 
                 false => Placeholder::make("{$adjustment->type->getKey()}.{$adjustment->id}")
@@ -158,10 +158,28 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
             ->actions([
                 Action::make('adjustments')
                     ->label('')
+                    ->fillForm(
+                        fn (PayrollDetail $record) => $record->salaryAdjustments
+                            ->groupBy(fn (SalaryAdjustment $adjustment) => $adjustment->type->getKey())
+                            ->map(fn (Collection $adjustments) => $adjustments->mapWithKeys(
+                                fn (SalaryAdjustment $adjustment) =>
+                                [$adjustment->id => $adjustment->detailSalaryAdjustmentValue->custom_value]
+                            ))
+                            ->toArray()
+                    )
                     ->form([
                         Grid::make(2)
                             ->schema($tabs->toArray())
                     ])
+                    ->action(function (array $data, PayrollDetail $record) {
+                        $data = collect($data[SalaryAdjustmentTypeEnum::INCOME->getKey()] + $data[SalaryAdjustmentTypeEnum::DEDUCTION->getKey()])
+                            ->mapWithKeys(fn (string $customValue, $adjustmentId) => [$adjustmentId => ['custom_value' => $customValue]]);
+                        $record->salaryAdjustments()->sync($data);
+                        Notification::make()
+                            ->success()
+                            ->title('Ajustes modificados con éxito')
+                            ->send();
+                    })
             ])
             ->recordAction('adjustments');
     }
