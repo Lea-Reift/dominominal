@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Modules\Payroll\Models\PayrollDetail;
+use App\Support\SalaryAdjustmentParser;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -20,6 +22,8 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use DirectoryIterator;
+use Filament\Support\Enums\MaxWidth;
+use Filament\Tables\Table;
 
 class MainPanelProvider extends PanelProvider
 {
@@ -32,41 +36,16 @@ class MainPanelProvider extends PanelProvider
             ->login()
             ->colors([
                 'primary' => Color::Amber,
-            ]);
-
-        $modulesFolder = new DirectoryIterator(app_path('Modules'));
-
-        foreach ($modulesFolder as $directory) {
-            /** @var DirectoryIterator $directory */
-
-            if ($directory->isDot() || $directory->isFile()) {
-                continue;
-            }
-
-            if (!is_dir($directoryResourcesPath = $directory->getRealPath().DIRECTORY_SEPARATOR.'Resources')) {
-                mkdir($directoryResourcesPath);
-            }
-
-            $namespace = str($directory->getPath())
-                ->append('\\')
-                ->replace([app_path(), DIRECTORY_SEPARATOR], ['App', '\\'])
-                ->append("{$directory->getBasename()}\\Resources")
-                ->toString();
-
-            $panel->discoverResources($directoryResourcesPath, $namespace);
-        }
-
-        return $panel
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
+            ])
             ->pages([
                 Pages\Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
+            ->spa()
             ->widgets([
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
             ])
+            ->sidebarCollapsibleOnDesktop()
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -80,6 +59,49 @@ class MainPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->maxContentWidth(MaxWidth::Full);
+
+
+        $modulesFolder = new DirectoryIterator(app_path('Modules'));
+
+        foreach ($modulesFolder as $directory) {
+            /** @var DirectoryIterator $directory */
+
+            if ($directory->isDot() || $directory->isFile()) {
+                continue;
+            }
+
+            $directoryResourcesPath = $directory->getRealPath() . DIRECTORY_SEPARATOR . 'Resources';
+            $directoryPagesPath = $directory->getRealPath() . DIRECTORY_SEPARATOR . 'Pages';
+
+            $baseNamespace = str($directory->getPath())
+                ->append('\\')
+                ->replace([app_path(), DIRECTORY_SEPARATOR], ['App', '\\']);
+
+            $resourcesNamespace = $baseNamespace
+                ->append("{$directory->getBasename()}\\Resources")
+                ->toString();
+
+            $pagesNamespace = $baseNamespace
+                ->append("{$directory->getBasename()}\\Pages")
+                ->toString();
+
+            $panel->discoverResources($directoryResourcesPath, $resourcesNamespace);
+            $panel->discoverPages($directoryPagesPath, $pagesNamespace);
+        }
+
+        return $panel;
+    }
+
+    public function boot(): void
+    {
+        Table::$defaultCurrency = 'USD';
+        Table::$defaultNumberLocale = 'en';
+
+        SalaryAdjustmentParser::setDefaultVariables([
+            'SALARIO' => fn (PayrollDetail $detail) => $detail->salary->amount,
+            'SALARIO_QUINCENA' => fn (PayrollDetail $detail) => $detail->getParsedPayrollSalary($detail->salary),
+        ]);
     }
 }

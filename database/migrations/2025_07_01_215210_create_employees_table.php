@@ -6,7 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use App\Enums\DocumentTypeEnum;
-use App\Modules\Companies\Models\Company;
+use App\Modules\Company\Models\Company;
 
 return new class () extends Migration {
     /**

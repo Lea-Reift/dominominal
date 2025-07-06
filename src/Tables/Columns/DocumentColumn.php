@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Tables\Columns;
 
 use Filament\Tables\Columns\TextColumn;
-use App\Modules\Companies\Models\Company;
-use App\Modules\Companies\Models\Employee;
+use App\Modules\Company\Models\Company;
+use App\Modules\Company\Models\Employee;
 
 class DocumentColumn extends TextColumn
 {
