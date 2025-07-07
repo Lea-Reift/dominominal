@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Concerns;
 
-use Illuminate\Support\Str;
 use BadMethodCallException;
+use Illuminate\Support\Stringable;
 
 trait IsEnhanced
 {
@@ -30,8 +30,8 @@ trait IsEnhanced
         return $this->name === $case;
     }
 
-    public function getKey(): string
+    public function getKey(bool $plural = false): string
     {
-        return Str::slug($this->name, '_');
+        return str($this->name)->slug('_')->when($plural, fn (Stringable $str) => $str->plural())->toString();
     }
 }
