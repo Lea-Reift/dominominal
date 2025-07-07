@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Concerns;
 
+use Illuminate\Support\Str;
+use BadMethodCallException;
+
 trait IsEnhanced
 {
     abstract public static function cases(): array;

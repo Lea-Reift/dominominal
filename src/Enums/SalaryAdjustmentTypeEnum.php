@@ -7,6 +7,10 @@ namespace App\Enums;
 use App\Concerns\IsEnhanced;
 use Filament\Support\Contracts\HasLabel;
 
+/**
+ * @method bool isIncome()
+ * @method bool isDeduction()
+ */
 enum SalaryAdjustmentTypeEnum: int implements HasLabel
 {
     use IsEnhanced;

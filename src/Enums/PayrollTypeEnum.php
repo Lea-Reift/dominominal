@@ -8,6 +8,10 @@ use App\Concerns\IsEnhanced;
 use Filament\Support\Contracts\HasDescription;
 use Filament\Support\Contracts\HasLabel;
 
+/**
+ * @method bool isMonthly()
+ * @method bool isBiweekly()
+ */
 enum PayrollTypeEnum: int implements HasLabel, HasDescription
 {
     use IsEnhanced;
