@@ -21,8 +21,8 @@ return new class () extends Migration {
             $table->string('surname');
             $table->tinyInteger('document_type')->default(DocumentTypeEnum::IDENTIFICATION);
             $table->string('document_number');
-            $table->string('address');
-            $table->string('email');
+            $table->string('address')->nullable();
+            $table->string('email')->nullable();
             $table->json('phones');
             $table->timestamps();
         });
