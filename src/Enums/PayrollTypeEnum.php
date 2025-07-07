@@ -11,6 +11,8 @@ use Filament\Support\Contracts\HasLabel;
 /**
  * @method bool isMonthly()
  * @method bool isBiweekly()
+ * @method bool isNotMonthly()
+ * @method bool isNotBiweekly()
  */
 enum PayrollTypeEnum: int implements HasLabel, HasDescription
 {
