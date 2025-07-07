@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Payroll\Resources\PayrollResource\Pages;
 
 use App\Enums\PayrollTypeEnum;
-use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Modules\Company\Models\Employee;
 use App\Modules\Company\Resources\CompanyResource;
 use App\Modules\Company\Resources\CompanyResource\Pages\ViewCompany;
@@ -15,23 +14,14 @@ use Filament\Tables\Table;
 use App\Modules\Payroll\Models\Payroll;
 use App\Modules\Payroll\Models\PayrollDetail;
 use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
-use Illuminate\Support\Str;
-use App\Enums\SalaryAdjustmentValueTypeEnum;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Number;
 use App\Modules\Payroll\Models\SalaryAdjustment;
 use App\Support\ValueObjects\PayrollDisplay\DetailDisplay;
-use Filament\Forms\Components\Fieldset;
-use Illuminate\Support\Collection;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Support\HtmlString;
-use App\Modules\Company\Models\Salary;
 use App\Modules\Payroll\Exceptions\DuplicatedPayrollException;
 use Filament\Support\Enums\ActionSize;
 use Filament\Support\Enums\MaxWidth;
@@ -41,11 +31,12 @@ use Illuminate\Support\Arr;
 use Maatwebsite\Excel\Excel;
 use Filament\Actions\Action as BaseAction;
 use App\Modules\Payroll\Exports\PayrollExport;
-use Filament\Forms\Components\Grid;
+use App\Tables\Columns\SalaryAdjustmentColumn;
+use Filament\Actions\EditAction;
+use Filament\Forms\Form;
 use Filament\Tables\Columns\Layout\Grid as TableGrid;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
-use Filament\Tables\Columns\TextInputColumn;
 
 /**
  * @property Payroll $record
@@ -79,6 +70,9 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
     protected function getHeaderActions(): array
     {
         return [
+            EditAction::make()
+                ->form(fn (Form $form) => PayrollResource::form($form))
+                ->slideOver(),
             BaseAction::make('excel_export')
                 ->label('Exportar a excel')
                 ->color('success')
@@ -136,16 +130,11 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
         $table
             ->paginated(false)
             ->recordTitleAttribute('employee_id')
-            // ->contentGrid([
-            //     'md' => 2,
-            //     'xl' => 3,
-            // ])
             ->headerActions([
                 Action::make('secondary_payrolls')
                     ->label('Generar nóminas secundarias')
                     ->modalHeading('Generar nóminas al...')
                     ->visible(fn () => $this->record->type->isMonthly())
-
                     ->size(ActionSize::Small)
                     ->modalIcon('heroicon-s-clipboard-document')
                     ->databaseTransaction()
@@ -212,158 +201,66 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                             ->title('Empleados agregados con éxito')
                             ->send();
                     }),
-            ])
-            ->recordAction('adjustments');
-
-        $inputs = $this->record->salaryAdjustments
-            ->keyBy('id')
-            ->map(fn (SalaryAdjustment $adjustment) => match ($adjustment->requires_custom_value) {
-
-                true => TextInput::make("{$adjustment->type->getKey()}.{$adjustment->id}")
-                    ->label(Str::headline($adjustment->name))
-                    ->default(0)
-                    ->placeholder($adjustment->value),
-
-                false => Placeholder::make("{$adjustment->type->getKey()}.{$adjustment->id}")
-                    ->label(Str::headline($adjustment->name))
-                    ->content(match ($adjustment->value_type) {
-                        SalaryAdjustmentValueTypeEnum::ABSOLUTE => "{$adjustment->value_type->getLabel()}: " . Number::currency((float)$adjustment->value, 'DOP'),
-                        SalaryAdjustmentValueTypeEnum::PERCENTAGE => "{$adjustment->value_type->getLabel()}: {$adjustment->value}%",
-                        default => new HtmlString(strval(view('filament::components.badge', ['slot' => $adjustment->value]))),
-                    }),
-            });
-
-        $tabs = $this->record->salaryAdjustments
-            ->groupBy('type')
-            ->mapWithKeys(fn (EloquentCollection $adjustments, int $type) => [
-                Str::plural(SalaryAdjustmentTypeEnum::from($type)->getLabel()) => $adjustments->pluck('id'),
-            ])
-            // @phpstan-ignore-next-line
-            ->map(fn (Collection $adjustments) => $adjustments->map(fn (int $adjustmentId) => $inputs->get($adjustmentId)))
-            ->map(
-                fn (Collection $adjustmentsInputs, string $typeLabel) =>
-                Fieldset::make($typeLabel)
-                    ->schema($adjustmentsInputs->toArray())
-                    ->columns(1)
-                    ->columnSpan(1)
-            );
+            ]);
 
         $columns = collect([
-            TableGrid::make([
-                'sm' => 4,
-            ])
-            ->schema([
-                Split::make([
-                    Stack::make([
-                        TextColumn::make('employee.full_name'),
-                        TextColumn::make('salary')
-                            ->formatStateUsing(fn (PayrollDetail $record, Salary $state) => Number::currency($record->getParsedPayrollSalary($state)))
-                            ->summarize(
-                                Summarizer::make()
-                                    ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('rawSalary'))
-                                    ->money()
-                                    ->label('Total Salarios')
-                            ),
+            TableGrid::make(10)
+                ->schema([
+                    Split::make([
+                        Stack::make([
+                            TextColumn::make('employee.full_name'),
+                            TextColumn::make('salary')
+                                ->formatStateUsing(fn (PayrollDetail $record) => 'Salario: ' . Number::currency($record->getParsedPayrollSalary()))
+                                ->summarize(
+                                    Summarizer::make()
+                                        ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('rawSalary'))
+                                        ->money()
+                                        ->label('Total Salarios')
+                                ),
+                            TextColumn::make('incomes')
+                                ->money()
+                                ->state(fn (PayrollDetail $record) => 'Ingresos: ' . Number::currency((new DetailDisplay($record))->incomeTotal))
+                                ->summarize(
+                                    Summarizer::make()
+                                        ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('incomeTotal'))
+                                        ->money()
+                                        ->label('Total Ingresos')
+                                ),
+                            TextColumn::make('deductions')
+                                ->money()
+                                ->state(fn (PayrollDetail $record) => 'Deducciones: ' . Number::currency((new DetailDisplay($record))->deductionTotal))
+                                ->summarize(
+                                    Summarizer::make()
+                                        ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('deductionTotal'))
+                                        ->money()
+                                        ->label('Total Deducciones')
+                                ),
+                            TextColumn::make('salaryAdjustments')
+                                ->money()
+                                ->state(fn (PayrollDetail $record) => 'Total a Pagar: ' . Number::currency((new DetailDisplay($record))->netSalary)),
+                        ])
 
-                        TextColumn::make('incomes')
-                            ->money()
-                            ->state(fn (PayrollDetail $record) => 'Ingresos: ' . Number::currency((new DetailDisplay($record))->incomeTotal))
-                            ->summarize(
-                                Summarizer::make()
-                                    ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('incomeTotal'))
-                                    ->money()
-                                    ->label('Total Ingresos')
-                            ),
-                        TextColumn::make('deductions')
-                            ->money()
-                            ->state(fn (PayrollDetail $record) => 'Deducciones: ' . Number::currency((new DetailDisplay($record))->deductionTotal))
-                            ->summarize(
-                                Summarizer::make()
-                                    ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('deductionTotal'))
-                                    ->money()
-                                    ->label('Total Deducciones')
-                            ),
-                    ]),
-
-                ])
-                    ->columnSpan(1)
-                    ->from('md'),
-                Split::make([
-                    ...$this->record->salaryAdjustments->map(
-                        fn (SalaryAdjustment $adjustment, int $index) => TextInputColumn::make("salaryAdjustments.{$index}")
-                            ->label($adjustment->name)
-                            ->placeholder($adjustment->name)
-                            ->visible($adjustment->requires_custom_value)
-                            ->state(function (PayrollDetail $record) use ($adjustment) {
-                                $value = $record->salaryAdjustments->keyBy('id')->get($adjustment->id)?->detailSalaryAdjustmentValue?->custom_value;
-
-                                return is_numeric($value) ? Number::currency(floatval($value)) : $value;
-                            })
-                            ->updateStateUsing(function (?string $state, PayrollDetail $record) use ($adjustment) {
-                                $detailAdjustment = $record->salaryAdjustments->keyBy('id')->get($adjustment->id);
-
-                                if (empty($detailAdjustment)) {
-                                    return;
-                                }
-
-                                $detailAdjustment->detailSalaryAdjustmentValue->custom_value = is_null($state) ? $state : floatval($state);
-                                $detailAdjustment->detailSalaryAdjustmentValue->save();
-
-                                Notification::make()
-                                    ->success()
-                                    ->title('Ajustes modificados con éxito')
-                                    ->send();
-                            })
-                    ),
-                ])
-                ->from('md')
-                ->columnSpan(2),
-            ]),
+                    ])
+                        ->extraAttributes(merge: true, attributes: [
+                            'x-tooltip' => '{content: "El salario, los ingresos y las deducciones se calculan en base a los datos del empleado y la información de la nomina.",theme: $store.theme,}',
+                        ])
+                        ->columnSpan(2),
+                    Split::make([
+                        TableGrid::make(4)
+                            ->schema(
+                                $this->record->salaryAdjustments
+                                    ->filter(fn (SalaryAdjustment $salaryAdjustment) => $salaryAdjustment->requires_custom_value)
+                                    ->map(fn (SalaryAdjustment $adjustment) => SalaryAdjustmentColumn::make("salaryAdjustments.{$adjustment->id}.{$this->record->id}"))
+                                    ->toArray()
+                            )
+                    ])
+                        ->columnSpan(8),
+                ]),
 
         ]);
 
         return $table
-            ->columns($columns->toArray())
-            ->actions([
-                Action::make('adjustments')
-                    ->label('')
-                    ->fillForm(
-                        fn (PayrollDetail $record) => $record->salaryAdjustments
-                            ->groupBy(fn (SalaryAdjustment $adjustment) => $adjustment->type->getKey())
-                            ->map(fn (Collection $adjustments) => $adjustments->mapWithKeys(
-                                fn (SalaryAdjustment $adjustment) =>
-                                [$adjustment->id => $adjustment->detailSalaryAdjustmentValue->custom_value]
-                            ))
-                            ->toArray()
-                    )
-                    ->form([
-                        Grid::make(2)
-                            ->schema($tabs->toArray())
-                    ])
-                    ->action(function (array $data, PayrollDetail $record) {
-                        $data = collect()
-                            ->when(
-                                data_get($data, SalaryAdjustmentTypeEnum::INCOME->getKey()),
-                                fn (Collection $collection, array $incomes) => $collection->union($incomes)
-                            )
-                            ->when(
-                                data_get($data, SalaryAdjustmentTypeEnum::DEDUCTION->getKey()),
-                                fn (Collection $collection, array $deductions) => $collection->union($deductions)
-                            )
-                            ->mapWithKeys(fn (?string $customValue, int $adjustmentId) => [
-                                $adjustmentId => [
-                                    'custom_value' => $customValue
-                                ]
-                            ]);
-
-                        $record->salaryAdjustments()->sync($data);
-
-                        Notification::make()
-                            ->success()
-                            ->title('Ajustes modificados con éxito')
-                            ->send();
-                    })
-            ]);
+            ->columns($columns->toArray());
     }
 
     public function generateSecondaryPayroll(int $day): void

@@ -35,7 +35,6 @@ readonly class DetailDisplay
 
         $adjustments = SalaryAdjustmentParser::make($detail)
             ->variables()
-            // ->when(str_contains($detail->employee->name, 'JOSE'), fn ($collection) => $collection->dd())
             ->filter(fn (mixed $value) => is_float($value))
             ->each(fn (float $value, string $key) => match ($adjustments->get($key)?->type) {
                 SalaryAdjustmentTypeEnum::INCOME => $incomes->put($key, $value),
