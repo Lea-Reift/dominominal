@@ -52,6 +52,7 @@ class PayrollResource extends Resource
                     ->format('Y-m-d')
                     ->monthPicker()
                     ->unique(
+                        ignoreRecord: true,
                         modifyRuleUsing: fn (Unique $rule, ?Payroll $record) => $rule
                             ->unless(
                                 is_null($record),
@@ -73,6 +74,7 @@ class PayrollResource extends Resource
                     ->default(now())
                     ->format('Y-m-d')
                     ->unique(
+                        ignoreRecord: true,
                         modifyRuleUsing: fn (Unique $rule, ?Payroll $record) => $rule
                             ->unless(
                                 is_null($record),
@@ -169,7 +171,7 @@ class PayrollResource extends Resource
                         $record->salaryAdjustments()->sync([]);
                         $record->load('details');
 
-                        $record->details->each(fn (PayrollDetail $detail) => $detail->salaryAdjustments()->sync([]));// @phpstan-ignore-line
+                        $record->details->each(fn (PayrollDetail $detail) => $detail->salaryAdjustments()->sync([])); // @phpstan-ignore-line
                         $record->details()->delete();
                     }),
             ]);
