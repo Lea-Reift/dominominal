@@ -93,7 +93,6 @@ class PayrollsRelationManager extends RelationManager
                             ->label('Ingresos')
                             ->relationship('incomes', 'name')
                             ->bulkToggleable()
-                            ->required()
                             ->descriptions(
                                 fn () => SalaryAdjustment::query()
                                     ->incomes()
@@ -119,7 +118,6 @@ class PayrollsRelationManager extends RelationManager
                             ->label('Descuentos')
                             ->relationship('deductions', 'name')
                             ->bulkToggleable()
-                            ->required()
                             ->descriptions(
                                 fn () => SalaryAdjustment::query()
                                     ->deductions()
