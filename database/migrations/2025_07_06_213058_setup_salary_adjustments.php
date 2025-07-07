@@ -90,15 +90,6 @@ return new class () extends Migration {
      */
     public function down(): void
     {
-        $adjustments = array_merge($this->incomes, $this->deductions);
-        $adjustmentAliases = array_map(array: $adjustments, callback: fn (array $adjustment) => str($adjustment['name'])->slug('_')->upper());
-        $databaseAdjustmentsCount = SalaryAdjustment::query()->count();
-
-        if ($databaseAdjustmentsCount === count($adjustments)) {
-            Schema::withoutForeignKeyConstraints(fn () => SalaryAdjustment::query()->truncate());
-            return;
-        }
-
-        SalaryAdjustment::query()->whereIn('parser_alias', $adjustmentAliases)->delete();
+        Schema::withoutForeignKeyConstraints(fn () => SalaryAdjustment::query()->truncate());
     }
 };
