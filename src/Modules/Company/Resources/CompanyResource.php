@@ -17,6 +17,7 @@ use App\Forms\Components\PhoneRepeater;
 use App\Modules\Company\Resources\CompanyResource\RelationManagers\EmployeesRelationManager;
 use App\Modules\Payroll\Resources\CompanyResource\RelationManagers\PayrollsRelationManager;
 use App\Modules\Payroll\Resources\PayrollResource;
+use Filament\Forms\Get;
 use Filament\Tables\Actions\EditAction;
 use Filament\Navigation\NavigationItem;
 
@@ -50,16 +51,18 @@ class CompanyResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->label('Nombre')
-                    ->required()
-                    ->maxLength(255),
                 Forms\Components\Select::make('document_type')
                     ->label('Tipo de documento')
                     ->options(DocumentTypeEnum::class)
+                    ->live()
                     ->required(),
                 Forms\Components\TextInput::make('document_number')
                     ->label('Número de documento')
+                    ->required()
+                    ->mask(fn (Get $get) => DocumentTypeEnum::tryFrom($get('document_type'))?->getMask())
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('name')
+                    ->label('Nombre')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('address')

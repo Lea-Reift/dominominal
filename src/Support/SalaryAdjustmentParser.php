@@ -7,7 +7,6 @@ namespace App\Support;
 use App\Enums\SalaryAdjustmentValueTypeEnum;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Modules\Payroll\Models\SalaryAdjustment;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use Symfony\Polyfill\Php80\PhpToken;
@@ -25,8 +24,7 @@ class SalaryAdjustmentParser
         array $customVariables = [],
     ) {
         $this->cacheKey .= ".{$detail->id}";
-        $this->detail->loadMissing('salaryAdjustments', 'payroll.salaryAdjustments');
-        $this->parseDefaultVariables();
+        $this->detail->loadMissing(['salaryAdjustments', 'payroll' => ['salaryAdjustments', 'incomes', 'deductions']]);
         $this->parseVariablesFromPayrollDetail($customVariables);
     }
 
@@ -50,14 +48,6 @@ class SalaryAdjustmentParser
         return static::$defaultVariables = array_merge(static::$defaultVariables, $defaultVariables);
     }
 
-    protected function parseDefaultVariables(): void
-    {
-        $this->variables = [
-            ...$this->variables,
-            ...Arr::map(static::$defaultVariables, fn (mixed $variable) => is_callable($variable) ? $variable($this->detail) : $variable)
-        ];
-    }
-
     protected function parse(string $formula): float
     {
         $variables = $this->variables;
@@ -73,7 +63,10 @@ class SalaryAdjustmentParser
 
     public function parseVariablesFromPayrollDetail(array $customVariables): self
     {
-        $variables = $this->detail->payroll->salaryAdjustments
+        $defaultVariables = Arr::map(static::$defaultVariables, fn (mixed $variable) => is_callable($variable) ? $variable($this->detail) : $variable);
+        $this->detail->payroll->salaryAdjustments
+
+            // Map adjustments into variables
             ->map(fn (SalaryAdjustment $adjustment) => $this->detail->salaryAdjustments->firstWhere('id', $adjustment->id) ?? $adjustment)
             ->mapWithKeys(function (SalaryAdjustment $adjustment) {
                 $value = $adjustment->requires_custom_value
@@ -85,32 +78,18 @@ class SalaryAdjustmentParser
                     default => $value,
                 };
 
-                return [$adjustment->parser_alias => $value];
+                return [$adjustment->parser_alias => is_null($value) ? 0 : $value];
             })
-            ->merge($customVariables)
-            ->pipe(fn (Collection $adjustments) => $this->sortVariables($adjustments));
 
-        foreach ($variables as $key => $variable) {
-            if (is_numeric($variable)) {
-                $this->variables[$key] = floatval($variable);
-                continue;
-            }
+            // Add custom and default variables
+            ->union($defaultVariables)
+            ->union($customVariables)
 
-            if (!is_string($variable)) {
-                continue;
-            }
+            // Sort variable in parsing order
+            ->pipe(fn (Collection $adjustments) => $this->sortVariables($adjustments))
 
-            preg_match_all('/\b[A-Z][A-Z0-9_]*[A-Z0-9]\b/', $variable, $matches);
-
-            if (!empty($matches[0])) {
-                $matches = collect($matches[0])
-                    ->mapWithKeys(fn (string $match) => [$match => $this->variables[$match] ?? 0]);
-
-                $variable = str_replace($matches->keys()->toArray(), $matches->values()->toArray(), $variable);
-            }
-
-            $this->variables[$key] = $this->parse($variable);
-        }
+            // parse variables
+            ->each(fn (string |float $variable, string $key) => $this->variables[$key] =  is_string($variable) ? $this->parse($variable) : $variable);
 
         return $this;
     }
@@ -144,35 +123,158 @@ class SalaryAdjustmentParser
         return $this->parse($formula);
     }
 
-    protected function sortVariables(Collection $variables): Collection
+    protected function p(Collection $variables): Collection
     {
+        // $knownVars = [];
+
+        // $priorities = [];
+
+        // foreach ($variables as $key => $value) {
+        //     switch (true) {
+        //         case is_numeric($value):
+        //             $priorities[$key] = 1;
+        //             $knownVars[] = $key;
+        //             break;
+
+        //         case is_string($value):
+        //             // array_walk($variables, fn ($_, $innerKey) => $innerKey !== $key && str_contains($value, $innerKey) ? $priority++ : $priority);
+        //             $priority = array_reduce($variables->keys()->toArray(), initial: 2, callback: function (?int $priority, string $innerKey) use ($key, $variables) {
+        //                 $value = $variables->get($innerKey);
+        //                 if (is_numeric($value)) {
+        //                     return $priority;
+        //                 }
+
+        //                 if ($innerKey !== $key) {
+        //                     dd($innerKey, $key, $value, str_contains((string)$value, $innerKey));
+        //                 }
+
+        //                 if ($innerKey !== $key && str_contains((string)$value, $innerKey)) {
+        //                     $priority++;
+        //                 }
+
+        //                 return $priority;
+        //             });
+
+        //             // array_walk($variables, fn ($_, $innerKey) => $innerKey !== $key && str_contains($value, $innerKey) ? $priority++ : $priority);
+
+        //             $priorities[$key] = $priority;
+        //             break;
+
+        //         default:
+        //             $priorities[$key] = PHP_INT_MAX;
+        //             break;
+        //     }
+        //     $knownVars[] = $key;
+        // }
+
+        // return $variables->sortBy(function ($_, $key) use ($priorities) {
+        //     return $priorities[$key];
+        // })
+        // ->map(fn ($value, $key) => ['value' => $value, 'prority' => $priorities[$key]])
+        //     ->dd();
+
         $knownVars = [];
 
+        // Construimos un mapa de prioridad
         $priorities = [];
 
+        $variables = $variables->toArray();
+
         foreach ($variables as $key => $value) {
-            switch (true) {
-                case is_numeric($value):
-                    $priorities[$key] = 1;
-                    break;
-
-                case is_string($value):
-                    $priority = 2;
-
-                    array_walk($variables, fn ($_, $innerKey) => $innerKey !== $key && str_contains($value, $innerKey) ? $priority++ : $priority);
-
-                    $priorities[$key] = $priority;
-                    break;
-
-                default:
-                    $priorities[$key] = PHP_INT_MAX;
-                    break;
+            // Claves numéricas (variables sin nombre)
+            if (is_int($key)) {
+                $priorities[$key] = 0;
+                $knownVars[] = is_string($value) ? $value : null;
             }
-            $knownVars[] = $key;
+            // Valores numéricos
+            elseif (is_numeric($value)) {
+                $priorities[$key] = 1;
+                $knownVars[] = $key;
+            }
+            // Expresiones que dependen de otras
+            elseif (is_string($value)) {
+                // Contamos cuántas variables conocidas contiene
+                $priority = 2;
+
+                foreach ($variables as $innerKey => $_) {
+                    if ($innerKey !== $key && strpos($value, $innerKey) !== false) {
+                        $priority += 1; // más dependencias, más tarde
+                    }
+                }
+
+                $priorities[$key] = $priority;
+            } else {
+                $priorities[$key] = 99;
+            }
         }
 
-        return $variables->sortBy(function ($_, $key) use ($priorities) {
-            return $priorities[$key];
+        // Ordenamos el array de acuerdo a los niveles de prioridad
+        uksort($variables, function ($a, $b) use ($priorities) {
+            return ($priorities[$a] ?? 99) <=> ($priorities[$b] ?? 99);
         });
+
+        return collect($variables)
+            ->dd();
+    }
+
+    protected function sortVariables(Collection $variables): Collection
+    {
+        $variablesNumericas = [];
+        $variablesCompuestas = [];
+        $variablesOrganizadas = [];
+
+        // Paso 1: Separar variables numéricas de las compuestas
+        foreach ($variables as $nombre => $valor) {
+            if (is_numeric($valor)) {
+                $variablesNumericas[$nombre] = $valor;
+            } else {
+                $variablesCompuestas[$nombre] = $valor;
+            }
+        }
+
+        // Paso 2: Añadir las variables numéricas al resultado final primero
+        foreach ($variablesNumericas as $nombre => $valor) {
+            $variablesOrganizadas[$nombre] = $valor;
+        }
+
+        // Paso 3: Procesar las variables compuestas resolviendo dependencias
+        // Este bucle continuará hasta que no se puedan resolver más variables
+        // o hasta que todas las variables compuestas hayan sido procesadas.
+        $cambioRealizado = true;
+        while ($cambioRealizado && !empty($variablesCompuestas)) {
+            $cambioRealizado = false;
+            foreach ($variablesCompuestas as $nombreCompuesta => $expresion) {
+                $variablesEnExpresion = [];
+                preg_match_all('/[a-zA-Z_][a-zA-Z0-9_]*/', $expresion, $matches); // Extrae nombres de variables
+                foreach ($matches[0] as $match) {
+                    if ($match !== 'true' && $match !== 'false' && $match !== 'null') { // Evita palabras clave PHP
+                        $variablesEnExpresion[] = $match;
+                    }
+                }
+
+                $todasLasDependenciasResueltas = true;
+                foreach ($variablesEnExpresion as $dep) {
+                    if (!array_key_exists($dep, $variablesOrganizadas)) {
+                        $todasLasDependenciasResueltas = false;
+                        break;
+                    }
+                }
+
+                // Si todas las dependencias de la expresión ya están en $variablesOrganizadas
+                if ($todasLasDependenciasResueltas) {
+                    $variablesOrganizadas[$nombreCompuesta] = $expresion;
+                    unset($variablesCompuestas[$nombreCompuesta]);
+                    $cambioRealizado = true; // Se realizó un cambio, intentar otra pasada
+                }
+            }
+        }
+
+        // Paso 4: (Opcional) Añadir las variables compuestas que no se pudieron resolver
+        // Esto es útil para depuración o si se desea manejar dependencias circulares/no resueltas
+        foreach ($variablesCompuestas as $nombre => $valor) {
+            $variablesOrganizadas[$nombre] = $valor;
+        }
+
+        return collect($variablesOrganizadas);
     }
 }

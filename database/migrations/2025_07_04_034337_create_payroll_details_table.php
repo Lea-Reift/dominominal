@@ -17,9 +17,9 @@ return new class () extends Migration {
     {
         Schema::create('payroll_details', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Payroll::class);
-            $table->foreignIdFor(Employee::class);
-            $table->foreignIdFor(Salary::class);
+            $table->foreignIdFor(Payroll::class)->constrained();
+            $table->foreignIdFor(Employee::class)->constrained();
+            $table->foreignIdFor(Salary::class)->constrained();
             $table->timestamps();
         });
     }

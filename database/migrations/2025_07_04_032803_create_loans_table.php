@@ -15,7 +15,7 @@ return new class () extends Migration {
     {
         Schema::create('loans', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Employee::class);
+            $table->foreignIdFor(Employee::class)->constrained();
             $table->decimal('total_amount', 12);
             $table->decimal('installment_amount', 12);
             $table->integer('instalments_total');

@@ -102,6 +102,8 @@ class MainPanelProvider extends PanelProvider
         SalaryAdjustmentParser::setDefaultVariables([
             'SALARIO' => fn (PayrollDetail $detail) => $detail->salary->amount,
             'SALARIO_QUINCENA' => fn (PayrollDetail $detail) => $detail->getParsedPayrollSalary($detail->salary),
+            'TOTAL_INGRESOS' => fn (PayrollDetail $detail) => $detail->payroll->incomes->pluck('parser_alias')->push('SALARIO_QUINCENA')->join(' + '),
+            'TOTAL_DEDUCCIONES' => fn (PayrollDetail $detail) => $detail->payroll->incomes->pluck('parser_alias')->join(' + '),
         ]);
     }
 }

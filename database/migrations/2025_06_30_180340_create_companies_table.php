@@ -21,7 +21,7 @@ return new class () extends Migration {
             $table->string('document_number');
             $table->string('address');
             $table->json('phones');
-            $table->foreignIdFor(User::class);
+            $table->foreignIdFor(User::class)->constrained();
             $table->timestamps();
         });
     }

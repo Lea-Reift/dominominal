@@ -16,8 +16,8 @@ return new class () extends Migration {
     {
         Schema::create('payroll_detail_salary_adjustment', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(PayrollDetail::class);
-            $table->foreignIdFor(SalaryAdjustment::class);
+            $table->foreignIdFor(PayrollDetail::class)->constrained();
+            $table->foreignIdFor(SalaryAdjustment::class)->constrained();
             $table->string('custom_value')->nullable();
             $table->timestamps();
         });

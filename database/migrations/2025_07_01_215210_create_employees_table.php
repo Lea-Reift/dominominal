@@ -16,7 +16,7 @@ return new class () extends Migration {
     {
         Schema::create('employees', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Company::class);
+            $table->foreignIdFor(Company::class)->constrained();
             $table->string('name');
             $table->string('surname');
             $table->tinyInteger('document_type')->default(DocumentTypeEnum::IDENTIFICATION);
