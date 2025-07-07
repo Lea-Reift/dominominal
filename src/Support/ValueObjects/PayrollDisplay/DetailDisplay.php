@@ -31,7 +31,7 @@ readonly class DetailDisplay
         $adjustments = $detail->payroll->salaryAdjustments->keyBy('parser_alias');
 
         $adjustments = SalaryAdjustmentParser::make($detail)
-            ->variablesAsCollection()
+            ->variables()
             ->groupBy(preserveKeys: true, groupBy: fn (float $_, string $key) => $adjustments->get($key)?->type?->getKey() ?? 'custom');
 
         $this->incomes = $adjustments[SalaryAdjustmentTypeEnum::INCOME->getKey()];

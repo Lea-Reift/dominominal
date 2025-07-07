@@ -30,12 +30,7 @@ class SalaryAdjustmentParser
         $this->parseVariablesFromPayrollDetail($customVariables);
     }
 
-    public function variables(): array
-    {
-        return $this->variables;
-    }
-
-    public function variablesAsCollection(): Collection
+    public function variables(): Collection
     {
         return collect($this->variables);
     }
