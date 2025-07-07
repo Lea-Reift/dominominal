@@ -94,8 +94,9 @@ class PayrollDetail extends Model
         return new PayrollDetailBuilder($query);
     }
 
-    public function getParsedPayrollSalary(Salary $salary): float
+    public function getParsedPayrollSalary(): float
     {
+        $salary = $this->salary;
         if ($this->payroll->type->isMonthly()) {
             return $salary->amount;
         }
