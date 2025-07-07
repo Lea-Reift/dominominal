@@ -59,7 +59,7 @@ class CompanyResource extends Resource
                 Forms\Components\TextInput::make('document_number')
                     ->label('Número de documento')
                     ->required()
-                    ->mask(fn (Get $get) => DocumentTypeEnum::tryFrom($get('document_type'))?->getMask())
+                    ->mask(fn (Get $get) => DocumentTypeEnum::tryFrom(intval($get('document_type')))?->getMask())
                     ->maxLength(255),
                 Forms\Components\TextInput::make('name')
                     ->label('Nombre')

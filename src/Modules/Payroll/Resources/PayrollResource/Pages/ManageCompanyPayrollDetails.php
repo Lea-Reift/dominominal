@@ -40,6 +40,9 @@ use Filament\Support\Enums\MaxWidth;
 use Filament\Support\Enums\Alignment;
 use Filament\Support\Exceptions\Halt;
 use Illuminate\Support\Arr;
+use Maatwebsite\Excel\Excel;
+use Filament\Actions\Action as BaseAction;
+use App\Modules\Payroll\Exports\PayrollExport;
 
 /**
  * @property Payroll $record
@@ -68,6 +71,27 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                 ],
             ])
             ->findOrFail($key);
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            BaseAction::make('excel_export')
+                ->label('Exportar a excel')
+                ->color('success')
+                ->icon('heroicon-o-document-arrow-down')
+                ->action(function () {
+                    $filenameDate = $this->record->period;
+
+                    $filenameDate = match (true) {
+                        $this->record->type->isMonthly() => $filenameDate->format('m-Y'),
+                        default => $filenameDate->toDateString()
+                    };
+
+                    return (new PayrollExport($this->record->display))
+                        ->download("Nómina Administrativa {$this->record->company->name} {$filenameDate}.xlsx", Excel::XLSX);
+                }),
+        ];
     }
 
     public function getBreadcrumbs(): array
