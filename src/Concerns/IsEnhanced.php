@@ -24,8 +24,7 @@ trait IsEnhanced
 
     protected function isCase(string $case): bool
     {
-        $caseInComparation = collect(self::cases())->firstWhere('name', $case);
-        return $this === $caseInComparation;
+        return $this->name === $case;
     }
 
     public function getKey(): string
