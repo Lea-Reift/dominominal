@@ -96,7 +96,7 @@ class CompanyResource extends Resource
         return [
             'index' => Pages\ListCompanies::route('/'),
             'view' => Pages\ViewCompany::route('/{record}'),
-            'payroll_details' => ManageCompanyPayrollDetails::route('/{company}/payrolls/{record}/details')
+            'payroll_details' => ManageCompanyPayrollDetails::route('/payrolls/{record}/details')
         ];
     }
 }

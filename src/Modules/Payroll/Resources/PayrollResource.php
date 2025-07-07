@@ -52,7 +52,6 @@ class PayrollResource extends Resource
                     ->format('Y-m-d')
                     ->monthPicker()
                     ->unique(
-                        ignoreRecord: true,
                         modifyRuleUsing: fn (Unique $rule, ?Payroll $record) => $rule
                             ->unless(
                                 is_null($record),
@@ -74,7 +73,6 @@ class PayrollResource extends Resource
                     ->default(now())
                     ->format('Y-m-d')
                     ->unique(
-                        ignoreRecord: true,
                         modifyRuleUsing: fn (Unique $rule, ?Payroll $record) => $rule
                             ->unless(
                                 is_null($record),
@@ -175,5 +173,12 @@ class PayrollResource extends Resource
                         $record->details()->delete();
                     }),
             ]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'payroll_details' => ManageCompanyPayrollDetails::route('{record}/details'),
+        ];
     }
 }
