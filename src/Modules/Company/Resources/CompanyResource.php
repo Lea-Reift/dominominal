@@ -16,10 +16,9 @@ use App\Enums\DocumentTypeEnum;
 use App\Forms\Components\PhoneRepeater;
 use App\Modules\Company\Resources\CompanyResource\RelationManagers\EmployeesRelationManager;
 use App\Modules\Payroll\Resources\CompanyResource\RelationManagers\PayrollsRelationManager;
-use App\Modules\Payroll\Resources\PayrollResource;
 use Filament\Forms\Get;
 use Filament\Tables\Actions\EditAction;
-use Filament\Navigation\NavigationItem;
+use App\Modules\Payroll\Resources\PayrollResource\Pages\ManageCompanyPayrollDetails;
 
 class CompanyResource extends Resource
 {
@@ -29,23 +28,7 @@ class CompanyResource extends Resource
 
     protected static ?string $modelLabel = 'compañía';
 
-    protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
-
-    public static function getNavigationItems(): array
-    {
-        return [
-            NavigationItem::make(static::getNavigationLabel())
-                ->group(static::getNavigationGroup())
-                ->parentItem(static::getNavigationParentItem())
-                ->icon(static::getNavigationIcon())
-                ->activeIcon(static::getActiveNavigationIcon())
-                ->isActiveWhen(fn () => request()->routeIs(static::getRouteBaseName() . '.*', PayrollResource::getRouteBaseName() . '.*'))
-                ->badge(static::getNavigationBadge(), color: static::getNavigationBadgeColor())
-                ->badgeTooltip(static::getNavigationBadgeTooltip())
-                ->sort(static::getNavigationSort())
-                ->url(static::getNavigationUrl()),
-        ];
-    }
+    protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Start;
 
     public static function form(Form $form): Form
     {
@@ -113,6 +96,7 @@ class CompanyResource extends Resource
         return [
             'index' => Pages\ListCompanies::route('/'),
             'view' => Pages\ViewCompany::route('/{record}'),
+            'payroll_details' => ManageCompanyPayrollDetails::route('/{company}/payrolls/{record}/details')
         ];
     }
 }

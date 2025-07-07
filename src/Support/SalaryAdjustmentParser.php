@@ -82,10 +82,9 @@ class SalaryAdjustmentParser
             ->each(
                 fn (mixed $variable, string $key) =>
                 $this->variables[$key] = match (true) {
-                    is_numeric($variable) => $variable,
                     is_string($variable) => $this->parse($variable),
-                    $variable instanceof PayrollDetail => $variable,
-                    is_array($variable) => Arr::map($variable, fn ($formula) => $this->parse($formula))
+                    is_array($variable) => Arr::map($variable, fn ($formula) => $this->parse($formula)),
+                    default => $variable,
                 }
             );
 
