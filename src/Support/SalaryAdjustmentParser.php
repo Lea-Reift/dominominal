@@ -97,25 +97,27 @@ class SalaryAdjustmentParser
             ->groupBy(fn (mixed $value) => is_numeric($value) ? 0 : 1, true);
 
         $changed = true;
+
         while ($changed && $compositeVariables->isNotEmpty()) {
             $changed = false;
-            $compositeVariables->each(function (string $expression, string $key) use ($parsedVariables, $compositeVariables, &$changed) {
-                $variablesInExpresion = collect(PhpToken::tokenize("<?php {$expression}"))
-                    ->filter(fn (PhpToken $token) => $token->is([T_STRING, T_VARIABLE]))
-                    ->map(fn (PhpToken $token) => $token->is(T_VARIABLE) ? str($token->text)->substr(1)->snake()->upper()->toString() : $token->text);
+            $compositeVariables
+                ->each(function (string $expression, string $key) use ($parsedVariables, $compositeVariables, &$changed) {
+                    $variablesInExpresion = collect(PhpToken::tokenize("<?php {$expression}"))
+                        ->filter(fn (PhpToken $token) => $token->is([T_STRING, T_VARIABLE]))
+                        ->map(fn (PhpToken $token) => $token->is(T_VARIABLE) ? str($token->text)->substr(1)->snake()->upper()->toString() : $token->text);
 
-                $allDependenciesFixed = true;
-                $variablesInExpresion->each(function (string $variable) use (&$allDependenciesFixed, $parsedVariables) {
-                    $allDependenciesFixed = $parsedVariables->has($variable);
-                    return $allDependenciesFixed;
+                    $allDependenciesFixed = true;
+                    $variablesInExpresion->each(function (string $variable) use (&$allDependenciesFixed, $parsedVariables) {
+                        return $allDependenciesFixed = $parsedVariables->has($variable);
+                    });
+
+
+                    if ($allDependenciesFixed) {
+                        $parsedVariables->put($key, $expression);
+                        $compositeVariables->forget($key);
+                        $changed = true;
+                    }
                 });
-
-                if ($allDependenciesFixed) {
-                    $parsedVariables->put($key, $expression);
-                    $compositeVariables->forget($key);
-                    $changed = true;
-                }
-            });
         }
 
         if ($compositeVariables->isNotEmpty()) {
