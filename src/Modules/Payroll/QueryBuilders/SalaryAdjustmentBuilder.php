@@ -8,6 +8,9 @@ use App\Enums\SalaryAdjustmentTypeEnum;
 use Illuminate\Contracts\Database\Eloquent\Builder as BuilderContract;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
+/**
+ * @mixin EloquentBuilder
+ */
 class SalaryAdjustmentBuilder extends EloquentBuilder implements BuilderContract
 {
     public function whereType(SalaryAdjustmentTypeEnum $type): self
