@@ -96,8 +96,6 @@ class SalaryAdjustmentParser
         [$parsedVariables, $compositeVariables] = $variables
             ->groupBy(fn (mixed $value) => is_numeric($value) ? 0 : 1, true);
 
-        $compositeVariables->put('POLLO', 'SALMON');
-        $compositeVariables->put('EMPANADA', 'SALMON + PAPAS');
         $changed = true;
         while ($changed && $compositeVariables->isNotEmpty()) {
             $changed = false;
