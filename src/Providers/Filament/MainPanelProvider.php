@@ -24,6 +24,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use DirectoryIterator;
 use Filament\Support\Enums\MaxWidth;
 use Filament\Tables\Table;
+use Illuminate\Support\Arr;
 
 class MainPanelProvider extends PanelProvider
 {
@@ -100,10 +101,58 @@ class MainPanelProvider extends PanelProvider
         Table::$defaultNumberLocale = 'en';
 
         SalaryAdjustmentParser::setDefaultVariables([
-            'SALARIO' => fn (PayrollDetail $detail) => $detail->salary->amount,
-            'SALARIO_QUINCENA' => fn (PayrollDetail $detail) => $detail->getParsedPayrollSalary($detail->salary),
+            'SALARIO' => 'DETALLE.salary.amount',
+            'SALARIO_QUINCENA' => 'DETALLE.getParsedPayrollSalary()',
+            'RENGLON_ISR' => fn (PayrollDetail $detail) => $detail->payroll->salaryAdjustments->pluck('parser_alias')->contains('ISR')
+                ? 'SALARIO_BASE_ISR < 416_220.01 ? 0 : ( SALARIO_BASE_ISR < 624_329.01 ? 1 : ( SALARIO_BASE_ISR < 867_123.01 ? 2 : 3 ))'
+                : '0',
             'TOTAL_INGRESOS' => fn (PayrollDetail $detail) => $detail->payroll->incomes->pluck('parser_alias')->push('SALARIO_QUINCENA')->join(' + '),
-            'TOTAL_DEDUCCIONES' => fn (PayrollDetail $detail) => $detail->payroll->incomes->pluck('parser_alias')->join(' + '),
+            'TOTAL_DEDUCCIONES' => fn (PayrollDetail $detail) => ($deductions = $detail->payroll->deductions)->isNotEmpty()
+                ? $deductions->pluck('parser_alias')->join(' + ')
+                : '0',
+            'SALARIO_BASE_ISR' =>
+            fn (PayrollDetail $detail) => ($adjustmentsAlias = $detail->payroll->salaryAdjustments->pluck('parser_alias'))->contains('ISR') &&
+                $adjustmentsAlias->contains('SFS')
+                ? '((TOTAL_INGRESOS - AFP - SFS) * ' . ($detail->payroll->type->isMonthly() ? 12 : 24) . ')'
+                : '0',
+            'RENGLONES_ISR' => function (PayrollDetail $detail) {
+                if ($detail->payroll->salaryAdjustments->pluck('parser_alias')->doesntContain('ISR')) {
+                    return '0';
+                }
+
+                $isrSteps = [
+                    [
+                        'base' => 0,
+                        'top' => 416_220,
+                        'rate' => 0,
+                        'amount_to_add' => 0,
+                    ],
+                    [
+                        'base' => 416_220.01,
+                        'top' => 624_329.00,
+                        'rate' => 15,
+                        'amount_to_add' => 0,
+                    ],
+                    [
+                        'base' => 624_329.01,
+                        'top' => 867_123.00,
+                        'rate' => 20,
+                        'amount_to_add' => 31_216.00,
+                    ],
+                    [
+                        'base' => 0,
+                        'top' => 416_220,
+                        'rate' => 0,
+                        'amount_to_add' => 0,
+                    ],
+                ];
+
+                return Arr::map(
+                    $isrSteps,
+                    fn (array $step) =>
+                    "(((SALARIO_BASE_ISR - {$step['base']}) * 0.{$step['rate']}) + {$step['amount_to_add']}) /" . ($detail->payroll->type->isMonthly() ? 12 : 24)
+                );
+            }
         ]);
     }
 }
