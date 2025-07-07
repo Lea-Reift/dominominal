@@ -16,7 +16,7 @@ return new class () extends Migration {
             'requires_custom_value' => true,
         ],
         [
-            'name' => 'Horas extras',
+            'name' => 'Horas extra',
             'value_type' => SalaryAdjustmentValueTypeEnum::ABSOLUTE,
             'requires_custom_value' => true,
         ],
@@ -47,8 +47,9 @@ return new class () extends Migration {
         ],
         [
             'name' => 'ISR',
-            'value_type' => SalaryAdjustmentValueTypeEnum::ABSOLUTE,
-            'requires_custom_value' => true,
+            'value_type' => SalaryAdjustmentValueTypeEnum::FORMULA,
+            'value' => 'RENGLONES_ISR[RENGLON_ISR]',
+            'requires_custom_value' => false,
         ],
         [
             'name' => 'CxC',
