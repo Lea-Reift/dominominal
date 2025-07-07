@@ -13,7 +13,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use App\Enums\SalaryAdjustmentTypeEnum;
+use App\Support\ValueObjects\PayrollDisplay;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 /**
  * @property int $id
@@ -21,6 +23,7 @@ use Illuminate\Database\Eloquent\Collection;
  * @property PayrollTypeEnum $type
  * @property Carbon $period
  * @property-read Company $company
+ * @property-read PayrollDisplay $display
  * @property-read Collection<int, SalaryAdjustment> $salaryAdjustments
  * @property-read Collection<int, SalaryAdjustment> $incomes
  * @property-read Collection<int, SalaryAdjustment> $deductions
@@ -69,5 +72,10 @@ class Payroll extends Model
     public function deductions(): BelongsToMany
     {
         return $this->salaryAdjustments()->where('type', SalaryAdjustmentTypeEnum::DEDUCTION);
+    }
+
+    public function display(): Attribute
+    {
+        return Attribute::get(fn () => new PayrollDisplay($this));
     }
 }

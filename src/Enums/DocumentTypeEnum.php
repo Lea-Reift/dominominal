@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
+use App\Concerns\IsEnhanced;
 use Filament\Support\Contracts\HasLabel;
 
 enum DocumentTypeEnum: int implements HasLabel
 {
+    use IsEnhanced;
+
     case RNC = 1;
     case IDENTIFICATION = 2;
     case PASSPORT = 3;

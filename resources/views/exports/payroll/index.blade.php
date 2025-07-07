@@ -45,19 +45,5 @@
                 <td>{{ $detail->netSalary }}</td>
             </tr>
         @endforeach
-        <tr>
-            <td>TOTAL</td>
-            <td></td>
-            <td>{{ $totals->rawSalary }}</td>
-            @foreach ($incomes->keys() as $income)
-                <td>{{ $totals->incomes->get($deduction, 0) }}</td>
-            @endforeach
-            <td>{{ $totals->incomesTotal }}</td>
-            @foreach ($deductions->keys() as $deduction)
-                <td>{{ $totals->deductions->get($deduction, 0) }}</td>
-            @endforeach
-            <td>{{ $totals->deductionsTotal }}</td>
-            <td>{{ $totals->netSalary }}</td>
-        </tr>
     </tbody>
 </table>

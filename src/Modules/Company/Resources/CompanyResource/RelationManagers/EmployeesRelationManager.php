@@ -54,15 +54,12 @@ class EmployeesRelationManager extends RelationManager
                 TextInput::make('document_number')
                     ->label('Número de documento')
                     ->mask(fn (Get $get) => DocumentTypeEnum::tryFrom((int)$get('document_type'))?->getMask())
-                    ->required()
                     ->maxLength(255),
                 TextInput::make('address')
                     ->label('Dirección')
-                    ->required()
                     ->maxLength(255),
                 TextInput::make('email')
                     ->email()
-                    ->required()
                     ->maxLength(255),
                 PhoneRepeater::make('phones')
                     ->columnSpan(1),
@@ -136,7 +133,7 @@ class EmployeesRelationManager extends RelationManager
                 TextColumn::make('address')
                     ->label('Dirección')
                     ->limit(25)
-                    ->tooltip(fn (TextColumn $column) => strlen($state = $column->getState()) <= $column->getCharacterLimit() ? null : $state),
+                    ->tooltip(fn (TextColumn $column) => strlen($state = strval($column->getState())) <= $column->getCharacterLimit() ? null : $state),
             ])
             ->headerActions([
                 CreateAction::make(),

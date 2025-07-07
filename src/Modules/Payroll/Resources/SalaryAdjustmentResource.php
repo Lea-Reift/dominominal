@@ -55,7 +55,7 @@ class SalaryAdjustmentResource extends Resource
                     ->afterStateUpdated(function ($state, callable $set) {
                         $set('parser_alias', str($state)->slug('_')->upper());
                     })
-                    ->formatStateUsing(fn (string $state) => Str::headline($state))
+                    ->formatStateUsing(fn (?string $state) => Str::headline($state))
                     ->maxLength(255),
                 TextInput::make('parser_alias')
                     ->label('Nombre de variable')

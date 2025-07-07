@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Support\ValueObjects\PayrollDisplay;
 
+use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Modules\Payroll\Models\PayrollDetail;
 use Illuminate\Support\Collection;
-use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Support\SalaryAdjustmentParser;
 
 readonly class DetailDisplay
@@ -27,15 +27,23 @@ readonly class DetailDisplay
 
         $this->name = $detail->employee->full_name;
         $this->document_number = $detail->employee->document_number;
-        $this->rawSalary = (float) $detail->getParsedPayrollSalary($detail->salary);
+        $this->rawSalary = (float) $detail->getParsedPayrollSalary();
         $adjustments = $detail->payroll->salaryAdjustments->keyBy('parser_alias');
+
+        $incomes = collect();
+        $deductions = collect();
 
         $adjustments = SalaryAdjustmentParser::make($detail)
             ->variables()
-            ->groupBy(preserveKeys: true, groupBy: fn (float $_, string $key) => $adjustments->get($key)?->type?->getKey() ?? 'custom');
+            ->filter(fn (mixed $value) => is_float($value))
+            ->each(fn (float $value, string $key) => match ($adjustments->get($key)?->type) {
+                SalaryAdjustmentTypeEnum::INCOME => $incomes->put($key, $value),
+                SalaryAdjustmentTypeEnum::DEDUCTION => $deductions->put($key, $value),
+                default => null
+            });
 
-        $this->incomes = $adjustments[SalaryAdjustmentTypeEnum::INCOME->getKey()];
-        $this->deductions = $adjustments[SalaryAdjustmentTypeEnum::DEDUCTION->getKey()];
+        $this->incomes = $incomes;
+        $this->deductions = $deductions;
 
         $this->incomeTotal = $this->rawSalary +  $this->incomes->sum();
         $this->deductionTotal = $this->deductions->sum();

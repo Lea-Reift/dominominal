@@ -22,7 +22,7 @@ class AsValueObjectCollection implements CastsAttributes
 
     public function get(Model $model, string $key, mixed $value, array $attributes): mixed
     {
-        return collect(json_decode($value, true))
+        return collect(is_string($value) ? json_decode($value, true) : $value)
             ->map(fn (array $values) => $this->valueObjectClass::make(...$values));
     }
 

@@ -15,8 +15,6 @@ use InvalidArgumentException;
 
 class SalaryAdjustmentParser
 {
-    protected string $cacheKey = 'salary_adjustment_parser.variables';
-
     protected array $variables = [];
 
     protected static array $defaultVariables = [];
@@ -25,14 +23,13 @@ class SalaryAdjustmentParser
         protected PayrollDetail $detail,
         array $customVariables = [],
     ) {
-        $this->cacheKey .= ".{$detail->id}";
         $this->detail->loadMissing(['salaryAdjustments', 'payroll' => ['salaryAdjustments', 'incomes', 'deductions']]);
         $this->parseVariablesFromPayrollDetail($customVariables);
     }
 
     public function variables(): Collection
     {
-        return collect($this->variables);
+        return collect($this->variables)->except('DETALLE');
     }
 
     public static function make(PayrollDetail $detail, array $customVariables = []): self
@@ -47,15 +44,9 @@ class SalaryAdjustmentParser
 
     protected function parse(string $formula): float
     {
-        $variables = $this->variables;
-
-        if (empty($variables) && empty($formula)) {
-            return 0;
-        }
-
         $parser = new ExpressionLanguage();
 
-        return floatval($parser->evaluate($formula, $variables));
+        return floatval($parser->evaluate($formula, $this->variables));
     }
 
     public function parseVariablesFromPayrollDetail(array $customVariables): self
@@ -75,7 +66,7 @@ class SalaryAdjustmentParser
                     default => $value,
                 };
 
-                return [$adjustment->parser_alias => is_null($value) ? 0 : $value];
+                return [$adjustment->parser_alias => is_numeric($value) ? floatval($value) : ($value ?? 0)];
             })
 
             // Add custom and default variables
@@ -85,35 +76,54 @@ class SalaryAdjustmentParser
             // Sort variable in parsing order
             ->pipe(fn (Collection $adjustments) => $this->sortVariables($adjustments))
 
+            // Add detail into scope
+            ->prepend($this->detail, 'DETALLE')
             // parse variables
-            ->each(fn (string |float $variable, string $key) => $this->variables[$key] =  is_string($variable) ? $this->parse($variable) : $variable);
+            ->each(
+                fn (mixed $variable, string $key) =>
+                $this->variables[$key] = match (true) {
+                    is_string($variable) => $this->parse($variable),
+                    is_array($variable) => Arr::map($variable, fn ($formula) => $this->parse($formula)),
+                    default => $variable,
+                }
+            );
 
         return $this;
     }
 
     protected function sortVariables(Collection $variables): Collection
     {
-        [$parsedVariables, $compositeVariables] = $variables
-            ->groupBy(fn (mixed $value) => is_numeric($value) ? 0 : 1, true);
+        $parsedVariables = collect();
+        $compositeVariables = collect();
+        $finalVariables = collect();
+
+        $variables
+            ->each(fn (mixed $value, string $key) => match (true) {
+                is_numeric($value) || (is_string($value) && str_contains($value, 'DETALLE')) => $parsedVariables->put($key, $value),
+                is_array($value) => $finalVariables->put($key, $value),
+                default => $compositeVariables->put($key, $value)
+            });
 
         $changed = true;
-
         while ($changed && $compositeVariables->isNotEmpty()) {
             $changed = false;
             $compositeVariables
-                ->each(function (string $expression, string $key) use ($parsedVariables, $compositeVariables, &$changed) {
+                ->each(function (string $expression, string $key) use ($parsedVariables, $compositeVariables, $finalVariables, &$changed) {
                     $variablesInExpresion = collect(PhpToken::tokenize("<?php {$expression}"))
-                        ->filter(fn (PhpToken $token) => $token->is([T_STRING, T_VARIABLE]))
-                        ->map(fn (PhpToken $token) => $token->is(T_VARIABLE) ? str($token->text)->substr(1)->snake()->upper()->toString() : $token->text);
+                        ->filter(fn (PhpToken $token) => $token->is(T_STRING))
+                        ->map(fn (PhpToken $token) => $token->text);
 
                     $allDependenciesFixed = true;
-                    $variablesInExpresion->each(function (string $variable) use (&$allDependenciesFixed, $parsedVariables) {
-                        return $allDependenciesFixed = $parsedVariables->has($variable);
+                    $variablesInExpresion->each(function (string $variable) use (&$allDependenciesFixed, $parsedVariables, $finalVariables) {
+                        return $allDependenciesFixed = $parsedVariables->has($variable) || $finalVariables->has($variable);
                     });
 
-
                     if ($allDependenciesFixed) {
-                        $parsedVariables->put($key, $expression);
+                        if ($variablesInExpresion->contains(fn (string $variable) => $finalVariables->has($variable))) {
+                            $finalVariables->put($key, $expression);
+                        } else {
+                            $parsedVariables->put($key, $expression);
+                        }
                         $compositeVariables->forget($key);
                         $changed = true;
                     }
@@ -128,6 +138,6 @@ class SalaryAdjustmentParser
             );
         }
 
-        return $parsedVariables;
+        return $parsedVariables->union($finalVariables);
     }
 }

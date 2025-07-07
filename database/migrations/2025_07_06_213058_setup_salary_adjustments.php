@@ -16,7 +16,7 @@ return new class () extends Migration {
             'requires_custom_value' => true,
         ],
         [
-            'name' => 'Horas extras',
+            'name' => 'Horas extra',
             'value_type' => SalaryAdjustmentValueTypeEnum::ABSOLUTE,
             'requires_custom_value' => true,
         ],
@@ -47,8 +47,9 @@ return new class () extends Migration {
         ],
         [
             'name' => 'ISR',
-            'value_type' => SalaryAdjustmentValueTypeEnum::ABSOLUTE,
-            'requires_custom_value' => true,
+            'value_type' => SalaryAdjustmentValueTypeEnum::FORMULA,
+            'value' => 'RENGLONES_ISR[RENGLON_ISR]',
+            'requires_custom_value' => false,
         ],
         [
             'name' => 'CxC',
@@ -89,15 +90,6 @@ return new class () extends Migration {
      */
     public function down(): void
     {
-        $adjustments = array_merge($this->incomes, $this->deductions);
-        $adjustmentAliases = array_map(array: $adjustments, callback: fn (array $adjustment) => str($adjustment['name'])->slug('_')->upper());
-        $databaseAdjustmentsCount = SalaryAdjustment::query()->count();
-
-        if ($databaseAdjustmentsCount === count($adjustments)) {
-            Schema::withoutForeignKeyConstraints(fn () => SalaryAdjustment::query()->truncate());
-            return;
-        }
-
-        SalaryAdjustment::query()->whereIn('parser_alias', $adjustmentAliases)->delete();
+        Schema::withoutForeignKeyConstraints(fn () => SalaryAdjustment::query()->truncate());
     }
 };

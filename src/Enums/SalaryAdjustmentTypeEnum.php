@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
+use App\Concerns\IsEnhanced;
 use Filament\Support\Contracts\HasLabel;
-use Illuminate\Support\Str;
 
+/**
+ * @method bool isIncome()
+ * @method bool isDeduction()
+ */
 enum SalaryAdjustmentTypeEnum: int implements HasLabel
 {
+    use IsEnhanced;
+
     case INCOME = 1;
     case DEDUCTION = 2;
 
@@ -18,10 +24,5 @@ enum SalaryAdjustmentTypeEnum: int implements HasLabel
             self::INCOME => 'Ingreso',
             self::DEDUCTION => 'Descuento',
         };
-    }
-
-    public function getKey(): string
-    {
-        return Str::slug($this->name, '_');
     }
 }

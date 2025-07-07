@@ -50,6 +50,14 @@ class Employee extends Model
         'email',
     ];
 
+    public static function boot(): void
+    {
+        parent::boot();
+        static::creating(function (Employee $employee) {
+            $employee->phones ??= collect();
+        });
+    }
+
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);

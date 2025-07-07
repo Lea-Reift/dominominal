@@ -4,11 +4,20 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
+use App\Concerns\IsEnhanced;
 use Filament\Support\Contracts\HasDescription;
 use Filament\Support\Contracts\HasLabel;
 
+/**
+ * @method bool isMonthly()
+ * @method bool isBiweekly()
+ * @method bool isNotMonthly()
+ * @method bool isNotBiweekly()
+ */
 enum PayrollTypeEnum: int implements HasLabel, HasDescription
 {
+    use IsEnhanced;
+
     case MONTHLY = 1;
     case BIWEEKLY = 2;
 
@@ -26,15 +35,5 @@ enum PayrollTypeEnum: int implements HasLabel, HasDescription
             self::MONTHLY => 'Mensual',
             self::BIWEEKLY => 'Quincenal'
         };
-    }
-
-    public function isMonthly(): bool
-    {
-        return $this === self::MONTHLY;
-    }
-
-    public function isBiweekly(): bool
-    {
-        return $this === self::BIWEEKLY;
     }
 }
