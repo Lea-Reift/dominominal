@@ -31,6 +31,8 @@ use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\MaxWidth;
 use Filament\Support\Exceptions\Halt;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Columns\Layout\Grid as TableGrid;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
@@ -41,6 +43,7 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Number;
 use Maatwebsite\Excel\Excel;
+use Filament\Tables\Enums\ActionsPosition;
 
 /**
  * @property Payroll $record
@@ -71,6 +74,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
     {
         $this->importEmployeeTabId = $this->formTabsId.'-import-employee-tab';
         $this->addEmployeeTabId = $this->formTabsId.'-add-employee-tab';
+        $this->activeFormTab = $this->importEmployeeTabId;
     }
 
     public function mount(int|string $record): void
@@ -274,7 +278,33 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                             ->success()
                             ->title('Empleados agregados con éxito')
                     ),
-            ]);
+            ])
+            ->actions(
+                position: ActionsPosition::BeforeColumns,
+                actions:[
+                    ActionGroup::make([
+                        Action::make('show_payment_voucher')
+                            ->label('Mostrar volante')
+                            ->button()
+                            ->icon('heroicon-s-inbox-arrow-down')
+                            ->modalHeading(fn (PayrollDetail $record) => $record->employee->full_name)
+                            ->color('info')
+                            ->modalContent(fn (PayrollDetail $record) => view(
+                                'show-pdf',
+                                ['pdf_base64_string' => base64_encode($record->display->renderPDF())],
+                            ))
+                            ->modalSubmitAction(false)
+                            ->size(ActionSize::ExtraSmall),
+                        DeleteAction::make()
+                            ->size(ActionSize::ExtraSmall)
+                            ->modalHeading(fn (PayrollDetail $record) => "Eliminar a {$record->employee->full_name} de la nómina")
+                            ->button()
+                    ])
+                        ->button()
+                        ->size(ActionSize::Small)
+                        ->label('Opciones')
+                ]
+            );
 
         $hasAdjustments = $this->record->salaryAdjustments->isNotEmpty();
 
