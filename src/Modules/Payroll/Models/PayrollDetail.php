@@ -14,7 +14,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Modules\Payroll\QueryBuilders\PayrollDetailBuilder;
-use App\Support\ValueObjects\PayrollDisplay\DetailDisplay;
+use App\Support\ValueObjects\PayrollDisplay\PayrollDetailDisplay;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use App\Enums\SalaryDistributionFormatEnum;
@@ -24,6 +24,7 @@ use App\Enums\SalaryDistributionFormatEnum;
  * @property int $employee_id
  * @property int $payroll_id
  * @property int $salary_id
+ * @property-read PayrollDetailDisplay $display
  * @property-read Employee $employee
  * @property-read Payroll $payroll
  * @property-read Salary $salary
@@ -86,7 +87,7 @@ class PayrollDetail extends Model
 
     public function display(): Attribute
     {
-        return Attribute::get(fn () => new DetailDisplay($this));
+        return Attribute::get(fn () => new PayrollDetailDisplay($this));
     }
 
     public function newEloquentBuilder($query): PayrollDetailBuilder

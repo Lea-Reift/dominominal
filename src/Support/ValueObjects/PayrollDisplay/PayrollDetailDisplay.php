@@ -9,7 +9,7 @@ use App\Modules\Payroll\Models\PayrollDetail;
 use Illuminate\Support\Collection;
 use App\Support\SalaryAdjustmentParser;
 
-readonly class DetailDisplay
+readonly class PayrollDetailDisplay
 {
     public string $name;
     public string $document_number;

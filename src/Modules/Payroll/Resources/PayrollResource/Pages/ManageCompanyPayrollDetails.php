@@ -15,7 +15,7 @@ use App\Modules\Payroll\Models\Payroll;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Modules\Payroll\Models\SalaryAdjustment;
 use App\Modules\Payroll\Resources\PayrollResource;
-use App\Support\ValueObjects\PayrollDisplay\DetailDisplay;
+use App\Support\ValueObjects\PayrollDisplay\PayrollDetailDisplay;
 use App\Tables\Columns\SalaryAdjustmentColumn;
 use Filament\Actions\Action as BaseAction;
 use Filament\Actions\EditAction;
@@ -293,7 +293,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
             TextColumn::make('incomes')
                 ->label('Ingresos')
                 ->money()
-                ->state(fn (PayrollDetail $record) => ($hasAdjustments ? 'Ingresos: ' : '').Number::currency((new DetailDisplay($record))->incomeTotal))
+                ->state(fn (PayrollDetail $record) => ($hasAdjustments ? 'Ingresos: ' : '').Number::currency((new PayrollDetailDisplay($record))->incomeTotal))
                 ->summarize(
                     Summarizer::make()
                         ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('incomeTotal'))
@@ -303,7 +303,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
             TextColumn::make('deductions')
                 ->label('Deducciones')
                 ->money()
-                ->state(fn (PayrollDetail $record) => ($hasAdjustments ? 'Deducciones: ' : '') . Number::currency((new DetailDisplay($record))->deductionTotal))
+                ->state(fn (PayrollDetail $record) => ($hasAdjustments ? 'Deducciones: ' : '') . Number::currency((new PayrollDetailDisplay($record))->deductionTotal))
                 ->summarize(
                     Summarizer::make()
                         ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('deductionTotal'))
@@ -314,7 +314,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                 ->label('Total a pagar')
                 ->money()
                 ->state(
-                    fn (PayrollDetail $record) => ($hasAdjustments ? 'Total a Pagar: ' : '') . Number::currency((new DetailDisplay($record))->netSalary)
+                    fn (PayrollDetail $record) => ($hasAdjustments ? 'Total a Pagar: ' : '') . Number::currency((new PayrollDetailDisplay($record))->netSalary)
                 ),
         ];
 

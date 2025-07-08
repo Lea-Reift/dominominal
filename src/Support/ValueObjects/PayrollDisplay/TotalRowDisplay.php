@@ -20,7 +20,7 @@ readonly class TotalRowDisplay
 
     /**
      * @param EloquentCollection<int, SalaryAdjustment> $payrollSalaryAdjustments
-     * @param Collection<int, DetailDisplay> $details
+     * @param Collection<int, PayrollDetailDisplay> $details
      */
     public function __construct(
         EloquentCollection $payrollSalaryAdjustments,
@@ -34,7 +34,7 @@ readonly class TotalRowDisplay
             ->groupBy('type')
             ->each
             ->mapWithKeys(function (SalaryAdjustment $adjustment) use ($details) {
-                return [$adjustment->parser_alias => $details->sum(function (DetailDisplay $detail) use ($adjustment) {
+                return [$adjustment->parser_alias => $details->sum(function (PayrollDetailDisplay $detail) use ($adjustment) {
                     return $detail->{"{$adjustment->type->getKey()}s"}->get($adjustment->parser_alias);
                 })];
             });
