@@ -5,14 +5,22 @@ declare(strict_types=1);
 namespace App\Support\ValueObjects\PayrollDisplay;
 
 use App\Enums\SalaryAdjustmentTypeEnum;
+use App\Modules\Company\Models\Company;
+use App\Modules\Payroll\Models\Payroll;
 use App\Modules\Payroll\Models\PayrollDetail;
 use Illuminate\Support\Collection;
 use App\Support\SalaryAdjustmentParser;
+use Barryvdh\DomPDF\Facade\Pdf as FacadePdf;
+use Illuminate\Contracts\View\View;
+use Barryvdh\DomPDF\PDF;
+use Illuminate\Http\Response;
 
 readonly class PayrollDetailDisplay
 {
     public string $name;
-    public string $document_number;
+    public Company $company;
+    public Payroll $payroll;
+    public string $documentNumber;
     public float $rawSalary;
     public Collection $incomes;
     public Collection $deductions;
@@ -20,13 +28,26 @@ readonly class PayrollDetailDisplay
     public float $deductionTotal;
     public float $netSalary;
 
+    protected PDF $PDF;
+
     public function __construct(
         PayrollDetail $detail
     ) {
-        $detail->loadMissing(['employee', 'salary', 'salaryAdjustments', 'payroll' => ['salaryAdjustments']]);
+        $detail->loadMissing([
+            'employee',
+            'salary',
+            'salaryAdjustments',
+            'payroll' => [
+                'salaryAdjustments',
+                'company',
+            ]
+        ]);
 
         $this->name = $detail->employee->full_name;
-        $this->document_number = $detail->employee->document_number;
+        $this->company = $detail->payroll->company;
+        $this->payroll = $detail->payroll;
+        $this->documentNumber = $detail->employee->document_number;
+
         $this->rawSalary = (float) $detail->getParsedPayrollSalary();
         $adjustments = $detail->payroll->salaryAdjustments->keyBy('parser_alias');
 
@@ -48,5 +69,30 @@ readonly class PayrollDetailDisplay
         $this->incomeTotal = $this->rawSalary +  $this->incomes->sum();
         $this->deductionTotal = $this->deductions->sum();
         $this->netSalary = $this->incomeTotal - $this->deductionTotal;
+
+        $maxAdjustmentCount = $this->incomes->count() > $this->deductions->count() ? $this->incomes->count() : $this->deductions->count();
+
+        $this->PDF = FacadePdf::loadView('exports.payroll.payment-voucher', ['detail' => $this])
+            ->setPaper([0.0, 0.0, $maxAdjustmentCount > 5 ? (($maxAdjustmentCount * 6) * 10) : 300, 550], 'landscape');
+    }
+
+    public function render(): View
+    {
+        return view('exports.payroll.payment-voucher', ['detail' => $this]);
+    }
+
+    protected function getPDF(): PDF
+    {
+        return $this->PDF;
+    }
+
+    public function renderPDF(): string
+    {
+        return $this->getPDF()->output();
+    }
+
+    public function streamPDF(): Response
+    {
+        return $this->getPDF()->stream();
     }
 }
