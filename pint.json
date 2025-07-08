@@ -21,6 +21,7 @@
         "strict_comparison": true,
         "single_quote": {
             "strings_containing_single_quote_chars": false
-        }
+        },
+        "method_chaining_indentation" : true
     }
 }

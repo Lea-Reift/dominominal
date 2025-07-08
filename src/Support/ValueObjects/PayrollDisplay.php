@@ -10,7 +10,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use App\Enums\SalaryAdjustmentTypeEnum;
-use App\Support\ValueObjects\PayrollDisplay\DetailDisplay;
+use App\Support\ValueObjects\PayrollDisplay\PayrollDetailDisplay;
 
 readonly class PayrollDisplay
 {
@@ -55,7 +55,7 @@ readonly class PayrollDisplay
                 ]
             );
 
-        $this->details = $payroll->details->mapInto(DetailDisplay::class)->toBase();
+        $this->details = $payroll->details->mapInto(PayrollDetailDisplay::class)->toBase();
 
         $this->totals = new TotalRowDisplay($payroll->salaryAdjustments, $this->details);
     }

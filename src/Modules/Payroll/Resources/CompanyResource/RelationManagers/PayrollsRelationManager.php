@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Resources\CompanyResource\RelationManagers;
 
+use App\Modules\Company\Models\Company;
+use App\Modules\Payroll\Resources\PayrollResource;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Table;
-use App\Modules\Company\Models\Company;
-use App\Modules\Payroll\Resources\PayrollResource;
 
 /**
  * @property Company $ownerRecord
@@ -16,7 +16,9 @@ use App\Modules\Payroll\Resources\PayrollResource;
 class PayrollsRelationManager extends RelationManager
 {
     protected static string $relationship = 'payrolls';
+
     protected static ?string $title = 'Nóminas';
+
     protected static ?string $modelLabel = 'nómina';
 
     public function isReadOnly(): bool

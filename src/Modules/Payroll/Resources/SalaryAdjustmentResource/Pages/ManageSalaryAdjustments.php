@@ -17,11 +17,11 @@ class ManageSalaryAdjustments extends ManageRecords
     {
         return [
             CreateAction::make()
-            ->modalSubmitAction(function (StaticAction $action) {
-                $action->extraAttributes(merge: true, attributes: [
-                    'wire:loading.attr' => 'disabled'
-                ]);
-            }),
+                ->modalSubmitAction(function (StaticAction $action) {
+                    $action->extraAttributes(merge: true, attributes: [
+                        'wire:loading.attr' => 'disabled'
+                    ]);
+                }),
         ];
     }
 }

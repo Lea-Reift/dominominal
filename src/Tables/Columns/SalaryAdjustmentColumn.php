@@ -13,7 +13,7 @@ use Filament\Forms\Components\Concerns\HasHint;
 use Filament\Tables\Columns\TextInputColumn;
 use Filament\Support\RawJs;
 use App\Modules\Payroll\Models\PayrollDetail;
-use App\Support\ValueObjects\PayrollDisplay\DetailDisplay;
+use App\Support\ValueObjects\PayrollDisplay\PayrollDetailDisplay;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Number;
 use Filament\Tables\Columns\Concerns\HasLabel;
@@ -49,7 +49,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
                         fn () => (new PayrollDetail())->newEloquentBuilder($this->payroll->details()->toBase())
                             ->asDisplay()
                             ->sum(
-                                fn (DetailDisplay $display) => $display
+                                fn (PayrollDetailDisplay $display) => $display
                                     ->{$this->adjustment->type->getKey(plural: true)}
                                     ->get($this->adjustment->parser_alias, 0)
                             )

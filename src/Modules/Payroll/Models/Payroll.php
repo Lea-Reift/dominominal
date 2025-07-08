@@ -43,6 +43,16 @@ class Payroll extends Model
         'period' => 'date:Y-m-d',
     ];
 
+    public static function boot(): void
+    {
+        parent::boot();
+        static::saving(function (Payroll $payroll) {
+            if ($payroll->type->isMonthly()) {
+                $payroll->period = Carbon::parse($payroll->period)->endOfMonth();
+            }
+        });
+    }
+
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
