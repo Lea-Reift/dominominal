@@ -26,7 +26,7 @@ enum DocumentTypeEnum: int implements HasLabel
 
     public function getAcronym(): string
     {
-        return match($this) {
+        return match ($this) {
             self::RNC => 'RNC',
             self::IDENTIFICATION => 'Cédula',
             self::PASSPORT => 'Pasaporte',
@@ -35,7 +35,7 @@ enum DocumentTypeEnum: int implements HasLabel
 
     public function getMask(): string
     {
-        return match($this) {
+        return match ($this) {
             self::IDENTIFICATION => '999-9999999-9',
             self::RNC => '999999999',
             self::PASSPORT => '**********',
