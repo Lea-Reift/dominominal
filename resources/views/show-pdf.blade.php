@@ -1,0 +1,1 @@
+<embed src="data:application/pdf;base64, {{$pdf_base64_string}}" width="800" height="500" type="application/pdf"> 
