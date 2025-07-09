@@ -35,8 +35,11 @@ class MainPanelProvider extends PanelProvider
             ->id('main')
             ->path('main')
             ->login()
+            ->darkMode(isForced: true)
+            ->profile(isSimple: false)
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Indigo,
+                'success' => Color::Blue,
             ])
             ->pages([
                 Pages\Dashboard::class,
