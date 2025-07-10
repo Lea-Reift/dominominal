@@ -29,6 +29,7 @@ use App\Enums\SalaryDistributionFormatEnum;
  * @property-read Payroll $payroll
  * @property-read Salary $salary
  * @property-read Collection<int, SalaryAdjustment> $salaryAdjustments
+ * @property-read Collection<int, SalaryAdjustment> $editableSalaryAdjustments
  * @property-read Collection<int, SalaryAdjustment> $incomes
  * @property-read Collection<int, SalaryAdjustment> $deductions
  * @property Carbon|null $created_at
@@ -46,6 +47,14 @@ class PayrollDetail extends Model
     protected $with = [
         'payroll'
     ];
+
+    protected static function boot(): void
+    {
+        parent::boot();
+        static::deleting(function (PayrollDetail $payrollDetail) {
+            $payrollDetail->salaryAdjustments()->detach();
+        });
+    }
 
     public function employee(): BelongsTo
     {
@@ -73,6 +82,11 @@ class PayrollDetail extends Model
             ->as(PayrollDetailSalaryAdjustment::$pivotPropertyName)
             ->withPivot(PayrollDetailSalaryAdjustment::$columns)
             ->using(PayrollDetailSalaryAdjustment::class);
+    }
+
+    public function editableSalaryAdjustments(): BelongsToMany
+    {
+        return $this->salaryAdjustments()->where('requires_custom_value', true);
     }
 
     public function incomes(): BelongsToMany

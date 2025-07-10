@@ -47,9 +47,11 @@ use Filament\Tables\Enums\ActionsPosition;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PaymentVoucherMail;
 use Filament\Forms\Components\TextInput;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * @property Payroll $record
+ * @property Collection<int, salaryAdjustment> $editableAdjustments
  */
 class ManageCompanyPayrollDetails extends ManageRelatedRecords
 {
@@ -91,6 +93,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
             ->with([
                 'employees',
                 'salaryAdjustments',
+                'editableSalaryAdjustments',
                 'incomes',
                 'deductions',
                 'details' => [
@@ -230,7 +233,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                         Notification::make()
                             ->title('Nóminas Secundarias')
                             ->success()
-                            ->body('nóminas generadas con éxito')
+                            ->body('Nóminas generadas con éxito')
                             ->send();
                     }),
                 Action::make('add_employees')
@@ -255,24 +258,36 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                                 'wire:click' => 'setCurrentFormTab(tab)',
                             ]),
                     ])
+                    ->databaseTransaction()
                     ->action(function (array $data, Action $action) {
-                        $employee = Employee::query()->create([
-                            ...$data,
-                            'company_id' => $this->record->company_id
-                        ]);
+                        $payrollDetails = Collection::make();
 
-                        $employee->salary()->create($data['salary']);
                         if (isset($data['employees'])) {
-                            $employees = Employee::query()->whereIn('id', $data['employees'])->with('salary')->get(['id', 'salary_id'])
+                            $payrollDetails = Employee::query()->whereIn('id', $data['employees'])->with('salary')->get(['id'])
                                 ->map(fn (Employee $employee) => new PayrollDetail([
                                     'employee_id' => $employee->id,
                                     'salary_id' => $employee->salary->id,
                                 ]));
 
-                            $this->record->details()->saveMany($employees);
                         } else {
-                            $this->record->details()->save(new PayrollDetail(['employee_id' => $employee->id, 'salary_id' => $employee->salary->id]));
+                            $employee = Employee::query()->create([
+                                ...$data,
+                                'company_id' => $this->record->company_id
+                            ]);
+
+                            $employee->salary()->create($data['salary']);
+                            $payrollDetails->push(new PayrollDetail(['employee_id' => $employee->id, 'salary_id' => $employee->salary->id]));
                         }
+
+                        /** @var Collection<int, salaryAdjustment> $details */
+                        $details = $this->record->details()->saveMany($payrollDetails);
+
+                        $adjustmentsForDetails = $this->record->salaryAdjustments->mapWithKeys(fn (SalaryAdjustment $payrollAdjustment) => [
+                            $payrollAdjustment->id => ['custom_value' => null],
+                        ]);
+
+                        // @phpstan-ignore-next-line
+                        $details->each(fn (PayrollDetail $detail) => $detail->salaryAdjustments()->sync($adjustmentsForDetails));
 
                         return $action->sendSuccessNotification();
                     })
@@ -286,6 +301,27 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                 position: ActionsPosition::BeforeColumns,
                 actions:[
                     ActionGroup::make([
+                        Action::make('edit_available_adjustments')
+                            ->label('Editar ajustes salariales')
+                            ->color('success')
+                            ->form([
+                                CheckboxList::make('available_adjustments')
+                                    ->hiddenLabel()
+                                    ->options($this->record->salaryAdjustments->pluck('name', 'id'))
+                                    ->default(fn (PayrollDetail $record) => $record->salaryAdjustments->pluck('id')->toArray())
+                                    ->columns(4)
+                                    ->bulkToggleable()
+                            ])
+                            ->databaseTransaction()
+                            ->action(function (array $data, PayrollDetail $record, Action $action) {
+                                $record->salaryAdjustments()->sync($data['available_adjustments']);
+                                return $action->sendSuccessNotification();
+                            })
+                            ->successNotification(
+                                Notification::make('edit_available_adjustments')
+                                    ->title('Datos guardados')
+                                    ->success()
+                            ),
                         Action::make('show_payment_voucher')
                             ->label('Mostrar volante')
                             ->icon('heroicon-s-inbox-arrow-down')
@@ -376,18 +412,22 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                             'x-tooltip' => '{content: "El salario, los ingresos y las deducciones se calculan en base a los datos del empleado y la información de la nomina.",theme: $store.theme,}',
                         ])
                         ->columnSpan(2),
-                    Split::make([
-                        TableGrid::make([
-                            'sm' => $this->record->salaryAdjustments->count() / 4,
-                            'lg' => ($this->record->salaryAdjustments->count() / 4) * 2,
+                    Split::make(fn (?PayrollDetail $record) =>
+                        [
+                            TableGrid::make([
+                                'sm' => $this->record->salaryAdjustments->count() / 4,
+                                'lg' => ($this->record->salaryAdjustments->count() / 4) * 2,
+                            ])
+                                ->schema(
+                                    ($record->editableSalaryAdjustments ?? $this->record->editableSalaryAdjustments)
+                                        ->sortBy('type')
+                                        ->map(
+                                            fn (SalaryAdjustment $adjustment) =>
+                                            SalaryAdjustmentColumn::make("salaryAdjustments.{$adjustment->id}.{$this->record->id}")
+                                        )
+                                        ->toArray()
+                                ),
                         ])
-                            ->schema(
-                                $this->record->salaryAdjustments
-                                    ->filter(fn (SalaryAdjustment $salaryAdjustment) => $salaryAdjustment->requires_custom_value)
-                                    ->map(fn (SalaryAdjustment $adjustment) => SalaryAdjustmentColumn::make("salaryAdjustments.{$adjustment->id}.{$this->record->id}"))
-                                    ->toArray()
-                            ),
-                    ])
                         ->columnSpan(8),
                 ]),
 

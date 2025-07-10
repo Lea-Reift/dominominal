@@ -56,37 +56,33 @@ class SalaryAdjustmentColumn extends TextInputColumn
                     ->label("Total {$this->adjustment->name}")
             )
             ->updateStateUsing(function (?string $state, PayrollDetail $record) {
-                if (is_null($state)) {
-                    return;
+                if (!is_null($state)) {
+                    $state = floatval(str_replace(',', '', $state));
+
+                    $validationFails = match ($this->adjustment->value_type) {
+                        SalaryAdjustmentValueTypeEnum::ABSOLUTE => match ($this->adjustment->type) {
+                            SalaryAdjustmentTypeEnum::INCOME => $state < 0,
+                            SalaryAdjustmentTypeEnum::DEDUCTION => $state > $record->getParsedPayrollSalary(),
+                        },
+                        SalaryAdjustmentValueTypeEnum::PERCENTAGE => $state < 0 || $state > 100,
+                        SalaryAdjustmentValueTypeEnum::FORMULA => empty($state)
+                    };
+
+                    if ($validationFails) {
+
+                        Notification::make('failed_adjustment_modification')
+                            ->title('Valor invalido ')
+                            ->body('El valor introducido no es correcto. Intente nuevamente')
+                            ->danger()
+                            ->color('danger')
+                            ->seconds(5)
+                            ->send();
+                        return;
+                    }
                 }
 
-                $customValue = floatval(str_replace(',', '', $state));
-
-                $validationFails = match ($this->adjustment->value_type) {
-                    SalaryAdjustmentValueTypeEnum::ABSOLUTE => match ($this->adjustment->type) {
-                        SalaryAdjustmentTypeEnum::INCOME => $customValue < 0,
-                        SalaryAdjustmentTypeEnum::DEDUCTION => $customValue > $record->getParsedPayrollSalary(),
-                    },
-                    SalaryAdjustmentValueTypeEnum::PERCENTAGE => $customValue < 0 || $customValue > 100,
-                    SalaryAdjustmentValueTypeEnum::FORMULA => empty($customValue)
-                };
-
-                if ($validationFails) {
-
-                    Notification::make('failed_adjustment_modification')
-                        ->title('Valor invalido ')
-                        ->body('El valor introducido no es correcto. Intente nuevamente')
-                        ->danger()
-                        ->color('danger')
-                        ->seconds(5)
-                        ->send();
-                    return;
-                }
-
-                DB::transaction(function () use ($record, $customValue) {
-                    $relation = tap($record->salaryAdjustments())->detach($this->adjustment->id);
-
-                    $relation->attach($this->adjustment->id, ['custom_value' => $customValue]);
+                DB::transaction(function () use ($record, $state) {
+                    $record->salaryAdjustments()->syncWithoutDetaching([$this->adjustment->id => ['custom_value' => $state]]);
                 });
             });
     }

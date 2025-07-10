@@ -23,7 +23,7 @@ class SalaryAdjustmentParser
         protected PayrollDetail $detail,
         array $customVariables = [],
     ) {
-        $this->detail->loadMissing(['salaryAdjustments', 'payroll' => ['salaryAdjustments', 'incomes', 'deductions']]);
+        $this->detail->loadMissing(['salaryAdjustments', 'incomes', 'deductions', 'payroll' => ['salaryAdjustments', 'incomes', 'deductions']]);
         $this->parseVariablesFromPayrollDetail($customVariables);
     }
 
@@ -52,10 +52,9 @@ class SalaryAdjustmentParser
     public function parseVariablesFromPayrollDetail(array $customVariables): self
     {
         $defaultVariables = Arr::map(static::$defaultVariables, fn (mixed $variable) => is_callable($variable) ? $variable($this->detail) : $variable);
-        $this->detail->payroll->salaryAdjustments
 
+        $this->detail->salaryAdjustments
             // Map adjustments into variables
-            ->map(fn (SalaryAdjustment $adjustment) => $this->detail->salaryAdjustments->firstWhere('id', $adjustment->id) ?? $adjustment)
             ->mapWithKeys(function (SalaryAdjustment $adjustment) {
                 $value = $adjustment->requires_custom_value
                     ? $adjustment->detailSalaryAdjustmentValue?->custom_value
