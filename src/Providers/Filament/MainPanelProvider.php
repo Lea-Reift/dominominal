@@ -41,6 +41,7 @@ class MainPanelProvider extends PanelProvider
                 'primary' => Color::Indigo,
                 'success' => Color::Blue,
             ])
+            ->discoverPages(in: app_path('Support/Pages'), for: 'App\\Support\\Pages')
             ->pages([
                 Pages\Dashboard::class,
             ])
