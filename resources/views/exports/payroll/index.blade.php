@@ -32,7 +32,7 @@
         @foreach ($details as $detail)
             <tr>
                 <td>{{ $detail->name }}</td>
-                <td>{{ $detail->document_number }}</td>
+                <td>{{ $detail->documentNumber }}</td>
                 <td>{{ $detail->rawSalary }}</td>
                 @foreach ($incomes->keys() as $income)
                     <td>{{ $detail->incomes->get($income, 0) }}</td>
