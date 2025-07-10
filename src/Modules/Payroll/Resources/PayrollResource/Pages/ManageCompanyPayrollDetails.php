@@ -298,6 +298,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                             ->form([
                                 TextInput::make('employee_email')
                                     ->label('Correo del empleado')
+                                    ->email()
                                     ->default(fn (PayrollDetail $record) => $record->employee->email)
                                     ->required(),
                             ])

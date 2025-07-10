@@ -6,7 +6,6 @@ namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -34,7 +33,6 @@ class PaymentVoucherMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address('justinavillar@outlook.com', 'Justina Villar'),
             subject: $this->subjectText,
         );
     }
@@ -44,9 +42,18 @@ class PaymentVoucherMail extends Mailable
      */
     public function content(): Content
     {
+        $senderEmail = config('mail.from.address');
         $text = <<<TEXT
-            Este correo se envió automaticamente y no requiere una respuesta. </br>
-            En caso de necesitarlo, puede contactar al correo {$this->envelope()->from->address}.
+            Este correo se envió automaticamente y no requiere una respuesta.<br>
+            En caso de necesitarlo, puede contactar al correo {$senderEmail}.<br><br>
+
+            <b>Justina M. Villar Suazo</b><br>
+            Contador Público Autorizado<br>
+            Horario de trabajo<br>
+            Lunes a Viernes<br>
+            8:00 A.M a 5:00 P.M<br>
+            Tel. 809-245-9233<br>
+            Cel. 849-881-3340<br>
             TEXT;
 
         return new Content(
