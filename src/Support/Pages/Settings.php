@@ -14,7 +14,6 @@ use Filament\Notifications\Notification;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -43,7 +42,8 @@ class Settings extends Page implements HasForms
 
     public function mount(): void
     {
-        $this->getEmailSettingsForm()->fill(empty($this->emailFormData) ? null : $this->emailFormData);
+        $this->getEmailSettingsForm()
+            ->fill(empty($this->emailFormData) ? null : $this->emailFormData);
     }
 
     public function getEmailSettingsForm(): Form
@@ -113,19 +113,5 @@ class Settings extends Page implements HasForms
             ->title('Configuración de correo guardada')
             ->success()
             ->send();
-
-        // if ($this->emailSettings->isEmpty()) {
-        // $data = Arr::map($this->emailFormData, fn (string|int $value, string $name) => [
-        //     'setting' => 'email',
-        //     'name' => $name,
-        //     'value' => $value,
-        //     'is_encrypted' => $name === 'password',
-        // ]);
-
-        //     Setting::query()->fillAndInsert($data);
-        //     $notification->send();
-        //     return;
-        // }
-
     }
 }
