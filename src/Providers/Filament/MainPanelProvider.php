@@ -25,6 +25,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use DirectoryIterator;
 use Filament\Support\Enums\MaxWidth;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Schema;
 
@@ -91,13 +92,12 @@ class MainPanelProvider extends PanelProvider
             'RENGLON_ISR' => fn (PayrollDetail $detail) => $detail->payroll->salaryAdjustments->pluck('parser_alias')->contains('ISR')
                 ? 'SALARIO_BASE_ISR < 416_220.01 ? 0 : ( SALARIO_BASE_ISR < 624_329.01 ? 1 : ( SALARIO_BASE_ISR < 867_123.01 ? 2 : 3 ))'
                 : '0',
-            'TOTAL_INGRESOS' => fn (PayrollDetail $detail) => $detail->payroll->incomes->pluck('parser_alias')->push('SALARIO_QUINCENA')->join(' + '),
-            'TOTAL_DEDUCCIONES' => fn (PayrollDetail $detail) => ($deductions = $detail->payroll->deductions)->isNotEmpty()
+            'TOTAL_INGRESOS' => fn (PayrollDetail $detail) => $detail->incomes->pluck('parser_alias')->push('SALARIO_QUINCENA')->join(' + '),
+            'TOTAL_DEDUCCIONES' => fn (PayrollDetail $detail) => ($deductions = $detail->deductions)->isNotEmpty()
                 ? $deductions->pluck('parser_alias')->join(' + ')
                 : '0',
             'SALARIO_BASE_ISR' =>
-            fn (PayrollDetail $detail) => ($adjustmentsAlias = $detail->payroll->salaryAdjustments->pluck('parser_alias'))->contains('ISR') &&
-                $adjustmentsAlias->contains('SFS')
+            fn (PayrollDetail $detail) => $detail->payroll->salaryAdjustments->pluck('parser_alias')->contains(['ISR', 'AFP', 'SFS'])
                 ? '((TOTAL_INGRESOS - AFP - SFS) * ' . ($detail->payroll->type->isMonthly() ? 12 : 24) . ')'
                 : '0',
             'RENGLONES_ISR' => function (PayrollDetail $detail) {
@@ -178,6 +178,7 @@ class MainPanelProvider extends PanelProvider
             return;
         }
 
+        /** @var Collection<string, Setting> $config */
         $config = Setting::query()->getSettings('email')->keyBy('name');
 
         if ($config->isEmpty()) {
@@ -188,7 +189,7 @@ class MainPanelProvider extends PanelProvider
 
         config(['mail.default' => 'smtp']);
 
-        if ($config->has(['username', 'from_name'])) {
+        if ($config->has('username') && $config->has('from_name')) {
             config([
                 'mail.from.address' => $config->get('username')->value,
                 'mail.from.name' => $config->get('from_name')->value,
