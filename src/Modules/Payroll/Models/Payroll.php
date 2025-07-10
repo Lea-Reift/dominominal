@@ -24,6 +24,8 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property Carbon $period
  * @property-read Company $company
  * @property-read PayrollDisplay $display
+ * @property-read ?Payroll $monthlyPayroll
+ * @property-read Collection<int, Payroll> $biweeklyPayrolls
  * @property-read Collection<int, SalaryAdjustment> $salaryAdjustments
  * @property-read Collection<int, SalaryAdjustment> $editableSalaryAdjustments
  * @property-read Collection<int, SalaryAdjustment> $incomes
@@ -37,6 +39,7 @@ class Payroll extends Model
         'company_id',
         'type',
         'period',
+        'parent_payroll_id'
     ];
 
     protected $casts = [
@@ -57,6 +60,16 @@ class Payroll extends Model
             $payroll->details()->delete();
             $payroll->salaryAdjustments()->detach();
         });
+    }
+
+    public function monthlyPayroll(): BelongsTo
+    {
+        return $this->belongsTo(static::class, 'parent_payroll_id');
+    }
+
+    public function biweeklyPayrolls(): HasMany
+    {
+        return $this->hasMany(static::class, 'parent_payroll_id');
     }
 
     public function company(): BelongsTo
