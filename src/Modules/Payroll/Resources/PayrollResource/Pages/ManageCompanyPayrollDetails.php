@@ -109,6 +109,33 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
         return [
             EditAction::make()
                 ->form(fn (Form $form) => PayrollResource::form($form))
+                ->databaseTransaction()
+                ->after(function (Payroll $editedPayroll) {
+                    if ($editedPayroll->type->isBiweekly()) {
+                        return;
+                    }
+
+                    $currentMontlyPayrollSalaryAdjustments = $editedPayroll->salaryAdjustments()->pluck('salary_adjustments.id')->toArray();
+
+                    $editedPayroll->details()->get()->each(
+                        fn (PayrollDetail $detail) => $this->removeDetailSalaryAdjustmentsFromEntity($detail, $currentMontlyPayrollSalaryAdjustments)
+                    );
+
+                    $this->removeDetailSalaryAdjustmentsFromEntity($editedPayroll, $currentMontlyPayrollSalaryAdjustments);
+
+                    $biweeklyPayrolls = $editedPayroll->biweeklyPayrolls()->with('details')->get();
+
+                    if ($biweeklyPayrolls->isEmpty()) {
+                        return;
+                    }
+
+                    $biweeklyPayrolls->each(function (Payroll $biweeklyPayroll) use ($currentMontlyPayrollSalaryAdjustments) {
+                        $this->removeDetailSalaryAdjustmentsFromEntity($biweeklyPayroll, $currentMontlyPayrollSalaryAdjustments);
+                        $biweeklyPayroll->details->each(
+                            fn (PayrollDetail $detail) => $this->removeDetailSalaryAdjustmentsFromEntity($detail, $currentMontlyPayrollSalaryAdjustments)
+                        );
+                    });
+                })
                 ->slideOver(),
             BaseAction::make('excel_export')
                 ->label('Exportar a excel')
@@ -306,13 +333,15 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                             ->disabled($this->record->type->isMonthly())
                             ->hidden($this->record->type->isMonthly())
                             ->label('Editar ajustes salariales')
+                            ->icon('heroicon-m-pencil-square')
                             ->color('success')
+                            ->modalWidth(MaxWidth::Large)
                             ->form([
-                                CheckboxList::make('available_adjustments')
+                                CheckboxList::make('available_salary_adjustments')
                                     ->hiddenLabel()
                                     ->options($this->record->salaryAdjustments->pluck('name', 'id'))
                                     ->default(fn (PayrollDetail $record) => $record->salaryAdjustments->pluck('id')->toArray())
-                                    ->columns(4)
+                                    ->columns(2)
                                     ->bulkToggleable()
                             ])
                             ->databaseTransaction()
@@ -417,10 +446,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                         ->columnSpan(2),
                     Split::make(fn (?PayrollDetail $record) =>
                         [
-                            TableGrid::make([
-                                'sm' => $this->record->salaryAdjustments->count() / 4,
-                                'lg' => ($this->record->salaryAdjustments->count() / 4) * 2,
-                            ])
+                            TableGrid::make(4)
                                 ->schema(
                                     ($record->editableSalaryAdjustments ?? $this->record->editableSalaryAdjustments)
                                         ->sortBy('type')
@@ -492,5 +518,18 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
             $newDetail->salaryAdjustments()->sync($detail->salaryAdjustments);
         }
+    }
+
+    public function removeDetailSalaryAdjustmentsFromEntity(Payroll|PayrollDetail $entity, array $salaryAdjustmentsModification): void
+    {
+        $relation = $entity->salaryAdjustments();
+
+        $currentPayrollSalaryAdjustments = $relation->pluck($relation->getRelatedPivotKeyName())->toArray();
+
+        $salaryAdjustmentsToAdd = array_diff($salaryAdjustmentsModification, $currentPayrollSalaryAdjustments);
+        $salaryAdjustmentsToRemove = array_diff($currentPayrollSalaryAdjustments, $salaryAdjustmentsModification);
+
+        $relation->syncWithoutDetaching($salaryAdjustmentsToAdd);
+        $relation->detach($salaryAdjustmentsToRemove);
     }
 }

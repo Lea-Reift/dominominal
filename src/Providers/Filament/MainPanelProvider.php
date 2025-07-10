@@ -96,13 +96,16 @@ class MainPanelProvider extends PanelProvider
             'TOTAL_DEDUCCIONES' => fn (PayrollDetail $detail) => ($deductions = $detail->deductions)->isNotEmpty()
                 ? $deductions->pluck('parser_alias')->join(' + ')
                 : '0',
+            'HORAS_EXTRA' => fn (PayrollDetail $detail) => $detail->payroll->salaryAdjustments->pluck('parser_alias')->contains('HORAS_EXTRA')
+                ? $detail->payroll->salaryAdjustments->keyBy('name')->get('HORAS_EXTRA')?->value
+                : '0',
             'SALARIO_BASE_ISR' =>
             fn (PayrollDetail $detail) => $detail->payroll->salaryAdjustments->pluck('parser_alias')->contains(['ISR', 'AFP', 'SFS'])
                 ? '((TOTAL_INGRESOS - AFP - SFS) * ' . ($detail->payroll->type->isMonthly() ? 12 : 24) . ')'
                 : '0',
             'RENGLONES_ISR' => function (PayrollDetail $detail) {
                 if ($detail->payroll->salaryAdjustments->pluck('parser_alias')->doesntContain('ISR')) {
-                    return '0';
+                    return array_fill(0, 4, '0');
                 }
 
                 $isrSteps = [
