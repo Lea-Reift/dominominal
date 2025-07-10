@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Models\Setting;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Support\SalaryAdjustmentParser;
 use Filament\Http\Middleware\Authenticate;
@@ -25,6 +26,7 @@ use DirectoryIterator;
 use Filament\Support\Enums\MaxWidth;
 use Filament\Tables\Table;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Schema;
 
 class MainPanelProvider extends PanelProvider
 {
@@ -35,9 +37,13 @@ class MainPanelProvider extends PanelProvider
             ->id('main')
             ->path('main')
             ->login()
+            ->darkMode(isForced: true)
+            ->profile(isSimple: false)
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Indigo,
+                'success' => Color::Blue,
             ])
+            ->discoverPages(in: app_path('Support/Pages'), for: 'App\\Support\\Pages')
             ->pages([
                 Pages\Dashboard::class,
             ])
@@ -64,34 +70,7 @@ class MainPanelProvider extends PanelProvider
             ->maxContentWidth(MaxWidth::Full);
 
 
-        $modulesFolder = new DirectoryIterator(app_path('Modules'));
-
-        foreach ($modulesFolder as $directory) {
-            /** @var DirectoryIterator $directory */
-
-            if ($directory->isDot() || $directory->isFile()) {
-                continue;
-            }
-
-            $directoryResourcesPath = $directory->getRealPath() . DIRECTORY_SEPARATOR . 'Resources';
-            $directoryPagesPath = $directory->getRealPath() . DIRECTORY_SEPARATOR . 'Pages';
-
-            $baseNamespace = str($directory->getPath())
-                ->append('\\')
-                ->replace([app_path(), DIRECTORY_SEPARATOR], ['App', '\\']);
-
-            $resourcesNamespace = $baseNamespace
-                ->append("{$directory->getBasename()}\\Resources")
-                ->toString();
-
-            $pagesNamespace = $baseNamespace
-                ->append("{$directory->getBasename()}\\Pages")
-                ->toString();
-
-            $panel->discoverResources($directoryResourcesPath, $resourcesNamespace);
-            $panel->discoverPages($directoryPagesPath, $pagesNamespace);
-        }
-
+        $this->addModulesToPanel($panel);
         return $panel;
     }
 
@@ -100,6 +79,12 @@ class MainPanelProvider extends PanelProvider
         Table::$defaultCurrency = 'USD';
         Table::$defaultNumberLocale = 'en';
 
+        $this->setSalaryParserDefaultVariables();
+        $this->loadEmailConfiguration();
+    }
+
+    public function setSalaryParserDefaultVariables(): void
+    {
         SalaryAdjustmentParser::setDefaultVariables([
             'SALARIO' => 'DETALLE.salary.amount',
             'SALARIO_QUINCENA' => 'DETALLE.getParsedPayrollSalary()',
@@ -154,5 +139,69 @@ class MainPanelProvider extends PanelProvider
                 );
             }
         ]);
+    }
+
+    public function addModulesToPanel(Panel $panel): void
+    {
+        $modulesFolder = new DirectoryIterator(app_path('Modules'));
+
+        foreach ($modulesFolder as $directory) {
+            /** @var DirectoryIterator $directory */
+
+            if ($directory->isDot() || $directory->isFile()) {
+                continue;
+            }
+
+            $directoryResourcesPath = $directory->getRealPath() . DIRECTORY_SEPARATOR . 'Resources';
+            $directoryPagesPath = $directory->getRealPath() . DIRECTORY_SEPARATOR . 'Pages';
+
+            $baseNamespace = str($directory->getPath())
+                ->append('\\')
+                ->replace([app_path(), DIRECTORY_SEPARATOR], ['App', '\\']);
+
+            $resourcesNamespace = $baseNamespace
+                ->append("{$directory->getBasename()}\\Resources")
+                ->toString();
+
+            $pagesNamespace = $baseNamespace
+                ->append("{$directory->getBasename()}\\Pages")
+                ->toString();
+
+            $panel->discoverResources($directoryResourcesPath, $resourcesNamespace);
+            $panel->discoverPages($directoryPagesPath, $pagesNamespace);
+        }
+    }
+
+    public function loadEmailConfiguration(): void
+    {
+        if (!Schema::hasTable('settings')) {
+            return;
+        }
+
+        $config = Setting::query()->getSettings('email')->keyBy('name');
+
+        if ($config->isEmpty()) {
+            return;
+        }
+
+        $originalSMTPSettings = config('mail.mailers.smtp');
+
+        config(['mail.default' => 'smtp']);
+
+        if ($config->has(['username', 'from_name'])) {
+            config([
+                'mail.from.address' => $config->get('username')->value,
+                'mail.from.name' => $config->get('from_name')->value,
+            ]);
+        }
+
+        $config = $config
+            ->filter(fn (Setting $emailSetting) => array_key_exists($emailSetting->name, $originalSMTPSettings))
+            ->pluck('value', 'name');
+
+        config([
+            'mail.mailers.smtp' => $config->toArray() + $originalSMTPSettings
+        ]);
+
     }
 }

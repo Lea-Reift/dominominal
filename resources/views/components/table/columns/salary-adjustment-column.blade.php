@@ -77,6 +77,8 @@
     />
 
     <span class="text-sm font-medium leading-6 text-gray-950 dark:text-white">
+        <x-filament-forms::field-wrapper.hint>{{ $getHint() }}</x-filament-forms::field-wrapper.hint>
+
         {{ $getLabel() }}
     </span>
 

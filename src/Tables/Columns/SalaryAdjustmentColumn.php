@@ -8,7 +8,6 @@ use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Enums\SalaryAdjustmentValueTypeEnum;
 use App\Modules\Payroll\Models\Payroll;
 use App\Modules\Payroll\Models\SalaryAdjustment;
-use Filament\Forms\Components\Concerns\HasHelperText;
 use Filament\Forms\Components\Concerns\HasHint;
 use Filament\Tables\Columns\TextInputColumn;
 use Filament\Support\RawJs;
@@ -16,14 +15,12 @@ use App\Modules\Payroll\Models\PayrollDetail;
 use App\Support\ValueObjects\PayrollDisplay\PayrollDetailDisplay;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Number;
-use Filament\Tables\Columns\Concerns\HasLabel;
 use Filament\Tables\Columns\Summarizers\Summarizer;
+use Illuminate\Support\Facades\DB;
 
 class SalaryAdjustmentColumn extends TextInputColumn
 {
-    use HasHelperText;
     use HasHint;
-    use HasLabel;
 
     protected string $view = 'components.table.columns.salary-adjustment-column';
 
@@ -36,6 +33,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
 
         $this
             ->label($this->adjustment->name)
+            ->hint($this->adjustment->type->getLabel())
             ->mask(RawJs::make('$money($input)'))
             ->grow(false)
             ->state(function (PayrollDetail $record) {
@@ -58,8 +56,6 @@ class SalaryAdjustmentColumn extends TextInputColumn
                     ->label("Total {$this->adjustment->name}")
             )
             ->updateStateUsing(function (?string $state, PayrollDetail $record) {
-                $relation = tap($record->salaryAdjustments())->detach($this->adjustment->id);
-
                 if (is_null($state)) {
                     return;
                 }
@@ -87,8 +83,11 @@ class SalaryAdjustmentColumn extends TextInputColumn
                     return;
                 }
 
+                DB::transaction(function () use ($record, $customValue) {
+                    $relation = tap($record->salaryAdjustments())->detach($this->adjustment->id);
 
-                $relation->attach($this->adjustment->id, ['custom_value' => $customValue]);
+                    $relation->attach($this->adjustment->id, ['custom_value' => $customValue]);
+                });
             });
     }
 
