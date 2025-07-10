@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property-read Company $company
  * @property-read PayrollDisplay $display
  * @property-read Collection<int, SalaryAdjustment> $salaryAdjustments
+ * @property-read Collection<int, SalaryAdjustment> $editableSalaryAdjustments
  * @property-read Collection<int, SalaryAdjustment> $incomes
  * @property-read Collection<int, SalaryAdjustment> $deductions
  * @property Carbon|null $created_at
@@ -51,6 +52,11 @@ class Payroll extends Model
                 $payroll->period = Carbon::parse($payroll->period)->endOfMonth();
             }
         });
+
+        static::deleting(function (Payroll $payroll) {
+            $payroll->details()->delete();
+            $payroll->salaryAdjustments()->detach();
+        });
     }
 
     public function company(): BelongsTo
@@ -72,6 +78,11 @@ class Payroll extends Model
     public function salaryAdjustments(): BelongsToMany
     {
         return $this->belongsToMany(SalaryAdjustment::class);
+    }
+
+    public function editableSalaryAdjustments(): BelongsToMany
+    {
+        return $this->salaryAdjustments()->where('requires_custom_value', true);
     }
 
     public function incomes(): BelongsToMany
