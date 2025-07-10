@@ -19,6 +19,8 @@ use App\Modules\Payroll\Resources\CompanyResource\RelationManagers\PayrollsRelat
 use Filament\Forms\Get;
 use Filament\Tables\Actions\EditAction;
 use App\Modules\Payroll\Resources\PayrollResource\Pages\ManageCompanyPayrollDetails;
+use Filament\Navigation\NavigationItem;
+use App\Modules\Payroll\Resources\PayrollResource;
 
 class CompanyResource extends Resource
 {
@@ -29,6 +31,22 @@ class CompanyResource extends Resource
     protected static ?string $modelLabel = 'compañía';
 
     protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Start;
+
+    public static function getNavigationItems(): array
+    {
+        return [
+            NavigationItem::make(static::getNavigationLabel())
+                ->group(static::getNavigationGroup())
+                ->parentItem(static::getNavigationParentItem())
+                ->icon(static::getNavigationIcon())
+                ->activeIcon(static::getActiveNavigationIcon())
+                ->isActiveWhen(fn () => request()->routeIs(static::getRouteBaseName() . '.*', PayrollResource::getRouteBaseName() . '.*'))
+                ->badge(static::getNavigationBadge(), color: static::getNavigationBadgeColor())
+                ->badgeTooltip(static::getNavigationBadgeTooltip())
+                ->sort(static::getNavigationSort())
+                ->url(static::getNavigationUrl()),
+        ];
+    }
 
     public static function form(Form $form): Form
     {
