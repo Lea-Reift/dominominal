@@ -27,6 +27,7 @@ readonly class PayrollDetailDisplay
     public float $incomeTotal;
     public float $deductionTotal;
     public float $netSalary;
+    public Collection $adjustmentNames;
 
     protected PDF $PDF;
 
@@ -50,6 +51,8 @@ readonly class PayrollDetailDisplay
 
         $this->rawSalary = (float) $detail->getParsedPayrollSalary();
         $adjustments = $detail->payroll->salaryAdjustments->keyBy('parser_alias');
+
+        $this->adjustmentNames = $adjustments->pluck('name', 'parser_alias');
 
         $incomes = collect();
         $deductions = collect();

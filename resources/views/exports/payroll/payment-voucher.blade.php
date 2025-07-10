@@ -74,7 +74,7 @@
                         </tr>
                         @foreach ($detail->incomes as $incomeName => $incomeValue)
                             <tr>
-                                <td>{{ $incomeName }}</td>
+                                <td>{{ $detail->adjustmentNames->get($incomeName) }}</td>
                                 <td style="text-align: right;">{{ Illuminate\Support\Number::currency($incomeValue, in: 'USD') }}</td>
                             </tr>
                         @endforeach
@@ -99,7 +99,7 @@
                     <tbody>
                         @foreach ($detail->deductions as $deductionName => $deductionValue)
                             <tr>
-                                <td>{{ $deductionName }}</td>
+                                <td>{{ $detail->adjustmentNames->get($deductionName) }}</td>
                                 <td style="text-align: right;">{{ Illuminate\Support\Number::currency($deductionValue, in: 'USD') }}</td>
                             </tr>
                         @endforeach
