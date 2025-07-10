@@ -96,6 +96,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                 'editableSalaryAdjustments',
                 'incomes',
                 'deductions',
+                'monthlyPayroll',
                 'details' => [
                     'salaryAdjustments',
                 ],
@@ -302,6 +303,8 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                 actions:[
                     ActionGroup::make([
                         Action::make('edit_available_adjustments')
+                            ->disabled($this->record->type->isMonthly())
+                            ->hidden($this->record->type->isMonthly())
                             ->label('Editar ajustes salariales')
                             ->color('success')
                             ->form([
@@ -466,6 +469,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
             ->fill([
                 'type' => PayrollTypeEnum::BIWEEKLY,
                 'period' => $period,
+                'parent_payroll_id' => $this->record->id,
             ]))
             ->save();
 
