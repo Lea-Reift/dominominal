@@ -82,7 +82,34 @@ class SalaryAdjustmentColumn extends TextInputColumn
                 }
 
                 DB::transaction(function () use ($record, $state) {
+                    /** @var ?SalaryAdjustment $currentDetailAdjustment */
+                    $currentDetailAdjustment = $record->salaryAdjustments()->where($this->adjustment->getTable().'.id', $this->adjustment->id)->first();
+
+                    $currentCustomValue = $currentDetailAdjustment->detailSalaryAdjustmentValue->custom_value;
+
                     $record->salaryAdjustments()->syncWithoutDetaching([$this->adjustment->id => ['custom_value' => $state]]);
+
+                    if (!$currentDetailAdjustment) {
+                        return;
+                    }
+
+                    /** @var ?Payroll $monthlyPayroll */
+                    $monthlyPayroll = $record->payroll->monthlyPayroll()->first();
+
+                    if ($monthlyPayroll) {
+
+                        /** @var PayrollDetail $monthlyDetail */
+                        $monthlyDetail = $monthlyPayroll->details()->where('employee_id', $record->employee_id)->firstOrFail();
+
+                        /** @var SalaryAdjustment $monthlyAdjustment */
+                        $monthlyAdjustment = $monthlyDetail->salaryAdjustments()->findOrFail($this->adjustment->id);
+
+                        $monthlyAdjustmentValue = $monthlyAdjustment->detailSalaryAdjustmentValue->custom_value ?? 0;
+
+                        $monthlyDetail
+                            ->salaryAdjustments()
+                            ->syncWithoutDetaching([$this->adjustment->id => ['custom_value' => $monthlyAdjustmentValue - floatval($currentCustomValue) + $state]]);
+                    }
                 });
             });
     }
