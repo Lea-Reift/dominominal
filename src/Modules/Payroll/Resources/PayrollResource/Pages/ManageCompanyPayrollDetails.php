@@ -311,9 +311,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
                                 $mail = new PaymentVoucherMail($mailSubject, $pdfOutput);
 
-                                $mailOutput = Mail::to($employeeEmail)->send($mail);
-
-                                info($mailOutput?->toString(), debug_backtrace());
+                                defer(fn () => Mail::to($employeeEmail)->send($mail));
 
                                 Notification::make('send_payment_voucher')
                                     ->title('Voucher enviado con exito')
