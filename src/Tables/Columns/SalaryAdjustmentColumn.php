@@ -12,11 +12,14 @@ use Filament\Forms\Components\Concerns\HasHint;
 use Filament\Tables\Columns\TextInputColumn;
 use Filament\Support\RawJs;
 use App\Modules\Payroll\Models\PayrollDetail;
+use App\Modules\Payroll\Models\PayrollDetailSalaryAdjustment;
 use App\Support\ValueObjects\PayrollDisplay\PayrollDetailDisplay;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Number;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Illuminate\Support\Facades\DB;
+use Closure;
+use Illuminate\Database\Eloquent\Builder;
 
 class SalaryAdjustmentColumn extends TextInputColumn
 {
@@ -31,11 +34,36 @@ class SalaryAdjustmentColumn extends TextInputColumn
     {
         parent::setUp();
 
+        $disabled = fn (PayrollDetail $record) =>  PayrollDetailSalaryAdjustment::query()
+            ->where('salary_adjustment_id', $this->adjustment->id)
+            ->whereIn(
+                'payroll_detail_id',
+                PayrollDetail::query()
+                    ->select(['id'])
+                    ->where('employee_id', $record->employee_id)
+                    ->whereHas(
+                        'payroll.monthlyPayroll',
+                        fn (Builder $query) => $query->where('id', $record->payroll_id)
+                    )
+            )
+            ->where(
+                fn (Builder $query) => $query
+                    ->whereNotNull('custom_value')
+                    ->where(
+                        'custom_value',
+                        '!=',
+                        floatval($record->salaryAdjustments->keyBy('id')->get($this->adjustment->id)?->detailSalaryAdjustmentValue?->custom_value) / 2
+                    )
+            )
+            ->exists();
+
         $this
             ->label($this->adjustment->name)
             ->hint($this->adjustment->type->getLabel())
             ->mask(RawJs::make('$money($input)'))
             ->grow(false)
+            ->disabled($disabled)
+            ->tooltip(fn (PayrollDetail $record) => $disabled($record) ? 'Este ajuste no se puede modificar porque ya se ha modificado desde una nómina quincenal' : null)
             ->state(function (PayrollDetail $record) {
                 $value = $record->salaryAdjustments->keyBy('id')->get($this->adjustment->id)?->detailSalaryAdjustmentValue?->custom_value;
 
@@ -55,63 +83,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
                     ->money()
                     ->label("Total {$this->adjustment->name}")
             )
-            ->updateStateUsing(function (?string $state, PayrollDetail $record) {
-                if (!is_null($state)) {
-                    $state = floatval(str_replace(',', '', $state));
-
-                    $validationFails = match ($this->adjustment->value_type) {
-                        SalaryAdjustmentValueTypeEnum::ABSOLUTE => match ($this->adjustment->type) {
-                            SalaryAdjustmentTypeEnum::INCOME => $state < 0,
-                            SalaryAdjustmentTypeEnum::DEDUCTION => $state > $record->getParsedPayrollSalary(),
-                        },
-                        SalaryAdjustmentValueTypeEnum::PERCENTAGE => $state < 0 || $state > 100,
-                        SalaryAdjustmentValueTypeEnum::FORMULA => empty($state)
-                    };
-
-                    if ($validationFails) {
-
-                        Notification::make('failed_adjustment_modification')
-                            ->title('Valor invalido ')
-                            ->body('El valor introducido no es correcto. Intente nuevamente')
-                            ->danger()
-                            ->color('danger')
-                            ->seconds(5)
-                            ->send();
-                        return;
-                    }
-                }
-
-                DB::transaction(function () use ($record, $state) {
-                    /** @var ?SalaryAdjustment $currentDetailAdjustment */
-                    $currentDetailAdjustment = $record->salaryAdjustments()->where($this->adjustment->getTable().'.id', $this->adjustment->id)->first();
-
-                    $currentCustomValue = $currentDetailAdjustment->detailSalaryAdjustmentValue->custom_value;
-
-                    $record->salaryAdjustments()->syncWithoutDetaching([$this->adjustment->id => ['custom_value' => $state]]);
-
-                    if (!$currentDetailAdjustment) {
-                        return;
-                    }
-
-                    /** @var ?Payroll $monthlyPayroll */
-                    $monthlyPayroll = $record->payroll->monthlyPayroll()->first();
-
-                    if ($monthlyPayroll) {
-
-                        /** @var PayrollDetail $monthlyDetail */
-                        $monthlyDetail = $monthlyPayroll->details()->where('employee_id', $record->employee_id)->firstOrFail();
-
-                        /** @var SalaryAdjustment $monthlyAdjustment */
-                        $monthlyAdjustment = $monthlyDetail->salaryAdjustments()->findOrFail($this->adjustment->id);
-
-                        $monthlyAdjustmentValue = $monthlyAdjustment->detailSalaryAdjustmentValue->custom_value ?? 0;
-
-                        $monthlyDetail
-                            ->salaryAdjustments()
-                            ->syncWithoutDetaching([$this->adjustment->id => ['custom_value' => $monthlyAdjustmentValue - floatval($currentCustomValue) + $state]]);
-                    }
-                });
-            });
+            ->updateStateUsing(Closure::fromCallable([$this, 'updateDetailAdjustmet']));
     }
 
     public static function make(string $name): static
@@ -136,5 +108,89 @@ class SalaryAdjustmentColumn extends TextInputColumn
     {
         $this->payroll = $payroll;
         return $this;
+    }
+
+    public function updateDetailAdjustmet(?string $state, PayrollDetail $record): void
+    {
+        if (!is_null($state)) {
+            $state = floatval(str_replace(',', '', $state));
+
+            $validationFails = match ($this->adjustment->value_type) {
+                SalaryAdjustmentValueTypeEnum::ABSOLUTE => match ($this->adjustment->type) {
+                    SalaryAdjustmentTypeEnum::INCOME => $state < 0,
+                    SalaryAdjustmentTypeEnum::DEDUCTION => $state > $record->getParsedPayrollSalary(),
+                },
+                SalaryAdjustmentValueTypeEnum::PERCENTAGE => $state < 0 || $state > 100,
+                SalaryAdjustmentValueTypeEnum::FORMULA => empty($state)
+            };
+
+            if ($validationFails) {
+
+                Notification::make('failed_adjustment_modification')
+                    ->title('Valor invalido ')
+                    ->body('El valor introducido no es correcto. Intente nuevamente')
+                    ->danger()
+                    ->color('danger')
+                    ->seconds(5)
+                    ->send();
+                return;
+            }
+        }
+
+        DB::transaction(function () use ($record, $state) {
+            // Update Current payroll
+            /** @var ?SalaryAdjustment $currentDetailAdjustment */
+            $currentDetailAdjustment = $record->salaryAdjustments()->where($this->adjustment->getTable().'.id', $this->adjustment->id)->first();
+
+            $currentCustomValue = $currentDetailAdjustment->detailSalaryAdjustmentValue->custom_value;
+
+            $record->salaryAdjustments()->syncWithoutDetaching([$this->adjustment->id => ['custom_value' => $state]]);
+
+            if ($record->payroll->monthlyPayroll()->doesntExist()) {
+                $this->updateBiweeklyPayrolls($record, $state);
+                return;
+            }
+
+            $this->updateMonthlyPayroll($record, $state, $currentCustomValue);
+        });
+    }
+
+    protected function updateBiweeklyPayrolls(PayrollDetail $record, mixed $state): void
+    {
+        PayrollDetailSalaryAdjustment::query()
+            ->where('salary_adjustment_id', $this->adjustment->id)
+            ->whereIn(
+                'payroll_detail_id',
+                PayrollDetail::query()
+                    ->select(['id'])
+                    ->where('employee_id', $record->employee_id)
+                    ->whereHas(
+                        'payroll.monthlyPayroll',
+                        fn (Builder $query) => $query->where('id', $record->payroll_id)
+                    )
+            )
+            ->update([
+                'custom_value' => $state / 2
+            ]);
+    }
+
+    protected function updateMonthlyPayroll(PayrollDetail $record, mixed $state, mixed $currentCustomValue): void
+    {
+        $monthlyEmployeePayrollDetailQuery = PayrollDetail::query()
+            ->select(['id'])
+            ->where('employee_id', $record->employee_id)
+            ->where('payroll_id', $record->payroll->monthly_payroll_id);
+
+        $monthlyAdjustmentValue = PayrollDetailSalaryAdjustment::query()
+            ->where('salary_adjustment_id', $this->adjustment->id)
+            ->where('payroll_detail_id', $monthlyEmployeePayrollDetailQuery)
+            ->value('custom_value') ?? 0;
+
+        PayrollDetailSalaryAdjustment::query()
+            ->where('salary_adjustment_id', $this->adjustment->id)
+            ->whereIn('payroll_detail_id', $monthlyEmployeePayrollDetailQuery)
+            ->update([
+                'custom_value' => $monthlyAdjustmentValue - floatval($currentCustomValue) + $state
+            ]);
     }
 }

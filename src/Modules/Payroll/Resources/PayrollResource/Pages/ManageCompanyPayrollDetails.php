@@ -117,11 +117,12 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
                     $currentMontlyPayrollSalaryAdjustments = $editedPayroll->salaryAdjustments()->pluck('salary_adjustments.id')->toArray();
 
-                    $editedPayroll->details()->get()->each(
-                        fn (PayrollDetail $detail) => $this->removeDetailSalaryAdjustmentsFromEntity($detail, $currentMontlyPayrollSalaryAdjustments)
+
+                    $editedPayroll->details()->get()->each( # @phpstan-ignore-next-line
+                        fn (PayrollDetail $detail) => $this->updateDetailSalaryAdjustmentsForEntity($detail, $currentMontlyPayrollSalaryAdjustments)
                     );
 
-                    $this->removeDetailSalaryAdjustmentsFromEntity($editedPayroll, $currentMontlyPayrollSalaryAdjustments);
+                    $this->updateDetailSalaryAdjustmentsForEntity($editedPayroll, $currentMontlyPayrollSalaryAdjustments);
 
                     $biweeklyPayrolls = $editedPayroll->biweeklyPayrolls()->with('details')->get();
 
@@ -129,10 +130,12 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                         return;
                     }
 
+                    // @phpstan-ignore-next-line
                     $biweeklyPayrolls->each(function (Payroll $biweeklyPayroll) use ($currentMontlyPayrollSalaryAdjustments) {
-                        $this->removeDetailSalaryAdjustmentsFromEntity($biweeklyPayroll, $currentMontlyPayrollSalaryAdjustments);
+                        $this->updateDetailSalaryAdjustmentsForEntity($biweeklyPayroll, $currentMontlyPayrollSalaryAdjustments);
                         $biweeklyPayroll->details->each(
-                            fn (PayrollDetail $detail) => $this->removeDetailSalaryAdjustmentsFromEntity($detail, $currentMontlyPayrollSalaryAdjustments)
+                            // @phpstan-ignore-next-line
+                            fn (PayrollDetail $detail) => $this->updateDetailSalaryAdjustmentsForEntity($detail, $currentMontlyPayrollSalaryAdjustments)
                         );
                     });
                 })
@@ -495,7 +498,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
             ->fill([
                 'type' => PayrollTypeEnum::BIWEEKLY,
                 'period' => $period,
-                'parent_payroll_id' => $this->record->id,
+                'monthly_payroll_id' => $this->record->id,
             ]))
             ->save();
 
@@ -520,7 +523,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
         }
     }
 
-    public function removeDetailSalaryAdjustmentsFromEntity(Payroll|PayrollDetail $entity, array $salaryAdjustmentsModification): void
+    public function updateDetailSalaryAdjustmentsForEntity(Payroll|PayrollDetail $entity, array $salaryAdjustmentsModification): void
     {
         $relation = $entity->salaryAdjustments();
 
