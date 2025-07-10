@@ -39,7 +39,7 @@ class Payroll extends Model
         'company_id',
         'type',
         'period',
-        'parent_payroll_id'
+        'monthly_payroll_id'
     ];
 
     protected $casts = [
@@ -64,12 +64,12 @@ class Payroll extends Model
 
     public function monthlyPayroll(): BelongsTo
     {
-        return $this->belongsTo(static::class, 'parent_payroll_id');
+        return $this->belongsTo(static::class, 'monthly_payroll_id');
     }
 
     public function biweeklyPayrolls(): HasMany
     {
-        return $this->hasMany(static::class, 'parent_payroll_id');
+        return $this->hasMany(static::class, 'monthly_payroll_id');
     }
 
     public function company(): BelongsTo

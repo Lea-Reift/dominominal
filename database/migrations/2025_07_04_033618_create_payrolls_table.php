@@ -18,7 +18,7 @@ return new class () extends Migration {
         Schema::create('payrolls', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(Company::class)->constrained();
-            $table->foreignIdFor(Payroll::class, 'parent_payroll_id')->nullable()->constrained();
+            $table->foreignIdFor(Payroll::class, 'monthly_payroll_id')->nullable()->constrained();
             $table->tinyInteger('type')->default(PayrollTypeEnum::MONTHLY);
             $table->date('period');
             $table->timestamps();
