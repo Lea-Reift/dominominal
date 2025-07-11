@@ -20,16 +20,11 @@ class CheckSetupIsCompletedMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (
-            $request->path() !== '/' &&
-            (
-                !Schema::hasTable('settings') ||
-                !(
-                    Setting::query()->where(['setting' => 'setup', 'name' => 'is_completed'])->value('value') ?? false
-                )
-            )
-        ) {
+        if (!Schema::hasTable('settings')) {
             Artisan::call('migrate --force');
+        }
+
+        if ($request->path() !== '/' && !(Setting::query()->where(['setting' => 'setup', 'name' => 'is_completed'])->value('value') ?? false)) {
             return redirect('/');
         }
 
