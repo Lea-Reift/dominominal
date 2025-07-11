@@ -269,7 +269,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                     ->color('success')
                     ->modalWidth(MaxWidth::Small)
                     ->modalFooterActionsAlignment(Alignment::Center)
-                    ->modalSubmitAction(!$disableSecondaryPayrolls)
+                    ->modalSubmitAction($disableSecondaryPayrolls ? false : null)
                     ->action(function (array $data) {
                         foreach ($data['dates'] as $day) {
                             try {
