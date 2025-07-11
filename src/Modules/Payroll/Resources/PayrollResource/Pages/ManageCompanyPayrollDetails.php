@@ -48,6 +48,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\PaymentVoucherMail;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property Payroll $record
@@ -223,6 +224,13 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
             ->columns(2)
             ->schema(fn (Component $component) => $this->fields(enabled: ! $component->isDisabled(), nested: true));
 
+        $disableSecondaryPayrolls =  Payroll::query()
+            ->whereIn(
+                'period',
+                Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->setDay($day)->toDateString()])
+            )
+            ->exists();
+
         $table
             ->paginated(false)
             ->recordTitleAttribute('employee_id')
@@ -238,14 +246,30 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                         CheckboxList::make('dates')
                             ->label('')
                             ->bulkToggleable()
+                            ->hint($disableSecondaryPayrolls ? 'Las nóminas del mes ya fueron generadas' : '')
+                            ->hintColor('warning')
                             ->required()
                             ->gridDirection('row')
+                            ->default(
+                                fn () => DB::query()
+                                    ->from($this->record->getTable())
+                                    ->selectRaw('DAY(period) as period')
+                                    ->whereIn(
+                                        'period',
+                                        Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->setDay($day)->toDateString()])
+                                    )
+                                    ->pluck('period')
+                                    ->toArray()
+                            )
                             ->columns(2)
+                            ->dehydrated(!$disableSecondaryPayrolls)
+                            ->disableOptionWhen(fn (string $value) => Payroll::query()->whereDate('period', $this->record->period->setDay(intval($value)))->exists())
                             ->options(Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->translatedFormat("{$day} \\d\\e F")])),
                     ])
                     ->color('success')
                     ->modalWidth(MaxWidth::Small)
                     ->modalFooterActionsAlignment(Alignment::Center)
+                    ->modalSubmitAction(!$disableSecondaryPayrolls)
                     ->action(function (array $data) {
                         foreach ($data['dates'] as $day) {
                             try {
