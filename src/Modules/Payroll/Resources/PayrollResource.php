@@ -162,7 +162,8 @@ class PayrollResource extends Resource
                     ->date(fn (Payroll $record) => $record->type->isMonthly() ? 'F-Y' : 'd-m-Y'),
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->successRedirectUrl(fn (Payroll $record): string => ManageCompanyPayrollDetails::getUrl(['record' => $record])),
             ])
             ->actions([
                 DeleteAction::make()

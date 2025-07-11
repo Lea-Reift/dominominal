@@ -2,8 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Pages\Setup;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return response()->redirectTo('main/login');
-});
+Route::get('/', Setup::class);

@@ -14,7 +14,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $databasePath = base_path(config('database.connections.sqlite.database'));
+        if (!file_exists($databasePath)) {
+            file_put_contents($databasePath, '');
+        }
     }
 
     /**

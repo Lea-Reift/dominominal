@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Crypt;
 /**
  * @property string $setting
  * @property string $name
- * @property string $value
+ * @property mixed $value
  * @property bool $is_encrypted
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
@@ -36,11 +36,20 @@ class Setting extends Model
         'is_encrypted' => false,
     ];
 
+    public function __construct(array $attributes = [])
+    {
+        $attributes = $this->attributes + $attributes;
+        parent::__construct($attributes);
+    }
+
     public function value(): Attribute
     {
         return Attribute::make(
-            get: fn (string $value, array $attributes) => $attributes['is_encrypted'] ? Crypt::decryptString($value) : $value,
-            set: fn (string $value, array $attributes) => $attributes['is_encrypted'] ? Crypt::encryptString($value) : $value,
+            get: function (string $value, array $attributes) {
+                $value = json_validate($value) ? json_decode($value) : $value;
+                return ($attributes['is_encrypted'] ?? false) ? Crypt::decryptString($value) : $value;
+            },
+            set: fn (mixed $value, array $attributes) => json_encode($attributes['is_encrypted'] ? Crypt::encryptString($value) : $value),
         );
     }
 
