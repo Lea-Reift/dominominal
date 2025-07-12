@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.lea-reift.dominominal",
   "build": {
-    "frontendDist": "../../public",
+    "frontendDist": "../public",
     "devUrl": "http://localhost:8000",
-    "beforeDevCommand": "php artisan serve --port=8000",
+    "beforeDevCommand": "",
     "beforeBuildCommand": "npm run build"
   },
   "app": {
