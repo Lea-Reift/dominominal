@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Console\Commands\CompileApp;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Http\Middleware\CheckSetupIsCompletedMiddleware;
 
 $baseDir = dirname(__DIR__);
 return Application::configure(basePath: $baseDir)
@@ -14,8 +16,13 @@ return Application::configure(basePath: $baseDir)
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->prepend([
+            CheckSetupIsCompletedMiddleware::class,
+        ]);
     })
+    ->withCommands([
+        CompileApp::class,
+    ])
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })

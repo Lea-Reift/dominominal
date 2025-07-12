@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
-use App\Http\Middleware\CheckSetupIsCompletedMiddleware;
 use App\Models\Setting;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Support\SalaryAdjustmentParser;
@@ -56,7 +55,6 @@ class MainPanelProvider extends PanelProvider
             ])
             ->sidebarCollapsibleOnDesktop()
             ->middleware([
-                CheckSetupIsCompletedMiddleware::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,

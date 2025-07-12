@@ -473,7 +473,11 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                         ->columnSpan(2),
                     Split::make(fn (?PayrollDetail $record) =>
                         [
-                            TableGrid::make(4)
+                            TableGrid::make([
+                                'sm' => 2,
+                                'xl' => 3,
+                                '2xl' => 4,
+                            ])
                                 ->schema(
                                     ($record->editableSalaryAdjustments ?? $this->record->editableSalaryAdjustments)
                                         ->sortBy('type')

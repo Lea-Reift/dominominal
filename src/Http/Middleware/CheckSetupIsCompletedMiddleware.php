@@ -24,7 +24,10 @@ class CheckSetupIsCompletedMiddleware
             Artisan::call('migrate --force');
         }
 
-        if ($request->path() !== '/' && !(Setting::query()->where(['setting' => 'setup', 'name' => 'is_completed'])->value('value') ?? false)) {
+        if (
+            !in_array($request->path(), ['/', 'livewire/update', 'livewire/livewire.js']) &&
+             !(Setting::query()->where(['setting' => 'setup', 'name' => 'is_completed'])->value('value') ?? false)
+        ) {
             return redirect('/');
         }
 
