@@ -12,8 +12,9 @@ pub fn run() {
         )?;
       }
 
-      let window = app.get_webview_window("main").unwrap();
-            window.maximize().unwrap(); // 👈 Esto maximiza al inicio
+      // Maximize window
+      app.get_webview_window("main").unwrap().maximize().unwrap();
+      
       Ok(())
     })
     .run(tauri::generate_context!())
