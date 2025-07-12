@@ -6,7 +6,6 @@
   "build": {
     "frontendDist": "../public",
     "devUrl": "http://localhost:8000",
-    "beforeDevCommand": "",
     "beforeBuildCommand": "npm run build"
   },
   "app": {
@@ -27,6 +26,10 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "resources": [
+        "./resources/app",
+        "./resources/php"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
