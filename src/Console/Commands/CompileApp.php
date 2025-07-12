@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Facades\Process;
 
 class CompileApp extends Command
@@ -73,10 +74,12 @@ class CompileApp extends Command
             $progressBar->start();
 
             foreach ($commands as $commandKey => $command) {
-                if (!in_array($commandKey, $originalPathCommands)) {
-                    $command = "cd {$tauriResourcesAppPath} && {$command}";
-                }
-                $process = Process::timeout(0)->run($command);
+                $process = Process::timeout(0)
+                    ->unless(
+                        in_array($commandKey, $originalPathCommands),
+                        fn (PendingProcess $process) => $process->path($tauriResourcesAppPath)
+                    )
+                    ->run($command);
 
                 if ($process->failed()) {
                     $this->line('');
@@ -85,27 +88,13 @@ class CompileApp extends Command
                 }
                 $progressBar->advance();
             }
-            // Process::pipe(
-            //     fn (Pipe $pipe) => collect($commands)
-            //         ->each(
-            //             fn (string $command, string $commandKey) => $pipe
-            //                 ->as($commandKey)
-            //                 ->unless(
-            //                     in_array($commandKey, ['delete_dir', 'create_dir', 'tauri_build']),
-            //                     fn (PendingProcess $pipeCommand) => $pipeCommand->path($tauriResourcesAppPath)
-            //                 )
-            //                 ->command($command)
-            //         ),
-            //     function (string $type, string $output, string $commandKey) use ($progressBar, $commands) {
-            //         throw_if($type === 'err', Exception::class, "{$commands[$commandKey]} | {$commandKey} con el error: {$output}");
-            //         $progressBar->advance();
-            //     }
-            // );
         } catch (Exception $e) {
             $this->line('');
             $this->error("El proceso {$e->getMessage()} falló");
             return Command::FAILURE;
         }
+
+        $this->line('');
 
         $progressBar->finish();
 
