@@ -4,8 +4,8 @@ use std::{
     sync::{Arc, Mutex},
     thread,
     time::Duration,
+    os::{windows::process::CommandExt}
 };
-
 
 use tauri::{Manager, WindowEvent};
 
@@ -23,6 +23,7 @@ pub fn run() {
             .current_dir("./resources/app/public")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
+            .creation_flags(0x08000000) // HIDE PHP WINDOW
             .spawn()
             .expect("Fallo al iniciar el servidor de PHP");
 
