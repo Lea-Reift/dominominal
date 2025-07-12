@@ -4,13 +4,13 @@
   "version": "0.1.0",
   "identifier": "com.lea-reift.dominominal",
   "build": {
-    "frontendDist": "../public",
-    "devUrl": "http://localhost:8000",
-    "beforeBuildCommand": "npm run build"
+    "frontendDist": "./resources/app/public",
+    "devUrl": "https://dominominal.test"
   },
   "app": {
     "windows": [
       {
+        "url": "http://localhost:8000",
         "title": "Dominominal",
         "width": 800,
         "height": 600,
