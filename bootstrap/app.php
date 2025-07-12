@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Console\Commands\CompileApp;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,6 +20,9 @@ return Application::configure(basePath: $baseDir)
             CheckSetupIsCompletedMiddleware::class,
         ]);
     })
+    ->withCommands([
+        CompileApp::class,
+    ])
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })
