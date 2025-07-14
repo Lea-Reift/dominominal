@@ -7,7 +7,7 @@ use std::{
     time::Duration,
 };
 
-use tauri::{Manager, WindowEvent,AppHandle};
+use tauri::{AppHandle, Manager, Window, WindowEvent};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -23,9 +23,11 @@ pub fn run() {
             .current_dir("./resources/app/public")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .creation_flags(0x08000000) // HIDE PHP WINDOW
+            .creation_flags(0x08000000)
             .spawn()
             .expect("Fallo al iniciar el servidor de PHP");
+
+        println!("Server Started in port 8000");
 
         let mut lock = process.lock().unwrap();
         *lock = Some(child.id());
@@ -39,7 +41,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            let _ = app.get_webview_window("main")
+            let _ = app.get_webview_window("app")
                        .expect("no main window")
                        .set_focus();
         }))
@@ -55,13 +57,15 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![set_complete])
-        .on_window_event(move |_, event| match event {
+        .on_window_event(move |window: &Window, event: &WindowEvent| match event {
             WindowEvent::CloseRequested { .. } => {
-                if let Some(pid) = cloned_process.lock().unwrap().as_mut() {
-                    Command::new("taskkill")
-                        .args(["/PID", &pid.to_string(), "/F"])
-                        .status()
-                        .expect("Fallo al ejecutar taskkill");
+                if window.label() == "app" {
+                    if let Some(pid) = cloned_process.lock().unwrap().as_mut() {
+                        Command::new("taskkill")
+                            .args(["/PID", &pid.to_string(), "/F"])
+                            .status()
+                            .expect("Fallo al ejecutar taskkill");
+                    }
                 }
             }
             _ => {}
@@ -75,7 +79,7 @@ async fn set_complete(
     app: AppHandle
 ) -> Result<(), ()> {
     let splash_window = app.get_webview_window("splashscreen").unwrap();
-    let main_window = app.get_webview_window("main").unwrap();
+    let main_window = app.get_webview_window("app").unwrap();
     
     splash_window.close().unwrap();
     main_window.show().unwrap();
