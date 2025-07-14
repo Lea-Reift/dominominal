@@ -1,53 +1,54 @@
 {
-  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Dominominal",
-  "version": "0.1.0",
-  "identifier": "com.lea-reift.dominominal",
-  "build": {
-    "frontendDist": "./resources/app/public",
-    "devUrl": "https://dominominal.test"
-  },
-  "app": {
-    "windows": [
-      {
-        "label": "main",
-        "url": "http://localhost:8000",
-        "resizable": true,
-        "fullscreen": false,
-        "zoomHotkeysEnabled": true,
-        "visible": false,
-        "maximized": true
-      },
-      {
-        "label": "splashscreen",
-        "url": "http://localhost:8000/splashscreen",
-        "center": true,
-        "closable": false,
-        "decorations": false,
-        "width": 180,
-        "height": 50,
-        "resizable": false,
-        "visible": true,
-        "alwaysOnTop": true
-      }
-    ],
-    "security": {
-      "csp": null
+    "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+    "productName": "Dominominal",
+    "version": "0.1.0",
+    "identifier": "com.lea-reift.dominominal",
+    "build": {
+        "frontendDist": "./resources/app/public",
+        "devUrl": "https://dominominal.test"
+    },
+    "app": {
+        "windows": [
+            {
+                "label": "splashscreen",
+                "url": "http://localhost:8000/splashscreen.html",
+                "center": true,
+                "closable": false,
+                "decorations": false,
+                "width": 180,
+                "height": 50,
+                "resizable": false,
+                "visible": true,
+                "alwaysOnTop": true
+            },
+            {
+                "label": "app",
+                "url": "http://localhost:8000",
+                "title": "Dominominal",
+                "resizable": true,
+                "fullscreen": false,
+                "zoomHotkeysEnabled": true,
+                "visible": false,
+                "maximized": true
+            }
+        ],
+        "security": {
+            "csp": null
+        }
+    },
+    "bundle": {
+        "active": true,
+        "targets": "all",
+        "resources": [
+            "./resources/app",
+            "./resources/php"
+        ],
+        "icon": [
+            "icons/32x32.png",
+            "icons/128x128.png",
+            "icons/128x128@2x.png",
+            "icons/icon.icns",
+            "icons/icon.ico"
+        ]
     }
-  },
-  "bundle": {
-    "active": true,
-    "targets": "all",
-    "resources": [
-        "./resources/app",
-        "./resources/php"
-    ],
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ]
-  }
 }
