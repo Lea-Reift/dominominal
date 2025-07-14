@@ -43,24 +43,22 @@ class CompileApp extends Command
             'routes',
             'src',
             'storage',
-            '.env',
             'artisan',
             'composer.json',
-            'composer.lock',
-            'package-lock.json',
-            'package.json',
-            'vite.config.js',
+            'composer.lock',,
         ];
 
         $projectFilesConcant = join(',', $projectProductionFiles);
 
+        $envProdPath = base_path('.env.production');
         $commands = [
             'delete_dir' => "rm -rf {$tauriResourcesAppPath}",
             'create_dir' => "mkdir {$tauriResourcesAppPath}",
-            'copy_project' => "cp -r ./{{$projectFilesConcant}} {$tauriResourcesAppPath}",
-            'composer_install' => 'composer install --optimize-autoloader --no-dev -a',
-            'npm_install' => 'npm install --omit=dev',
+            'set_env' => "cp {$envProdPath} {$tauriResourcesAppPath}/.env",
             'npm_build' => 'npm run build',
+            'copy_project' => "cp -r ./{{$projectFilesConcant}} {$tauriResourcesAppPath}",
+            'reset_database' => "rm -f {$tauriResourcesAppPath}/../dominominal.sqlite && touch {$tauriResourcesAppPath}/../dominominal.sqlite",
+            'composer_install' => 'composer install --optimize-autoloader --no-dev -a',
             'artisan_optimize' => 'php artisan optimize',
             'filament_optimize' => 'php artisan filament:optimize',
             'tauri_build' => 'npx tauri build',
@@ -74,6 +72,10 @@ class CompileApp extends Command
             $progressBar->start();
 
             foreach ($commands as $commandKey => $command) {
+                if ($commandKey === 'npm_build') {
+                    $oldManifestFiles = $this->getManifestFiles();
+                }
+
                 $process = Process::timeout(0)
                     ->unless(
                         in_array($commandKey, $originalPathCommands),
@@ -86,6 +88,11 @@ class CompileApp extends Command
                     $this->error("{$command} | {$commandKey} con el error: {$process->errorOutput()}");
                     return Command::FAILURE;
                 }
+
+                if ($commandKey === 'npm_build') {
+                    $this->generateSplashscreen($oldManifestFiles);
+                }
+
                 $progressBar->advance();
             }
         } catch (Exception $e) {
@@ -100,5 +107,28 @@ class CompileApp extends Command
 
         $this->info('Programa compilado con exito!!!!');
         return Command::SUCCESS;
+    }
+
+    public function generateSplashscreen(array $oldManifestFiles): void
+    {
+        $manifestFiles = $this->getManifestFiles();
+
+        $splashscreen = file_get_contents(base_path('public/splashscreen.html'));
+
+        $splashscreen = str_replace($oldManifestFiles, $manifestFiles, $splashscreen);
+        file_put_contents(base_path('public/splashscreen.html'), $splashscreen);
+    }
+
+    public function getManifestFiles(): array
+    {
+        $manifestPath = 'public/build/manifest.json';
+
+        if (!file_exists($manifestPath)) {
+            return ['', ''];
+        }
+
+        $manifest = json_decode(file_get_contents($manifestPath), true);
+
+        return [$manifest['resources/js/app.js']['file'], $manifest['resources/css/app.css']['file']];
     }
 }
