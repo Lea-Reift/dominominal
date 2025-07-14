@@ -45,7 +45,7 @@ class CompileApp extends Command
             'storage',
             'artisan',
             'composer.json',
-            'composer.lock',,
+            'composer.lock',
         ];
 
         $projectFilesConcant = join(',', $projectProductionFiles);
