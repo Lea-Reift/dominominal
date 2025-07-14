@@ -7,7 +7,7 @@ use std::{
     time::Duration,
 };
 
-use tauri::{Manager, WindowEvent};
+use tauri::{Manager, WindowEvent,AppHandle};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -52,10 +52,9 @@ pub fn run() {
                 )?;
             }
 
-            app.get_webview_window("main").unwrap().maximize().unwrap();
-
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![set_complete])
         .on_window_event(move |_, event| match event {
             WindowEvent::CloseRequested { .. } => {
                 if let Some(pid) = cloned_process.lock().unwrap().as_mut() {
@@ -69,4 +68,17 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[tauri::command]
+async fn set_complete(
+    app: AppHandle
+) -> Result<(), ()> {
+    let splash_window = app.get_webview_window("splashscreen").unwrap();
+    let main_window = app.get_webview_window("main").unwrap();
+    
+    splash_window.close().unwrap();
+    main_window.show().unwrap();
+    
+    Ok(())
 }
