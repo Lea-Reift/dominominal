@@ -51,13 +51,18 @@ class CompileApp extends Command
         $projectFilesConcant = join(',', $projectProductionFiles);
 
         $envProdPath = base_path('.env.production');
+
+        $assetsCommands = [
+            'npm_build' => 'npm run build',
+            'generate_splash' => 'php artisan generate-splash',
+        ];
+
         $commands = [
             'delete_dir' => "rm -rf {$tauriResourcesAppPath}",
             'create_dir' => "mkdir {$tauriResourcesAppPath}",
+            ...$assetsCommands,
             'set_env' => "cp {$envProdPath} {$tauriResourcesAppPath}/.env",
-            'npm_build' => 'npm run build',
             'copy_project' => "cp -r ./{{$projectFilesConcant}} {$tauriResourcesAppPath}",
-            'reset_database' => "rm -f {$tauriResourcesAppPath}/../dominominal.sqlite && touch {$tauriResourcesAppPath}/../dominominal.sqlite",
             'composer_install' => 'composer install --optimize-autoloader --no-dev -a',
             'artisan_optimize' => 'php artisan optimize',
             'filament_optimize' => 'php artisan filament:optimize',
@@ -65,23 +70,23 @@ class CompileApp extends Command
         ];
 
         if ($this->option('only-assets')) {
-            $commands = [
-                'npm_build' => 'npm run build',
-            ];
+            $commands = $assetsCommands;
         }
 
-        $progressBar = $this->output->createProgressBar(count($commands));
+        $originalPathCommands = [
+            'delete_dir',
+            'create_dir',
+            'tauri_build',
+            'copy_project',
+            'generate_splash',
+        ];
 
-        $originalPathCommands = ['delete_dir', 'create_dir', 'tauri_build', 'copy_project'];
+        $progressBar = $this->output->createProgressBar(count($commands));
 
         try {
             $progressBar->start();
 
             foreach ($commands as $commandKey => $command) {
-                if ($commandKey === 'npm_build') {
-                    $oldManifestFiles = $this->getManifestFiles();
-                }
-
                 $process = Process::timeout(0)
                     ->unless(
                         in_array($commandKey, $originalPathCommands),
@@ -93,10 +98,6 @@ class CompileApp extends Command
                     $this->line('');
                     $this->error("{$command} | {$commandKey} con el error: {$process->errorOutput()}");
                     return Command::FAILURE;
-                }
-
-                if ($commandKey === 'npm_build' && !empty($oldManifestFiles)) {
-                    $this->generateSplashscreen($oldManifestFiles);
                 }
 
                 $progressBar->advance();
@@ -113,28 +114,5 @@ class CompileApp extends Command
 
         $this->info('Programa compilado con exito!!!!');
         return Command::SUCCESS;
-    }
-
-    public function generateSplashscreen(array $oldManifestFiles): void
-    {
-        $manifestFiles = $this->getManifestFiles();
-
-        $splashscreen = file_get_contents(base_path('public/splashscreen.html'));
-
-        $splashscreen = str_replace($oldManifestFiles, $manifestFiles, $splashscreen);
-        file_put_contents(base_path('public/splashscreen.html'), $splashscreen);
-    }
-
-    public function getManifestFiles(): array
-    {
-        $manifestPath = 'public/build/manifest.json';
-
-        if (!file_exists($manifestPath)) {
-            return ['', ''];
-        }
-
-        $manifest = json_decode(file_get_contents($manifestPath), true);
-
-        return [$manifest['resources/js/app.js']['file'], $manifest['resources/css/app.css']['file']];
     }
 }
