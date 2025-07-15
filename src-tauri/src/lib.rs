@@ -1,20 +1,20 @@
 use std::{
-    net::TcpStream,
     os::windows::process::CommandExt,
+    net::TcpStream,
     process::{Command, Stdio},
     sync::{Arc, Mutex},
     thread,
     time::Duration,
 };
 
-use tauri::{AppHandle, Manager, Window, WindowEvent};
+use tauri::{AppHandle, Manager};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let process = Arc::new(Mutex::new(None));
 
     if TcpStream::connect("127.0.0.1:8000").is_err() {
-        let child = Command::new("./resources/php/php.exe")
+        let child = Command::new("./resources/php.exe")
             .args([
                 "-S",
                 "127.0.0.1:8000",
@@ -37,13 +37,14 @@ pub fn run() {
         }
     }
 
-    let cloned_process = process.clone();
+    let cloned_process: Arc<Mutex<Option<u32>>> = process.clone();
 
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            let _ = app.get_webview_window("app")
-                       .expect("no main window")
-                       .set_focus();
+            let _ = app
+                .get_webview_window("app")
+                .expect("no main window")
+                .set_focus();
         }))
         .setup(|app| {
             if cfg!(debug_assertions) {
@@ -57,32 +58,31 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![set_complete])
-        .on_window_event(move |window: &Window, event: &WindowEvent| match event {
-            WindowEvent::CloseRequested { .. } => {
-                if window.label() == "app" {
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(move|_: &AppHandle, event: tauri::RunEvent| {
+            match event {
+                tauri::RunEvent::Exit => {
                     if let Some(pid) = cloned_process.lock().unwrap().as_mut() {
                         Command::new("taskkill")
                             .args(["/PID", &pid.to_string(), "/F"])
+                            .creation_flags(0x08000000)
                             .status()
                             .expect("Fallo al ejecutar taskkill");
                     }
                 }
+                _ => {}
             }
-            _ => {}
-        })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        });
 }
 
 #[tauri::command]
-async fn set_complete(
-    app: AppHandle
-) -> Result<(), ()> {
+async fn set_complete(app: AppHandle) -> Result<(), ()> {
     let splash_window = app.get_webview_window("splashscreen").unwrap();
     let main_window = app.get_webview_window("app").unwrap();
-    
-    splash_window.close().unwrap();
+
     main_window.show().unwrap();
-    
+    splash_window.close().unwrap();
+
     Ok(())
 }
