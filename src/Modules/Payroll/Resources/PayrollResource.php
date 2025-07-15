@@ -10,7 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables\Table;
 use App\Modules\Payroll\Resources\PayrollResource\Pages\ManageCompanyPayrollDetails;
 use Filament\Forms\Components\Select;
-use App\Enums\PayrollTypeEnum;
+use App\Enums\SalaryTypeEnum;
 use Coolsam\Flatpickr\Forms\Components\Flatpickr;
 use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\CheckboxList;
@@ -42,8 +42,8 @@ class PayrollResource extends Resource
                     ->label('Tipo')
                     ->required()
                     ->live()
-                    ->default(PayrollTypeEnum::MONTHLY->value)
-                    ->options(PayrollTypeEnum::class)
+                    ->default(SalaryTypeEnum::MONTHLY->value)
+                    ->options(SalaryTypeEnum::class)
                     ->native(false),
 
                 Flatpickr::make('period')
@@ -58,12 +58,12 @@ class PayrollResource extends Resource
                                 is_null($record),
                                 fn (Unique $rule) => $rule
                                     ->where('company_id', $record->company_id)
-                                    ->where('type', PayrollTypeEnum::MONTHLY)
+                                    ->where('type', SalaryTypeEnum::MONTHLY)
                             )
                     )
                     ->default(now())
-                    ->visible(fn (Get $get) => PayrollTypeEnum::tryFrom(intval($get('type')))?->isMonthly())
-                    ->disabled(fn (Get $get) => PayrollTypeEnum::tryFrom(intval($get('type')))?->isNotMonthly())
+                    ->visible(fn (Get $get) => SalaryTypeEnum::tryFrom(intval($get('type')))?->isMonthly())
+                    ->disabled(fn (Get $get) => SalaryTypeEnum::tryFrom(intval($get('type')))?->isNotMonthly())
                     ->displayFormat('F-Y')
                     ->closeOnDateSelection()
                     ->required(),
@@ -80,11 +80,11 @@ class PayrollResource extends Resource
                                 is_null($record),
                                 fn (Unique $rule) => $rule
                                     ->where('company_id', $record->company_id)
-                                    ->where('type', PayrollTypeEnum::BIWEEKLY)
+                                    ->where('type', SalaryTypeEnum::BIWEEKLY)
                             )
                     )
-                    ->visible(fn (Get $get) => PayrollTypeEnum::tryFrom(intval($get('type'))) === PayrollTypeEnum::BIWEEKLY)
-                    ->disabled(fn (Get $get) => PayrollTypeEnum::tryFrom(intval($get('type'))) !== PayrollTypeEnum::BIWEEKLY)
+                    ->visible(fn (Get $get) => SalaryTypeEnum::tryFrom(intval($get('type'))) === SalaryTypeEnum::BIWEEKLY)
+                    ->disabled(fn (Get $get) => SalaryTypeEnum::tryFrom(intval($get('type'))) !== SalaryTypeEnum::BIWEEKLY)
                     ->displayFormat('d-m-Y')
                     ->closeOnDateSelection()
                     ->required(),

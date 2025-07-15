@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Models;
 
-use App\Enums\PayrollTypeEnum;
+use App\Enums\SalaryTypeEnum;
 use App\Modules\Company\Models\Company;
 use App\Modules\Company\Models\Employee;
 use Illuminate\Database\Eloquent\Model;
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 /**
  * @property int $id
  * @property int $company_id
- * @property PayrollTypeEnum $type
+ * @property SalaryTypeEnum $type
  * @property Carbon $period
  * @property-read Company $company
  * @property-read PayrollDisplay $display
@@ -43,7 +43,7 @@ class Payroll extends Model
     ];
 
     protected $casts = [
-        'type' => PayrollTypeEnum::class,
+        'type' => SalaryTypeEnum::class,
         'period' => 'date:Y-m-d',
     ];
 

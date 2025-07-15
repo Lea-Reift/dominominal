@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Enums\PayrollTypeEnum;
+use App\Enums\SalaryTypeEnum;
 use App\Modules\Company\Models\Company;
 use App\Modules\Payroll\Models\Payroll;
 use Illuminate\Database\Migrations\Migration;
@@ -19,7 +19,7 @@ return new class () extends Migration {
             $table->id();
             $table->foreignIdFor(Company::class)->constrained();
             $table->foreignIdFor(Payroll::class, 'monthly_payroll_id')->nullable()->constrained();
-            $table->tinyInteger('type')->default(PayrollTypeEnum::MONTHLY);
+            $table->tinyInteger('type')->default(SalaryTypeEnum::MONTHLY);
             $table->date('period');
             $table->timestamps();
         });

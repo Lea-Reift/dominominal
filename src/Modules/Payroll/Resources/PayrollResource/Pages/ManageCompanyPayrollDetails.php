@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Payroll\Resources\PayrollResource\Pages;
 
 use App\Concerns\HasEmployeeForm;
-use App\Enums\PayrollTypeEnum;
+use App\Enums\SalaryTypeEnum;
 use App\Modules\Company\Models\Employee;
 use App\Modules\Company\Resources\CompanyResource;
 use App\Modules\Company\Resources\CompanyResource\Pages\ViewCompany;
@@ -78,8 +78,8 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
     public function __construct()
     {
-        $this->importEmployeeTabId = $this->formTabsId.'-import-employee-tab';
-        $this->addEmployeeTabId = $this->formTabsId.'-add-employee-tab';
+        $this->importEmployeeTabId = $this->formTabsId . '-import-employee-tab';
+        $this->addEmployeeTabId = $this->formTabsId . '-add-employee-tab';
         $this->activeFormTab = $this->importEmployeeTabId;
     }
 
@@ -183,7 +183,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
             $format = 'd \d\e F \d\e\l Y';
         }
 
-        $period = $connector.' '.str($this->record->period->translatedFormat($format))->headline();
+        $period = $connector . ' ' . str($this->record->period->translatedFormat($format))->headline();
 
         return "Detalles de la nómina {$period} de {$this->record->company->name}";
     }
@@ -323,7 +323,6 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                                     'employee_id' => $employee->id,
                                     'salary_id' => $employee->salary->id,
                                 ]));
-
                         } else {
                             $employee = Employee::query()->create([
                                 ...$data,
@@ -354,7 +353,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
             ])
             ->actions(
                 position: ActionsPosition::BeforeColumns,
-                actions:[
+                actions: [
                     ActionGroup::make([
                         Action::make('edit_available_adjustments')
                             ->disabled($this->record->type->isMonthly())
@@ -428,7 +427,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                 ->label('Empleado'),
             TextColumn::make('salary')
                 ->label('Salario')
-                ->formatStateUsing(fn (PayrollDetail $record) => 'Salario: '.Number::currency($record->getParsedPayrollSalary()))
+                ->formatStateUsing(fn (PayrollDetail $record) => 'Salario: ' . Number::currency($record->getParsedPayrollSalary()))
                 ->summarize(
                     Summarizer::make()
                         ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('rawSalary'))
@@ -438,7 +437,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
             TextColumn::make('incomes')
                 ->label('Ingresos')
                 ->money()
-                ->state(fn (PayrollDetail $record) => ($hasAdjustments ? 'Ingresos: ' : '').Number::currency((new PayrollDetailDisplay($record))->incomeTotal))
+                ->state(fn (PayrollDetail $record) => ($hasAdjustments ? 'Ingresos: ' : '') . Number::currency((new PayrollDetailDisplay($record))->incomeTotal))
                 ->summarize(
                     Summarizer::make()
                         ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('incomeTotal'))
@@ -472,22 +471,22 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                         ])
                         ->columnSpan(2),
                     Split::make(fn (?PayrollDetail $record) =>
-                        [
-                            TableGrid::make([
-                                'sm' => 2,
-                                'xl' => 3,
-                                '2xl' => 4,
-                            ])
-                                ->schema(
-                                    ($record->editableSalaryAdjustments ?? $this->record->editableSalaryAdjustments)
-                                        ->sortBy('type')
-                                        ->map(
-                                            fn (SalaryAdjustment $adjustment) =>
-                                            SalaryAdjustmentColumn::make("salaryAdjustments.{$adjustment->id}.{$this->record->id}")
-                                        )
-                                        ->toArray()
-                                ),
+                    [
+                        TableGrid::make([
+                            'sm' => 2,
+                            'xl' => 3,
+                            '2xl' => 4,
                         ])
+                            ->schema(
+                                ($record->editableSalaryAdjustments ?? $this->record->editableSalaryAdjustments)
+                                    ->sortBy('type')
+                                    ->map(
+                                        fn (SalaryAdjustment $adjustment) =>
+                                        SalaryAdjustmentColumn::make("salaryAdjustments.{$adjustment->id}.{$this->record->id}")
+                                    )
+                                    ->toArray()
+                            ),
+                    ])
                         ->columnSpan(8),
                 ]),
 
@@ -524,7 +523,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
         $payroll = tap($this->record->replicate()
             ->unsetRelations()
             ->fill([
-                'type' => PayrollTypeEnum::BIWEEKLY,
+                'type' => SalaryTypeEnum::BIWEEKLY,
                 'period' => $period,
                 'monthly_payroll_id' => $this->record->id,
             ]))
