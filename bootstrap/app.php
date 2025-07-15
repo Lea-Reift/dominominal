@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Console\Commands\CompileApp;
+use App\Console\Commands\GenerateSplashscreenCommand;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,6 +23,7 @@ return Application::configure(basePath: $baseDir)
     })
     ->withCommands([
         CompileApp::class,
+        GenerateSplashscreenCommand::class,
     ])
     ->withExceptions(function (Exceptions $exceptions): void {
         //
