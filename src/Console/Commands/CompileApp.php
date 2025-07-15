@@ -89,7 +89,7 @@ class CompileApp extends Command
                     return Command::FAILURE;
                 }
 
-                if ($commandKey === 'npm_build') {
+                if ($commandKey === 'npm_build' && !empty($oldManifestFiles)) {
                     $this->generateSplashscreen($oldManifestFiles);
                 }
 
