@@ -25,8 +25,8 @@ class CheckSetupIsCompletedMiddleware
         }
 
         if (
-            !in_array($request->path(), ['/', 'livewire/update', 'livewire/livewire.js']) &&
-             !(Setting::query()->where(['setting' => 'setup', 'name' => 'is_completed'])->value('value') ?? false)
+            str_starts_with($request->path(), 'main') &&
+            !(Setting::query()->where(['setting' => 'setup', 'name' => 'is_completed'])->value('value') ?? false)
         ) {
             return redirect('/');
         }
