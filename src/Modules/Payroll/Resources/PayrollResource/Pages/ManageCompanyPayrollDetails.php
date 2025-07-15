@@ -20,16 +20,10 @@ use App\Tables\Columns\SalaryAdjustmentColumn;
 use Filament\Actions\Action as BaseAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\Component;
-use Filament\Forms\Components\Tabs;
-use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRelatedRecords;
-use Filament\Support\Enums\ActionSize;
-use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\MaxWidth;
-use Filament\Support\Exceptions\Halt;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Actions\DeleteAction;
@@ -48,7 +42,13 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\PaymentVoucherMail;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Collection;
+use Filament\Support\Enums\ActionSize;
 use Illuminate\Support\Facades\DB;
+use Filament\Support\Enums\Alignment;
+use Filament\Support\Exceptions\Halt;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Component;
+use Filament\Forms\Components\Tabs\Tab;
 
 /**
  * @property Payroll $record
@@ -199,36 +199,6 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
     public function table(Table $table): Table
     {
-        $tabs = Tabs::make()
-            ->id($this->formTabsId);
-
-        $employeeListTab = Tab::make('import_employee')
-            ->label('Importar Empleados')
-            ->visible($this->showImportEmployeeTab)
-            ->live()
-            ->schema([
-                CheckboxList::make('employees')
-                    ->hiddenLabel()
-                    ->dehydrated(fn (Component $component) => $component->getContainer()->getParentComponent()->isDisabled())
-                    ->disabled(fn (Component $component) => $component->getContainer()->getParentComponent()->isDisabled())
-                    ->options(
-                        fn () => $this->record->company->employees()
-                            ->whereNotIn('id', $this->record->employees()->select('employees.id'))
-                            ->get()
-                            ->pluck('full_name', 'id')
-                    )
-                    ->bulkToggleable()
-                    ->searchable()
-                    ->columns(2)
-                    ->columnSpanFull(),
-            ]);
-
-        $employeeFormTab = Tab::make('add_employee')
-            ->label('Crear Empleado')
-            ->live()
-            ->columns(2)
-            ->schema(fn (Component $component) => $this->fields(enabled: ! $component->isDisabled(), nested: true));
-
         $disableSecondaryPayrolls =  Payroll::query()
             ->whereIn(
                 'period',
@@ -240,134 +210,8 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
             ->paginated(false)
             ->recordTitleAttribute('employee_id')
             ->headerActions([
-                Action::make('secondary_payrolls')
-                    ->label('Generar nóminas secundarias')
-                    ->modalHeading('Generar nóminas al...')
-                    ->visible(fn () => $this->record->type->isMonthly())
-                    ->size(ActionSize::Small)
-                    ->modalIcon('heroicon-s-clipboard-document')
-                    ->databaseTransaction()
-                    ->form([
-                        CheckboxList::make('dates')
-                            ->label('')
-                            ->bulkToggleable()
-                            ->hint(function () use ($disableSecondaryPayrolls) {
-                                $hasEmployeesWithMonthlySalary = $this->record->employees
-                                    ->filter(fn (Employee $employee) => $employee->salary->type->isMonthly())
-                                    ->isNotEmpty();
-
-                                return match (true) {
-                                    $disableSecondaryPayrolls => 'Las nóminas del mes ya fueron generadas',
-                                    $hasEmployeesWithMonthlySalary => 'Los empleados con salarios mensuales no aparecerán en nominas de la primera quincena del mes',
-                                    default => '',
-                                };
-                            })
-                            ->hintColor('warning')
-                            ->validationMessages([
-                                'required' => 'Debe seleccionar al menos una fecha'
-                            ])
-                            ->required()
-                            ->gridDirection('row')
-                            ->default(
-                                fn () => DB::query()
-                                    ->from($this->record->getTable())
-                                    ->select('period')
-                                    ->whereIn(
-                                        'period',
-                                        Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->setDay($day)->toDateString()])
-                                    )
-                                    ->pluck('period')
-                                    ->toArray()
-                            )
-                            ->columns(2)
-                            ->dehydrated(!$disableSecondaryPayrolls)
-                            ->disableOptionWhen(fn (string $value) => Payroll::query()->whereDate('period', $this->record->period->setDay(intval($value)))->exists())
-                            ->options(Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->translatedFormat("{$day} \\d\\e F")])),
-                    ])
-                    ->color('success')
-                    ->modalWidth(MaxWidth::Small)
-                    ->modalFooterActionsAlignment(Alignment::Center)
-                    ->modalSubmitAction($disableSecondaryPayrolls ? false : null)
-                    ->action(function (array $data) {
-                        foreach ($data['dates'] as $day) {
-                            try {
-                                $this->generateSecondaryPayroll(intval($day));
-                            } catch (DuplicatedPayrollException $e) {
-                                Notification::make()
-                                    ->title('Nóminas Secundarias')
-                                    ->danger()
-                                    ->body($e->getMessage())
-                                    ->send();
-
-                                throw new Halt();
-                            }
-                        }
-
-                        Notification::make()
-                            ->title('Nóminas Secundarias')
-                            ->success()
-                            ->body('Nóminas generadas con éxito')
-                            ->send();
-                    }),
-                Action::make('add_employees')
-                    ->mountUsing(function (Form $form) {
-                        $form->fill();
-                        $this->setCurrentFormTab('0');
-                    })
-                    ->modalHeading('')
-                    ->label('Añadir empleados')
-                    ->slideOver()
-                    ->form([
-                        $tabs
-                            ->tabs([
-                                $employeeListTab
-                                    ->disabled(fn () => $this->activeFormTab === $this->addEmployeeTabId)
-                                    ->dehydrated(fn () => $this->activeFormTab !== $this->addEmployeeTabId),
-                                $employeeFormTab
-                                    ->disabled(fn () => $this->activeFormTab === $this->importEmployeeTabId)
-                                    ->dehydrated(fn () => $this->activeFormTab !== $this->importEmployeeTabId),
-                            ])
-                            ->extraAttributes([
-                                'wire:click' => 'setCurrentFormTab(tab)',
-                            ]),
-                    ])
-                    ->databaseTransaction()
-                    ->action(function (array $data, Action $action) {
-                        $payrollDetails = Collection::make();
-
-                        if (isset($data['employees'])) {
-                            $payrollDetails = Employee::query()->whereIn('id', $data['employees'])->with('salary')->get(['id'])
-                                ->map(fn (Employee $employee) => new PayrollDetail([
-                                    'employee_id' => $employee->id,
-                                    'salary_id' => $employee->salary->id,
-                                ]));
-                        } else {
-                            $employee = Employee::query()->create([
-                                ...$data,
-                                'company_id' => $this->record->company_id
-                            ]);
-
-                            $employee->salary()->create($data['salary']);
-                            $payrollDetails->push(new PayrollDetail(['employee_id' => $employee->id, 'salary_id' => $employee->salary->id]));
-                        }
-
-                        /** @var Collection<int, salaryAdjustment> $details */
-                        $details = $this->record->details()->saveMany($payrollDetails);
-
-                        $adjustmentsForDetails = $this->record->salaryAdjustments->mapWithKeys(fn (SalaryAdjustment $payrollAdjustment) => [
-                            $payrollAdjustment->id => ['custom_value' => null],
-                        ]);
-
-                        // @phpstan-ignore-next-line
-                        $details->each(fn (PayrollDetail $detail) => $detail->salaryAdjustments()->sync($adjustmentsForDetails));
-
-                        return $action->sendSuccessNotification();
-                    })
-                    ->successNotification(
-                        Notification::make()
-                            ->success()
-                            ->title('Empleados agregados con éxito')
-                    ),
+                $this->secondaryPayrollsTableAction($disableSecondaryPayrolls),
+                $this->addEmployeesTableAction(),
             ])
             ->actions(
                 position: ActionsPosition::BeforeColumns,
@@ -431,7 +275,11 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                                     ->send();
                             }),
                         DeleteAction::make()
-                            ->modalHeading(fn (PayrollDetail $record) => "Eliminar a {$record->employee->full_name} de la nómina"),
+                            ->modalHeading(fn (PayrollDetail $record) => "Eliminar a {$record->employee->full_name} de la nómina")
+                            ->after(function () {
+                                $this->mount($this->record->id);
+                                $this->setCurrentFormTab($this->activeFormTab);
+                            })
                     ])
                         ->button()
                         ->label('Opciones')
@@ -592,5 +440,179 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
         $relation->syncWithoutDetaching($salaryAdjustmentsToAdd);
         $relation->detach($salaryAdjustmentsToRemove);
+    }
+
+    protected function secondaryPayrollsTableAction(bool $disableSecondaryPayrolls): Action
+    {
+        return Action::make('secondary_payrolls')
+            ->label('Generar nóminas secundarias')
+            ->modalHeading('Generar nóminas al...')
+            ->visible(fn () => $this->record->type->isMonthly())
+            ->size(ActionSize::Small)
+            ->modalIcon('heroicon-s-clipboard-document')
+            ->databaseTransaction()
+            ->form([
+                CheckboxList::make('dates')
+                    ->label('')
+                    ->bulkToggleable()
+                    ->hint(function () use ($disableSecondaryPayrolls) {
+                        $hasEmployeesWithMonthlySalary = $this->record->employees
+                            ->filter(fn (Employee $employee) => $employee->salary->type->isMonthly())
+                            ->isNotEmpty();
+
+                        return match (true) {
+                            $disableSecondaryPayrolls => 'Las nóminas del mes ya fueron generadas',
+                            $hasEmployeesWithMonthlySalary => 'Los empleados con salarios mensuales no aparecerán en nominas de la primera quincena del mes',
+                            default => '',
+                        };
+                    })
+                    ->hintColor('warning')
+                    ->validationMessages([
+                        'required' => 'Debe seleccionar al menos una fecha'
+                    ])
+                    ->required()
+                    ->gridDirection('row')
+                    ->default(
+                        fn () => DB::query()
+                            ->from($this->record->getTable())
+                            ->select('period')
+                            ->whereIn(
+                                'period',
+                                Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->setDay($day)->toDateString()])
+                            )
+                            ->pluck('period')
+                            ->toArray()
+                    )
+                    ->columns(2)
+                    ->dehydrated(!$disableSecondaryPayrolls)
+                    ->disableOptionWhen(fn (string $value) => Payroll::query()->whereDate('period', $this->record->period->setDay(intval($value)))->exists())
+                    ->options(Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->translatedFormat("{$day} \\d\\e F")])),
+            ])
+            ->color('success')
+            ->modalWidth(MaxWidth::Small)
+            ->modalFooterActionsAlignment(Alignment::Center)
+            ->modalSubmitAction($disableSecondaryPayrolls ? false : null)
+            ->action(function (array $data) {
+                foreach ($data['dates'] as $day) {
+                    try {
+                        $this->generateSecondaryPayroll(intval($day));
+                    } catch (DuplicatedPayrollException $e) {
+                        Notification::make()
+                            ->title('Nóminas Secundarias')
+                            ->danger()
+                            ->body($e->getMessage())
+                            ->send();
+
+                        throw new Halt();
+                    }
+                }
+
+                Notification::make()
+                    ->title('Nóminas Secundarias')
+                    ->success()
+                    ->body('Nóminas generadas con éxito')
+                    ->send();
+            });
+    }
+
+    protected function addEmployeesTableAction(): Action
+    {
+        $action = function (array $data, Action $action) {
+            $isRegisteringEmployee = empty($data['employees']);
+            $payrollDetails = Collection::make()
+                ->unless(
+                    $isRegisteringEmployee,
+                    fn (Collection $payrollDetails) => $payrollDetails
+                        ->union(Employee::query()->whereIn('id', $data['employees'])->with('salary')->get(['id'])
+                            ->map(fn (Employee $employee) => new PayrollDetail([
+                                'employee_id' => $employee->id,
+                                'salary_id' => $employee->salary->id,
+                            ])))
+                )
+                ->when(
+                    $isRegisteringEmployee,
+                    function (Collection $payrollDetails) use ($data) {
+                        $employee = Employee::query()->create([
+                            ...$data,
+                            'company_id' => $this->record->company_id
+                        ]);
+
+                        $employee->salary()->create($data['salary']);
+                        $payrollDetails->push(new PayrollDetail(['employee_id' => $employee->id, 'salary_id' => $employee->salary->id]));
+                    }
+                );
+
+
+            /** @var Collection<int, salaryAdjustment> $details */
+            $details = $this->record->details()->saveMany($payrollDetails);
+
+            $adjustmentsForDetails = $this->record->salaryAdjustments->mapWithKeys(fn (SalaryAdjustment $payrollAdjustment) => [
+                $payrollAdjustment->id => ['custom_value' => null],
+            ]);
+
+            $details->each(fn (PayrollDetail $detail) => $detail->salaryAdjustments()->sync($adjustmentsForDetails));
+            $this->mount($this->record->id);
+            return $action->sendSuccessNotification();
+        };
+
+        $tabs = Tabs::make()
+            ->id($this->formTabsId);
+
+        $employeeListTab = Tab::make('import_employee')
+            ->label('Importar Empleados')
+            ->visible($this->showImportEmployeeTab)
+            ->live()
+            ->schema([
+                CheckboxList::make('employees')
+                    ->hiddenLabel()
+                    ->dehydrated(fn (Component $component) => $component->getContainer()->getParentComponent()->isDisabled())
+                    ->disabled(fn (Component $component) => $component->getContainer()->getParentComponent()->isDisabled())
+                    ->options(
+                        fn () => $this->record->company->employees()
+                            ->whereNotIn('id', $this->record->employees()->select('employees.id'))
+                            ->get()
+                            ->pluck('full_name', 'id')
+                    )
+                    ->bulkToggleable()
+                    ->searchable()
+                    ->columns(2)
+                    ->columnSpanFull(),
+            ]);
+
+        $employeeFormTab = Tab::make('add_employee')
+            ->label('Crear Empleado')
+            ->live()
+            ->columns(2)
+            ->schema(fn (Component $component) => $this->fields(enabled: ! $component->isDisabled(), nested: true));
+
+        return Action::make('add_employees')
+            ->mountUsing(function (Form $form) {
+                $form->fill();
+                $this->setCurrentFormTab('0');
+            })
+            ->modalHeading('')
+            ->label('Añadir empleados')
+            ->slideOver()
+            ->form([
+                $tabs
+                    ->tabs([
+                        $employeeListTab
+                            ->disabled(fn () => $this->activeFormTab === $this->addEmployeeTabId)
+                            ->dehydrated(fn () => $this->activeFormTab !== $this->addEmployeeTabId),
+                        $employeeFormTab
+                            ->disabled(fn () => $this->activeFormTab === $this->importEmployeeTabId)
+                            ->dehydrated(fn () => $this->activeFormTab !== $this->importEmployeeTabId),
+                    ])
+                    ->extraAttributes([
+                        'wire:click' => 'setCurrentFormTab(tab)',
+                    ]),
+            ])
+            ->databaseTransaction()
+            ->action($action)
+            ->successNotification(
+                Notification::make()
+                    ->success()
+                    ->title('Empleados agregados con éxito')
+            );
     }
 }
