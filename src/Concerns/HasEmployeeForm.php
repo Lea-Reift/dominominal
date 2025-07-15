@@ -32,6 +32,42 @@ trait HasEmployeeForm
             $salaryFieldNames = array_map(array: $salaryFieldNames, callback: fn (string $fieldName) => "salary.{$fieldName}");
         }
 
+        $salaryDistribution = [
+            ToggleButtons::make($salaryFieldNames['distribution_format'])
+                ->options(SalaryDistributionFormatEnum::class)
+                ->label('Formato')
+                ->inline()
+                ->live()
+                ->default(SalaryDistributionFormatEnum::PERCENTAGE->value)
+                ->helperText(fn (?string $state) => match (SalaryDistributionFormatEnum::tryFrom(intval($state))) {
+                    SalaryDistributionFormatEnum::ABSOLUTE => 'El valor ingresado será restado del total del salario',
+                    SalaryDistributionFormatEnum::PERCENTAGE => 'El valor ingresado se calculará al total del salario',
+                    default => '',
+                }),
+            TextInput::make($salaryFieldNames['distribution_value'])
+                ->label('Valor a restar de la primera quincena')
+                ->numeric()
+                ->mask(RawJs::make('$money($input)'))
+                ->stripCharacters(',')
+                ->inputMode('decimal')
+                ->default('50.00')
+                ->prefix(fn (Get $get) => match (SalaryDistributionFormatEnum::tryFrom(intval($get($salaryFieldNames['distribution_format'])))) {
+                    SalaryDistributionFormatEnum::ABSOLUTE => '0.0',
+                    SalaryDistributionFormatEnum::PERCENTAGE => '%',
+                    default => '',
+                })
+                ->maxValue(fn (Get $get) => match (SalaryDistributionFormatEnum::tryFrom(intval($get($salaryFieldNames['distribution_format'])))) {
+                    SalaryDistributionFormatEnum::ABSOLUTE => match (true) {
+                        is_float($get($salaryFieldNames['amount'])), is_int($get($salaryFieldNames['amount'])) => $get($salaryFieldNames['amount']),
+                        is_string($get($salaryFieldNames['amount'])) => (float)str_replace(',', '', $get($salaryFieldNames['amount'])),
+                        default => 0
+                    },
+                    SalaryDistributionFormatEnum::PERCENTAGE => 100,
+                    default => PHP_INT_MAX,
+                })
+                ->helperText('El valor restante será usado en la segunda quincena')
+        ];
+
         return [
             TextInput::make('name')
                 ->label('Nombres')
@@ -81,38 +117,7 @@ trait HasEmployeeForm
                                 ->description('Esta configuración se utiliza en las nominas quincenales para distribuir el salario del empleado')
                                 ->columnSpanFull()
                                 ->compact()
-                                ->schema([
-                                    ToggleButtons::make($salaryFieldNames['distribution_format'])
-                                        ->options(SalaryDistributionFormatEnum::class)
-                                        ->label('Formato')
-                                        ->inline()
-                                        ->default(SalaryDistributionFormatEnum::PERCENTAGE->value)
-                                        ->helperText(fn (?string $state) => match (SalaryDistributionFormatEnum::tryFrom(intval($state))) {
-                                            SalaryDistributionFormatEnum::ABSOLUTE => 'El valor ingresado será restado del total del salario',
-                                            SalaryDistributionFormatEnum::PERCENTAGE => 'El valor ingresado se calculará al total del salario',
-                                            default => '',
-                                        }),
-                                    TextInput::make($salaryFieldNames['distribution_value'])
-                                        ->label('Valor a restar de la primera quincena')
-                                        ->numeric()
-                                        ->mask(RawJs::make('$money($input)'))
-                                        ->stripCharacters(',')
-                                        ->inputMode('decimal')
-                                        ->default(50)
-                                        ->prefix(fn (Get $get) => match (SalaryDistributionFormatEnum::tryFrom(intval($get($salaryFieldNames['distribution_format'])))) {
-                                            SalaryDistributionFormatEnum::ABSOLUTE => '0.0',
-                                            SalaryDistributionFormatEnum::PERCENTAGE => '%',
-                                            default => '',
-                                        })
-                                        ->maxValue(fn (Get $get) => match (SalaryDistributionFormatEnum::tryFrom(intval($get($salaryFieldNames['distribution_format'])))) {
-                                            SalaryDistributionFormatEnum::ABSOLUTE => is_float($get($salaryFieldNames['amount']))
-                                                ? $get($salaryFieldNames['amount'])
-                                                : (float)str_replace(',', '', $get($salaryFieldNames['amount'])),
-                                            SalaryDistributionFormatEnum::PERCENTAGE => 100,
-                                            default => PHP_INT_MAX,
-                                        })
-                                        ->helperText('El valor restante será usado en la segunda quincena')
-                                ]),
+                                ->schema($salaryDistribution),
                         ]),
                     PhoneRepeater::make('phones')
                         ->defaultItems(0)
