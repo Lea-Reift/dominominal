@@ -1,12 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
 
-setTimeout(() => {
-    setInterval(() => {
-        fetch("http://localhost:8000")
+window.addEventListener('DOMContentLoaded', function(){
+    let interval = setInterval(async () => {
+        await fetch("http://localhost:8000/up")
             .then((response) => {
-                if (response.ok || response.redirected) {
+                if (response.ok) {
+                    clearInterval(interval)
                     invoke('set_complete');
                 }
             })
     }, 1000);
-}, 1000);
+})
