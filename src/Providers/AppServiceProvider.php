@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use Illuminate\Support\Number;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Artisan;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -22,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
         config(['database.connections.sqlite.database' => $databasePath]);
         if (!file_exists($databasePath)) {
             touch($databasePath);
+        }
+
+        if (!Schema::hasTable('settings')) {
+            Artisan::call('migrate --force');
         }
     }
 
