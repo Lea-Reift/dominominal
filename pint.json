@@ -1,5 +1,8 @@
 {
     "preset": "psr12",
+    "exclude": [
+        "src-tauri/"
+    ],
     "rules": {
         "align_multiline_comment": {
             "comment_type": "phpdocs_only"

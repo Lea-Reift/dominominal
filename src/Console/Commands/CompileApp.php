@@ -16,7 +16,7 @@ class CompileApp extends Command
      *
      * @var string
      */
-    protected $signature = 'compile';
+    protected $signature = 'compile {--a|only-assets}';
 
     /**
      * The console command description.
@@ -64,6 +64,12 @@ class CompileApp extends Command
             'tauri_build' => 'npx tauri build',
         ];
 
+        if ($this->option('only-assets')) {
+            $commands = [
+                'npm_build' => 'npm run build',
+            ];
+        }
+
         $progressBar = $this->output->createProgressBar(count($commands));
 
         $originalPathCommands = ['delete_dir', 'create_dir', 'tauri_build', 'copy_project'];
@@ -89,7 +95,7 @@ class CompileApp extends Command
                     return Command::FAILURE;
                 }
 
-                if ($commandKey === 'npm_build') {
+                if ($commandKey === 'npm_build' && !empty($oldManifestFiles)) {
                     $this->generateSplashscreen($oldManifestFiles);
                 }
 

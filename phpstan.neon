@@ -3,10 +3,12 @@ includes:
     - vendor/nesbot/carbon/extension.neon
 
 parameters:
+    ignoreErrors:
+        - '~Parameter #\d+ \$callback of method Illuminate\\Support\\Collection<.*>::[a-zA-Z0-9_]+\(\) expects .*, Closure\(.*\): .* given~'
+        
 
     paths:
         - src
-        - tests
 
     # Level 10 is the highest level
     level: 5

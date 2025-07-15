@@ -75,7 +75,8 @@ class CompanyResource extends Resource
                         'sm' => 2,
                         'md' => 3,
                         'xl' => 4,
-                    ]),
+                    ])
+                    ->defaultItems(0),
             ]);
     }
 

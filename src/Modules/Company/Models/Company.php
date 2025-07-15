@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 /**
  * @property int $id
@@ -23,6 +24,7 @@ use Illuminate\Support\Collection;
  * @property string $document_number
  * @property string $address
  * @property Collection<int, Phone> $phones
+ * @property EloquentCollection<int, Employee> $employees
  * @property int $user_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Company\Models;
 
 use App\Enums\SalaryDistributionFormatEnum;
+use App\Enums\SalaryTypeEnum;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Support\ValueObjects\SalaryDistribution;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $employee_id
  * @property float $amount
  * @property SalaryDistribution $distribution
+ * @property SalaryTypeEnum $type
  * @property-read Employee $employee
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -30,12 +32,14 @@ class Salary extends Model
     protected $fillable = [
         'employee_id',
         'amount',
+        'type',
         'distribution_format',
         'distribution_value',
     ];
 
     protected $casts = [
         'amount' => 'float',
+        'type' => SalaryTypeEnum::class,
         'distribution_format' => SalaryDistributionFormatEnum::class,
         'distribution_value' => 'float',
     ];
