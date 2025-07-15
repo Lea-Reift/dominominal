@@ -68,6 +68,8 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
     public string $activeFormTab;
 
+    public bool $showImportEmployeeTab = true;
+
     protected static string $relationship = 'details';
 
     protected static ?string $modelLabel = 'registro';
@@ -86,12 +88,14 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
     public function mount(int|string $record): void
     {
         parent::mount($record);
+        $this->showImportEmployeeTab = $this->record->company->employees->reject(fn (Employee $employee) => $this->record->employees->contains($employee))->isNotEmpty();
     }
 
     protected function resolveRecord(int|string $key): Payroll
     {
         return Payroll::query()
             ->with([
+                'company.employees',
                 'employees',
                 'salaryAdjustments',
                 'editableSalaryAdjustments',
@@ -200,6 +204,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
         $employeeListTab = Tab::make('import_employee')
             ->label('Importar Empleados')
+            ->visible($this->showImportEmployeeTab)
             ->live()
             ->schema([
                 CheckboxList::make('employees')
@@ -246,14 +251,27 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                         CheckboxList::make('dates')
                             ->label('')
                             ->bulkToggleable()
-                            ->hint($disableSecondaryPayrolls ? 'Las nóminas del mes ya fueron generadas' : '')
+                            ->hint(function () use ($disableSecondaryPayrolls) {
+                                $hasEmployeesWithMonthlySalary = $this->record->employees
+                                    ->filter(fn (Employee $employee) => $employee->salary->type->isMonthly())
+                                    ->isNotEmpty();
+
+                                return match (true) {
+                                    $disableSecondaryPayrolls => 'Las nóminas del mes ya fueron generadas',
+                                    $hasEmployeesWithMonthlySalary => 'Los empleados con salarios mensuales no aparecerán en nominas de la primera quincena del mes',
+                                    default => '',
+                                };
+                            })
                             ->hintColor('warning')
+                            ->validationMessages([
+                                'required' => 'Debe seleccionar al menos una fecha'
+                            ])
                             ->required()
                             ->gridDirection('row')
                             ->default(
                                 fn () => DB::query()
                                     ->from($this->record->getTable())
-                                    ->selectRaw('DAY(period) as period')
+                                    ->select('period')
                                     ->whereIn(
                                         'period',
                                         Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->setDay($day)->toDateString()])
@@ -498,6 +516,11 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
     public function setCurrentFormTab(string $currentTab)
     {
+        if (!$this->showImportEmployeeTab) {
+            $this->activeFormTab = $this->addEmployeeTabId;
+            return;
+        }
+
         $tabsIndex = [
             $this->importEmployeeTabId => 0,
             $this->addEmployeeTabId => 1,
@@ -532,8 +555,16 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
         // SalaryAdjustments
         $payroll->salaryAdjustments()->sync($this->record->salaryAdjustments);
 
+        $details = $this->record->details
+            ->when(
+                $period->day === 14,
+                fn (Collection $details) => $details->reject(
+                    fn (PayrollDetail $detail) => $detail->salary->type->isMonthly()
+                )
+            );
+
         // Details
-        foreach ($this->record->details as $detail) {
+        foreach ($details as $detail) {
             /**
              * @var PayrollDetail $newDetail
              * @var PayrollDetail $detail
