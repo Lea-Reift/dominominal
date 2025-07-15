@@ -16,7 +16,7 @@ class CompileApp extends Command
      *
      * @var string
      */
-    protected $signature = 'compile';
+    protected $signature = 'compile {--a|only-assets}';
 
     /**
      * The console command description.
@@ -63,6 +63,12 @@ class CompileApp extends Command
             'filament_optimize' => 'php artisan filament:optimize',
             'tauri_build' => 'npx tauri build',
         ];
+
+        if ($this->option('only-assets')) {
+            $commands = [
+                'npm_build' => 'npm run build',
+            ];
+        }
 
         $progressBar = $this->output->createProgressBar(count($commands));
 
