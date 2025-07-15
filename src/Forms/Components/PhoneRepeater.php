@@ -20,12 +20,12 @@ class PhoneRepeater extends Repeater
             ->schema([
                 TextInput::make('type')
                     ->label('Tipo')
-                    ->required(fn (TextInput $input) => $input->getParentRepeater()->isRequired())
+                    ->required()
                     ->maxLength(255),
                 TextInput::make('number')
                     ->label('Número')
                     ->mask('+1 (999) 999-9999')
-                    ->required(fn (TextInput $input) => $input->getParentRepeater()->isRequired()),
+                    ->required(),
             ]);
     }
 }
