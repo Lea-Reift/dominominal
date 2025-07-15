@@ -52,7 +52,12 @@ class Payroll extends Model
         parent::boot();
         static::saving(function (Payroll $payroll) {
             if ($payroll->type->isMonthly()) {
-                $payroll->period = Carbon::parse($payroll->period)->endOfMonth();
+                $period = Carbon::parse($payroll->period);
+
+                $payroll->period->setDay(match (true) {
+                    $period->month === 2 => 28,
+                    default => 30,
+                });
             }
         });
 
