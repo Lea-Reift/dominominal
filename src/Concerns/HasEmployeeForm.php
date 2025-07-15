@@ -8,6 +8,7 @@ use Filament\Forms\Components\Select;
 use App\Enums\SalaryDistributionFormatEnum;
 use Filament\Forms\Components\TextInput;
 use App\Enums\DocumentTypeEnum;
+use App\Enums\SalaryTypeEnum;
 use Filament\Forms\Components\Fieldset;
 use Filament\Support\RawJs;
 use App\Forms\Components\PhoneRepeater;
@@ -24,6 +25,7 @@ trait HasEmployeeForm
             'amount',
             'distribution_format',
             'distribution_value',
+            'salary_type',
         ];
 
         $salaryFieldNames = array_combine($salaryFieldNames, $salaryFieldNames);
@@ -38,6 +40,7 @@ trait HasEmployeeForm
                 ->label('Formato')
                 ->inline()
                 ->live()
+                ->required($enabled)
                 ->default(SalaryDistributionFormatEnum::PERCENTAGE->value)
                 ->helperText(fn (?string $state) => match (SalaryDistributionFormatEnum::tryFrom(intval($state))) {
                     SalaryDistributionFormatEnum::ABSOLUTE => 'El valor ingresado será restado del total del salario',
@@ -51,6 +54,7 @@ trait HasEmployeeForm
                 ->stripCharacters(',')
                 ->inputMode('decimal')
                 ->default('50.00')
+                ->required($enabled)
                 ->prefix(fn (Get $get) => match (SalaryDistributionFormatEnum::tryFrom(intval($get($salaryFieldNames['distribution_format'])))) {
                     SalaryDistributionFormatEnum::ABSOLUTE => '0.0',
                     SalaryDistributionFormatEnum::PERCENTAGE => '%',
@@ -110,13 +114,21 @@ trait HasEmployeeForm
                                 ->required($enabled)
                                 ->inputMode('decimal')
                                 ->minValue(0)
-                                ->columnSpanFull()
                                 ->live()
                                 ->label('Valor'),
+                            ToggleButtons::make($salaryFieldNames['salary_type'])
+                                ->options(SalaryTypeEnum::class)
+                                ->label('Tipo de salario')
+                                ->helperText('Esto define la cantidad de pagos al mes que recibe el empleado')
+                                ->inline()
+                                ->live()
+                                ->required($enabled)
+                                ->default(SalaryTypeEnum::BIWEEKLY->value),
                             Section::make('Distribución Salarial')
                                 ->description('Esta configuración se utiliza en las nominas quincenales para distribuir el salario del empleado')
-                                ->columnSpanFull()
                                 ->compact()
+                                ->columns(2)
+                                ->hidden(fn (Get $get) => (int)$get($salaryFieldNames['salary_type']) === SalaryTypeEnum::MONTHLY->value)
                                 ->schema($salaryDistribution),
                         ]),
                     PhoneRepeater::make('phones')
