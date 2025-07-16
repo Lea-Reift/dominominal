@@ -111,15 +111,16 @@ class CompileApp extends Command
                         in_array($commandKey, $originalPathCommands),
                         fn (PendingProcess $process) => $process->path($tauriResourcesAppPath)
                     )
-                    ->run($command);
+                    ->run($command, function (string $type, string $output) {
+                        $this->line($output);
+                    });
 
                 if ($process->failed()) {
-                    $this->line('');
-                    $this->error("{$command} | {$commandKey} con el error: {$process->errorOutput()}");
                     return Command::FAILURE;
                 }
 
                 $progressBar->advance();
+                $this->newLine();
             }
         } catch (Exception $e) {
             $this->line('');

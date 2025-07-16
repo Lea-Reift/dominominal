@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
             touch($databasePath);
         }
 
-        if (!Schema::hasTable('settings')) {
+        if (!Schema::hasTable('settings') && !$this->app->runningInConsole()) {
             Artisan::call('migrate --force');
         }
     }
