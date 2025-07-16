@@ -16,7 +16,7 @@ class CompileApp extends Command
      *
      * @var string
      */
-    protected $signature = 'compile {--a|assets} {--p|project} {--t|tauri}';
+    protected $signature = 'compile {--a|assets} {--p|project} {--t|tauri} {--d|debug}';
 
     /**
      * The console command description.
@@ -63,13 +63,14 @@ class CompileApp extends Command
             'create_dir' => "mkdir {$tauriResourcesAppPath}",
             'set_env' => "cp {$envProdPath} {$tauriResourcesAppPath}/.env",
             'copy_project' => "cp -r ./{{$projectFilesConcant}} {$tauriResourcesAppPath}",
+            'remove_dev_database' => 'rm -f ./database/dominominal.sqlite',
             'composer_install' => 'composer install --optimize-autoloader --no-dev -a',
             'artisan_optimize' => 'php artisan optimize',
             'filament_optimize' => 'php artisan filament:optimize',
         ];
 
         $tauriCompileCommand = [
-            'tauri_build' => 'npx tauri build',
+            'tauri_build' => 'npx tauri build' . ($this->option('debug') ? ' --debug --no-bundle' : ''),
         ];
 
         if ($this->option('assets')) {
@@ -100,12 +101,13 @@ class CompileApp extends Command
             'generate_splash',
         ];
 
-        $progressBar = $this->output->createProgressBar(count($commands));
-
         try {
-            $progressBar->start();
 
             foreach ($commands as $commandKey => $command) {
+                $this->newLine();
+                $this->info("Ejecutando: {$command}...");
+                $this->newLine();
+
                 $process = Process::timeout(0)
                     ->unless(
                         in_array($commandKey, $originalPathCommands),
@@ -118,19 +120,14 @@ class CompileApp extends Command
                 if ($process->failed()) {
                     return Command::FAILURE;
                 }
-
-                $progressBar->advance();
-                $this->newLine();
             }
         } catch (Exception $e) {
-            $this->line('');
+            $this->newLine();
             $this->error("El proceso {$e->getMessage()} falló");
             return Command::FAILURE;
         }
 
-        $this->line('');
-
-        $progressBar->finish();
+        $this->newLine();
 
         $this->info('Programa compilado con exito!!!!');
         return Command::SUCCESS;

@@ -28,7 +28,7 @@ class GenerateSplashscreenCommand extends Command
     public function handle()
     {
         $html = view('splashscreen')->render();
-        file_put_contents(public_path('splashscreen.html'), $html);
+        file_put_contents(public_path('splashscreen.html'), str_replace('http://localhost:8000', '.', $html));
         $this->info('splashscreen.html generado correctamente en public/');
     }
 }
