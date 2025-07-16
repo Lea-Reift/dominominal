@@ -16,7 +16,7 @@ class CompileApp extends Command
      *
      * @var string
      */
-    protected $signature = 'compile {--a|only-assets}';
+    protected $signature = 'compile {--a|assets} {--p|project} {--t|tauri}';
 
     /**
      * The console command description.
@@ -52,25 +52,44 @@ class CompileApp extends Command
 
         $envProdPath = base_path('.env.production');
 
+        $commands = [];
         $assetsCommands = [
             'npm_build' => 'npm run build',
             'generate_splash' => 'php artisan generate-splash',
         ];
 
-        $commands = [
+        $migrateProjectCommands = [
             'delete_dir' => "rm -rf {$tauriResourcesAppPath}",
             'create_dir' => "mkdir {$tauriResourcesAppPath}",
-            ...$assetsCommands,
             'set_env' => "cp {$envProdPath} {$tauriResourcesAppPath}/.env",
             'copy_project' => "cp -r ./{{$projectFilesConcant}} {$tauriResourcesAppPath}",
             'composer_install' => 'composer install --optimize-autoloader --no-dev -a',
             'artisan_optimize' => 'php artisan optimize',
             'filament_optimize' => 'php artisan filament:optimize',
+        ];
+
+        $tauriCompileCommand = [
             'tauri_build' => 'npx tauri build',
         ];
 
-        if ($this->option('only-assets')) {
-            $commands = $assetsCommands;
+        if ($this->option('assets')) {
+            $commands = [...$commands, ...$assetsCommands];
+        }
+
+        if ($this->option('project')) {
+            $commands = [...$commands, ...$migrateProjectCommands];
+        }
+
+        if ($this->option('tauri')) {
+            $commands = [...$commands, ...$tauriCompileCommand];
+        }
+
+        if (empty($commands)) {
+            $commands = [
+                ...$assetsCommands,
+                ...$migrateProjectCommands,
+                ...$tauriCompileCommand,
+            ];
         }
 
         $originalPathCommands = [
