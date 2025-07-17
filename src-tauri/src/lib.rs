@@ -1,6 +1,6 @@
 use std::{
-    os::windows::process::CommandExt,
     net::TcpStream,
+    os::windows::process::CommandExt,
     process::{Command, Stdio},
     sync::{Arc, Mutex},
     thread,
@@ -40,6 +40,7 @@ pub fn run() {
     let cloned_process: Arc<Mutex<Option<u32>>> = process.clone();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_sql::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             let _ = app
                 .get_webview_window("app")
@@ -60,19 +61,17 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![set_complete])
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
-        .run(move|_: &AppHandle, event: tauri::RunEvent| {
-            match event {
-                tauri::RunEvent::Exit => {
-                    if let Some(pid) = cloned_process.lock().unwrap().as_mut() {
-                        Command::new("taskkill")
-                            .args(["/PID", &pid.to_string(), "/F"])
-                            .creation_flags(0x08000000)
-                            .status()
-                            .expect("Fallo al ejecutar taskkill");
-                    }
+        .run(move |_: &AppHandle, event: tauri::RunEvent| match event {
+            tauri::RunEvent::Exit => {
+                if let Some(pid) = cloned_process.lock().unwrap().as_mut() {
+                    Command::new("taskkill")
+                        .args(["/PID", &pid.to_string(), "/F"])
+                        .creation_flags(0x08000000)
+                        .status()
+                        .expect("Fallo al ejecutar taskkill");
                 }
-                _ => {}
             }
+            _ => {}
         });
 }
 
