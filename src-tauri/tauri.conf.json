@@ -42,8 +42,10 @@
             "nsis"
         ],
         "resources": [
-            "./resources/app",
-            "./resources/php.exe"
+            "./resources/app"
+        ],
+        "externalBin": [
+            "resources/php"
         ],
         "icon": [
             "icons/32x32.png",
