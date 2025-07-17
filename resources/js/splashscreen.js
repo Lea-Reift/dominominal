@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-window.addEventListener('DOMContentLoaded', function(){
+window.addEventListener('DOMContentLoaded', function () {
     let interval = setInterval(async () => {
         await fetch("http://localhost:8000/up")
             .then((response) => {

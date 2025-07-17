@@ -8,6 +8,7 @@ use App\Models\Setting;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Schema;
 
 class CheckSetupIsCompletedMiddleware
 {
@@ -20,7 +21,7 @@ class CheckSetupIsCompletedMiddleware
     {
         if (
             str_starts_with($request->path(), 'main') &&
-            !(Setting::query()->where(['setting' => 'setup', 'name' => 'is_completed'])->value('value') ?? false)
+            (!Schema::hasTable('settings') || !(Setting::query()->where(['setting' => 'setup', 'name' => 'is_completed'])->value('value') ?? false))
         ) {
             return redirect('/');
         }

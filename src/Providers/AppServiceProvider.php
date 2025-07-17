@@ -17,17 +17,11 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $databaseName = 'dominominal.sqlite';
-        $databasePath = $this->app->environment('local')
-            ? database_path($databaseName)
-            : base_path('../' . $databaseName);
+        $databasePath =  database_path($databaseName);
 
         config(['database.connections.sqlite.database' => $databasePath]);
         if (!file_exists($databasePath)) {
             touch($databasePath);
-        }
-
-        if (!Schema::hasTable('settings')) {
-            Artisan::call('migrate --force');
         }
     }
 
@@ -36,6 +30,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (!Schema::hasTable('settings') && !$this->app->runningInConsole()) {
+            Artisan::call('migrate --force');
+        }
+
         Number::useLocale('en');
         Number::useCurrency('USD');
     }

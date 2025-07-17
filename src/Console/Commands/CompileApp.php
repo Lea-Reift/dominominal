@@ -16,7 +16,7 @@ class CompileApp extends Command
      *
      * @var string
      */
-    protected $signature = 'compile {--a|only-assets}';
+    protected $signature = 'compile {--a|assets} {--p|project} {--t|tauri} {--d|debug}';
 
     /**
      * The console command description.
@@ -51,90 +51,85 @@ class CompileApp extends Command
         $projectFilesConcant = join(',', $projectProductionFiles);
 
         $envProdPath = base_path('.env.production');
-        $commands = [
+
+        $commands = [];
+        $assetsCommands = [
+            'npm_build' => 'npm run build',
+            'generate_splash' => 'php artisan generate-splash',
+        ];
+
+        $migrateProjectCommands = [
             'delete_dir' => "rm -rf {$tauriResourcesAppPath}",
             'create_dir' => "mkdir {$tauriResourcesAppPath}",
             'set_env' => "cp {$envProdPath} {$tauriResourcesAppPath}/.env",
-            'npm_build' => 'npm run build',
             'copy_project' => "cp -r ./{{$projectFilesConcant}} {$tauriResourcesAppPath}",
-            'reset_database' => "rm -f {$tauriResourcesAppPath}/../dominominal.sqlite && touch {$tauriResourcesAppPath}/../dominominal.sqlite",
+            'remove_dev_database' => 'rm -f ./database/dominominal.sqlite',
             'composer_install' => 'composer install --optimize-autoloader --no-dev -a',
             'artisan_optimize' => 'php artisan optimize',
             'filament_optimize' => 'php artisan filament:optimize',
-            'tauri_build' => 'npx tauri build',
         ];
 
-        if ($this->option('only-assets')) {
+        $tauriCompileCommand = [
+            'tauri_build' => 'npx tauri build' . ($this->option('debug') ? ' --debug --no-bundle' : ''),
+        ];
+
+        if ($this->option('assets')) {
+            $commands = [...$commands, ...$assetsCommands];
+        }
+
+        if ($this->option('project')) {
+            $commands = [...$commands, ...$migrateProjectCommands];
+        }
+
+        if ($this->option('tauri')) {
+            $commands = [...$commands, ...$tauriCompileCommand];
+        }
+
+        if (empty($commands)) {
             $commands = [
-                'npm_build' => 'npm run build',
+                ...$assetsCommands,
+                ...$migrateProjectCommands,
+                ...$tauriCompileCommand,
             ];
         }
 
-        $progressBar = $this->output->createProgressBar(count($commands));
-
-        $originalPathCommands = ['delete_dir', 'create_dir', 'tauri_build', 'copy_project'];
+        $originalPathCommands = [
+            'delete_dir',
+            'create_dir',
+            'tauri_build',
+            'copy_project',
+            'generate_splash',
+        ];
 
         try {
-            $progressBar->start();
 
             foreach ($commands as $commandKey => $command) {
-                if ($commandKey === 'npm_build') {
-                    $oldManifestFiles = $this->getManifestFiles();
-                }
+                $this->newLine();
+                $this->info("Ejecutando: {$command}...");
+                $this->newLine();
 
                 $process = Process::timeout(0)
                     ->unless(
                         in_array($commandKey, $originalPathCommands),
                         fn (PendingProcess $process) => $process->path($tauriResourcesAppPath)
                     )
-                    ->run($command);
+                    ->run($command, function (string $type, string $output) {
+                        $this->line($output);
+                    });
 
                 if ($process->failed()) {
-                    $this->line('');
-                    $this->error("{$command} | {$commandKey} con el error: {$process->errorOutput()}");
                     return Command::FAILURE;
                 }
-
-                if ($commandKey === 'npm_build' && !empty($oldManifestFiles)) {
-                    $this->generateSplashscreen($oldManifestFiles);
-                }
-
-                $progressBar->advance();
             }
         } catch (Exception $e) {
-            $this->line('');
+            $this->newLine();
             $this->error("El proceso {$e->getMessage()} falló");
             return Command::FAILURE;
         }
 
-        $this->line('');
-
-        $progressBar->finish();
+        $this->newLine();
 
         $this->info('Programa compilado con exito!!!!');
         return Command::SUCCESS;
-    }
-
-    public function generateSplashscreen(array $oldManifestFiles): void
-    {
-        $manifestFiles = $this->getManifestFiles();
-
-        $splashscreen = file_get_contents(base_path('public/splashscreen.html'));
-
-        $splashscreen = str_replace($oldManifestFiles, $manifestFiles, $splashscreen);
-        file_put_contents(base_path('public/splashscreen.html'), $splashscreen);
-    }
-
-    public function getManifestFiles(): array
-    {
-        $manifestPath = 'public/build/manifest.json';
-
-        if (!file_exists($manifestPath)) {
-            return ['', ''];
-        }
-
-        $manifest = json_decode(file_get_contents($manifestPath), true);
-
-        return [$manifest['resources/js/app.js']['file'], $manifest['resources/css/app.css']['file']];
     }
 }
