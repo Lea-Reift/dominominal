@@ -1,52 +1,26 @@
-use std::{
-    net::TcpStream,
-    os::windows::process::CommandExt,
-    process::{Command, Stdio},
-    sync::{Arc, Mutex},
-    thread,
-    time::Duration,
+use std::sync::{Arc, Mutex, MutexGuard};
+
+use tauri::{App, AppHandle, Manager, RunEvent, State};
+use tauri_plugin_shell::{
+    process::{Command, CommandChild},
+    ShellExt,
 };
 
-use tauri::{AppHandle, Manager};
+struct LaravelServer(pub Arc<Mutex<Option<CommandChild>>>);
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let process = Arc::new(Mutex::new(None));
-
-    if TcpStream::connect("127.0.0.1:8000").is_err() {
-        let child = Command::new("./resources/php.exe")
-            .args([
-                "-S",
-                "127.0.0.1:8000",
-                "../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php",
-            ])
-            .current_dir("./resources/app/public")
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .creation_flags(0x08000000)
-            .spawn()
-            .expect("Fallo al iniciar el servidor de PHP");
-
-        println!("Server Started in port 8000");
-
-        let mut lock = process.lock().unwrap();
-        *lock = Some(child.id());
-
-        while TcpStream::connect("127.0.0.1:8000").is_err() {
-            thread::sleep(Duration::from_millis(300));
-        }
-    }
-
-    let cloned_process: Arc<Mutex<Option<u32>>> = process.clone();
-
-    tauri::Builder::default()
+    let app: App = tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_sql::Builder::new().build())
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            let _ = app
-                .get_webview_window("app")
-                .expect("no main window")
-                .set_focus();
-        }))
+        .plugin(tauri_plugin_single_instance::init(
+            |app: &AppHandle, _args, _cwd| {
+                let _ = app
+                    .get_webview_window("app")
+                    .expect("no main window")
+                    .set_focus();
+            },
+        ))
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -60,19 +34,20 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![set_complete])
         .build(tauri::generate_context!())
-        .expect("error while running tauri application")
-        .run(move |_: &AppHandle, event: tauri::RunEvent| match event {
-            tauri::RunEvent::Exit => {
-                if let Some(pid) = cloned_process.lock().unwrap().as_mut() {
-                    Command::new("taskkill")
-                        .args(["/PID", &pid.to_string(), "/F"])
-                        .creation_flags(0x08000000)
-                        .status()
-                        .expect("Fallo al ejecutar taskkill");
-                }
-            }
-            _ => {}
-        });
+        .expect("error while running tauri application");
+
+    app.run(|handler: &AppHandle, event: RunEvent| match event {
+        RunEvent::Ready => {
+            handler.manage(LaravelServer(Arc::new(Mutex::new(Some(start_laravel_server(handler))))));
+        }
+        RunEvent::ExitRequested { .. } | RunEvent::Exit => {
+            let laravel_server_mutex: State<'_, LaravelServer> = handler.try_state::<LaravelServer>().expect("Fail getting server instance");
+            let mut laravel_server_guard: MutexGuard<'_, Option<CommandChild>> = laravel_server_mutex.0.lock().expect("Fail getting server instance");
+            let laravel_server_process: CommandChild = laravel_server_guard.take().expect("Failure getting server process");
+            laravel_server_process.kill().expect("Fail killing laravel server");
+        }
+        _ => {}
+    });
 }
 
 #[tauri::command]
@@ -84,4 +59,21 @@ async fn set_complete(app: AppHandle) -> Result<(), ()> {
     splash_window.close().unwrap();
 
     Ok(())
+}
+
+fn start_laravel_server(handler: &AppHandle) -> CommandChild {
+    let php: Command = handler.shell().sidecar("php").unwrap();
+    let (mut _receiver, child) = php
+        .args([
+            "-S",
+            "127.0.0.1:8000",
+            "../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php",
+        ])
+        .current_dir("./resources/app/public")
+        .spawn()
+        .expect("Fallo al iniciar el servidor de PHP");
+
+    println!("Server Started in port 8000");
+
+    return child;
 }
