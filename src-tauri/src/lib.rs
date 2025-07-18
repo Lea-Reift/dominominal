@@ -17,7 +17,6 @@ struct LaravelServer(pub Arc<Mutex<Option<CommandChild>>>);
 pub fn run() {
     let app: App = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_sql::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(
             |app: &AppHandle, _args, _cwd| {
                 let _ = app
