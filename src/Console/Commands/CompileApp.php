@@ -42,7 +42,6 @@ class CompileApp extends Command
             'resources',
             'routes',
             'src',
-            'storage',
             'artisan',
             'composer.json',
             'composer.lock',
@@ -63,10 +62,9 @@ class CompileApp extends Command
             'create_dir' => "mkdir {$tauriResourcesAppPath}",
             'set_env' => "cp {$envProdPath} {$tauriResourcesAppPath}/.env",
             'copy_project' => "cp -r ./{{$projectFilesConcant}} {$tauriResourcesAppPath}",
+            'add_storage_folders' => "mkdir {$tauriResourcesAppPath}\\storage\\framework\\sessions {$tauriResourcesAppPath}\\storage\\framework\\cache {$tauriResourcesAppPath}\\storage\\framework\\views",
             'remove_dev_database' => 'rm -f ./database/dominominal.sqlite',
             'composer_install' => 'composer install --optimize-autoloader --no-dev -a',
-            'artisan_optimize' => 'php artisan optimize',
-            'filament_optimize' => 'php artisan filament:optimize',
         ];
 
         $tauriCompileCommand = [

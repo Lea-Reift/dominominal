@@ -23,6 +23,13 @@ class AppServiceProvider extends ServiceProvider
         if (!file_exists($databasePath)) {
             touch($databasePath);
         }
+
+        $frameworkCompiledViewPath = storage_path('framework/views');
+
+        if (!is_dir($frameworkCompiledViewPath)) {
+            mkdir($frameworkCompiledViewPath, recursive: true);
+        }
+
     }
 
     /**
