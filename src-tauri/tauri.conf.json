@@ -41,9 +41,11 @@
         "targets": [
             "nsis"
         ],
-        "resources": [
-            "./resources/app",
-            "./resources/php.exe"
+        "resources": {
+            "./resources/app" : "./"
+        },
+        "externalBin": [
+            "resources/php"
         ],
         "icon": [
             "icons/32x32.png",
@@ -51,6 +53,11 @@
             "icons/128x128@2x.png",
             "icons/icon.icns",
             "icons/icon.ico"
-        ]
+        ],
+        "windows": {
+            "nsis": {
+                "languages": ["Spanish"]
+            }
+        }
     }
 }
