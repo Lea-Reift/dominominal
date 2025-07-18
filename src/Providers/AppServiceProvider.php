@@ -29,7 +29,6 @@ class AppServiceProvider extends ServiceProvider
         if (!is_dir($frameworkCompiledViewPath)) {
             mkdir($frameworkCompiledViewPath, recursive: true);
         }
-
     }
 
     /**
