@@ -63,10 +63,10 @@
     },
     "plugins": {
         "updater": {
-            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUzQzIyOEI4RTQ2NjZGODgKUldTSWIyYmt1Q2pDVSswTWwyUDIwb2xPekJrc3FxbDdIaXc4a0UwR29oTS96VkxhNWttc0Z1cmUK"
-        },
-        "endpoints": [
-            "https://drive.google.com/uc?export=download&id=1JD0-q68uikOA7fJq4RYFEpPRyjj8gBSc"
-        ]
+            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUzQzIyOEI4RTQ2NjZGODgKUldTSWIyYmt1Q2pDVSswTWwyUDIwb2xPekJrc3FxbDdIaXc4a0UwR29oTS96VkxhNWttc0Z1cmUK",
+            "endpoints": [
+                "https://gist.githubusercontent.com/lea-reift/74b7c0ad1562764336ca4038b8d6aeb4/raw/dominominal.version.json"
+            ]
+        }
     }
 }
