@@ -4,18 +4,24 @@ use std::{
 };
 
 use tauri::{
-    async_runtime::Receiver, path::BaseDirectory, App, AppHandle, Manager, RunEvent, State,
+    async_runtime::Receiver, path::BaseDirectory, window::ProgressBarState, App, AppHandle,
+    Manager, RunEvent, State,
 };
 use tauri_plugin_shell::{
     process::{Command, CommandChild, CommandEvent},
     ShellExt,
 };
 
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+
+use tauri_plugin_updater::UpdaterExt;
+
 struct LaravelServer(pub Arc<Mutex<Option<CommandChild>>>);
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app: App = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(
@@ -34,6 +40,13 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            let handle = app.handle().clone();
+
+            tauri::async_runtime::spawn(async move {
+                update(handle).await.expect("error updating app");
+            });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![set_complete])
@@ -162,4 +175,72 @@ fn run_php_command(
         .current_dir(realpath.to_str().expect("Failure getting path"))
         .spawn()
         .expect(&format!("Failure running php command: {:?}", args));
+}
+
+async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
+    let app_clone = app.clone();
+
+    let updater = app
+        .updater_builder()
+        .version_comparator(|_current, _update| {
+            return true;
+        })
+        .on_before_exit(move || {
+            app_clone
+                .dialog()
+                .message("Se va a instalar la actualización. La app se va a cerrar")
+                .kind(MessageDialogKind::Warning)
+                .title("Instalando Actualización")
+                .blocking_show();
+        })
+        .build()?;
+
+    if let Some(update) = updater.check().await? {
+        let answer = app
+            .dialog()
+            .message("Hay una nueva actualización disponible. ¿Desea instalarla ahora?")
+            .title("Actualización Disponible")
+            .buttons(MessageDialogButtons::OkCancelCustom(
+                "Absolutely".to_string(),
+                "Totally".to_string(),
+            ))
+            .blocking_show();
+
+        if !answer {
+            return Ok(());
+        }
+
+        let downloaded_update = update
+            .download(
+                |chunk_length, content_length| {
+                    let content_length = content_length.unwrap_or(0);
+                    let window = app
+                        .get_webview_window("main")
+                        .expect("Cannot get main window");
+                    let progres =
+                        (((chunk_length as u64) * 100) + content_length - 1) / content_length;
+                    let state = ProgressBarState {
+                        status: Some(tauri::window::ProgressBarStatus::Normal),
+                        progress: Some(progres.into()),
+                    };
+                    window.set_progress_bar(state).expect("Failure on update download: downloading");
+                },
+                || {
+                    let window = app
+                        .get_webview_window("main")
+                        .expect("Cannot get main window");
+                    let state = ProgressBarState {
+                        status: Some(tauri::window::ProgressBarStatus::None),
+                        progress: Some(0),
+                    };
+                    window.set_progress_bar(state).expect("Failure on update download: downloaded");
+                },
+            )
+            .await?;
+
+        update.install(downloaded_update).expect("Failure installing");
+        app.restart();
+    }
+
+    Ok(())
 }
