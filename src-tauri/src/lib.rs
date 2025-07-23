@@ -16,6 +16,7 @@ struct LaravelServer(pub Arc<Mutex<Option<CommandChild>>>);
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app: App = tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(
             |app: &AppHandle, _args, _cwd| {
@@ -119,10 +120,7 @@ fn start_laravel_server(handler: &AppHandle) -> CommandChild {
                 .canonicalize()
                 .expect("Failure canonizing app"),
         )
-        .args([
-            "-S",
-            "127.0.0.1:8000"
-        ])
+        .args(["-S", "127.0.0.1:8000"])
         .spawn()
         .expect("Failure starting server");
 
