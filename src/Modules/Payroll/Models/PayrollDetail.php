@@ -18,6 +18,7 @@ use App\Support\ValueObjects\PayrollDisplay\PayrollDetailDisplay;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use App\Enums\SalaryDistributionFormatEnum;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * @property int $id
@@ -27,11 +28,12 @@ use App\Enums\SalaryDistributionFormatEnum;
  * @property-read PayrollDetailDisplay $display
  * @property-read Employee $employee
  * @property-read Payroll $payroll
+ * @property-read ?PayrollDetail $complementaryDetail
  * @property-read Salary $salary
  * @property-read Collection<int, SalaryAdjustment> $salaryAdjustments
  * @property-read Collection<int, SalaryAdjustment> $editableSalaryAdjustments
- * @property-read Collection<int, SalaryAdjustment> $incomes
- * @property-read Collection<int, SalaryAdjustment> $deductions
+ * @property Collection<int, SalaryAdjustment> $incomes
+ * @property Collection<int, SalaryAdjustment> $deductions
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @method static PayrollDetailBuilder query()
@@ -126,5 +128,30 @@ class PayrollDetail extends Model
         return $this->payroll->period->day > 15
             ? $firstBiweekSalary
             : $secondBiweekSalary;
+    }
+
+    public function complementaryDetail(): Attribute
+    {
+        return Attribute::get(function () {
+            if ($this->payroll->monthly_payroll_id === null) {
+                return null;
+            }
+
+            $complementaryPayrollDate = $this->payroll->period->clone();
+            $complementaryPayrollDate->setDay($complementaryPayrollDate->day !== 14 ? 14 : 28);
+
+            return PayrollDetail::query()
+                ->where('employee_id', $this->employee_id)
+                ->whereHas(
+                    'payroll',
+                    fn (Builder $query) => $query
+                        ->where('monthly_payroll_id', $this->payroll->monthly_payroll_id)
+                        ->where('id', '!=', $this->payroll->id)
+                        ->whereDate('period', $complementaryPayrollDate->toDateString())
+                )
+                ->with(['salaryAdjustments', 'incomes', 'deductions'])
+                ->first();
+        })
+            ->shouldCache();
     }
 }
