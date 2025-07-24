@@ -94,10 +94,8 @@ trait HasEmployeeForm
                 ->maxLength(255),
             TextInput::make('address')
                 ->label('Dirección')
-                ->required($enabled)
                 ->maxLength(255),
             TextInput::make('email')
-                ->required($enabled)
                 ->email()
                 ->maxLength(255),
 
