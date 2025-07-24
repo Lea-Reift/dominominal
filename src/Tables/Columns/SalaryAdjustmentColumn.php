@@ -138,12 +138,6 @@ class SalaryAdjustmentColumn extends TextInputColumn
         }
 
         DB::transaction(function () use ($record, $state) {
-            // Update Current payroll
-            /** @var ?SalaryAdjustment $currentDetailAdjustment */
-            $currentDetailAdjustment = $record->salaryAdjustments()->where($this->adjustment->getTable().'.id', $this->adjustment->id)->first();
-
-            $currentCustomValue = $currentDetailAdjustment->detailSalaryAdjustmentValue->custom_value;
-
             $record->salaryAdjustments()->syncWithoutDetaching([$this->adjustment->id => ['custom_value' => $state]]);
 
             if ($record->payroll->monthlyPayroll()->doesntExist()) {
@@ -151,7 +145,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
                 return;
             }
 
-            $this->updateMonthlyPayroll($record, $state, $currentCustomValue);
+            $this->updateMonthlyPayroll($record);
         });
     }
 
@@ -174,23 +168,39 @@ class SalaryAdjustmentColumn extends TextInputColumn
             ]);
     }
 
-    protected function updateMonthlyPayroll(PayrollDetail $record, mixed $state, mixed $currentCustomValue): void
+    protected function updateMonthlyPayroll(PayrollDetail $record): void
     {
-        $monthlyEmployeePayrollDetailQuery = PayrollDetail::query()
-            ->select(['id'])
-            ->where('employee_id', $record->employee_id)
-            ->where('payroll_id', $record->payroll->monthly_payroll_id);
+        $monthlyPayrollId = $record->payroll->monthly_payroll_id;
+        if (!$monthlyPayrollId) {
+            return;
+        };
 
-        $monthlyAdjustmentValue = PayrollDetailSalaryAdjustment::query()
+        $biweeklyPayrollDetailsQuery = PayrollDetail::query()
+            ->select('id')
+            ->where('employee_id', $record->employee_id)
+            ->whereHas(
+                'payroll.monthlyPayroll',
+                fn (Builder $query) => $query->where('id', $monthlyPayrollId)
+            );
+
+        $biweeklyPayrollsTotalValue = PayrollDetailSalaryAdjustment::query()
             ->where('salary_adjustment_id', $this->adjustment->id)
-            ->where('payroll_detail_id', $monthlyEmployeePayrollDetailQuery)
-            ->value('custom_value') ?? 0;
+            ->whereIn(
+                'payroll_detail_id',
+                $biweeklyPayrollDetailsQuery
+            )
+            ->numericAggregate('sum', ['custom_value']);
+
+        $monthlyEmployeePayrollDetailQuery = PayrollDetail::query()
+            ->select('id')
+            ->where('employee_id', $record->employee_id)
+            ->where('payroll_id', $monthlyPayrollId);
 
         PayrollDetailSalaryAdjustment::query()
             ->where('salary_adjustment_id', $this->adjustment->id)
-            ->whereIn('payroll_detail_id', $monthlyEmployeePayrollDetailQuery)
+            ->where('payroll_detail_id', $monthlyEmployeePayrollDetailQuery)
             ->update([
-                'custom_value' => $monthlyAdjustmentValue - floatval($currentCustomValue) + $state
+                'custom_value' => $biweeklyPayrollsTotalValue,
             ]);
     }
 }
