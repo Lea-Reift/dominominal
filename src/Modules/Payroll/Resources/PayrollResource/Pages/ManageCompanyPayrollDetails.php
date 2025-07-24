@@ -572,7 +572,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                         ])
                         ->databaseTransaction()
                         ->action(function (array $data, PayrollDetail $record, Action $action) {
-                            $record->salaryAdjustments()->sync($data['available_adjustments']);
+                            $record->salaryAdjustments()->sync($data['available_salary_adjustments']);
                             return $action->sendSuccessNotification();
                         })
                         ->successNotification(
