@@ -569,10 +569,15 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                                 ->default(fn (PayrollDetail $record) => $record->salaryAdjustments->pluck('id')->toArray())
                                 ->columns(2)
                                 ->bulkToggleable()
+                                ->disableOptionWhen(function (PayrollDetail $record, string $value) {
+                                    $allAdjustments = $this->record->salaryAdjustments->pluck('name', 'id');
+                                    $missingInComplementary = $allAdjustments->except($record->complementaryDetail->salaryAdjustments->pluck('id'))->keys();
+                                    return $missingInComplementary->contains($value);
+                                })
                         ])
                         ->databaseTransaction()
                         ->action(function (array $data, PayrollDetail $record, Action $action) {
-                            $record->salaryAdjustments()->sync($data['available_adjustments']);
+                            $record->salaryAdjustments()->sync($data['available_salary_adjustments']);
                             return $action->sendSuccessNotification();
                         })
                         ->successNotification(

@@ -7,6 +7,14 @@ namespace App\Enums;
 use App\Concerns\IsEnhanced;
 use Filament\Support\Contracts\HasLabel;
 
+/**
+ * @method bool isAbsolute()
+ * @method bool isPercentage()
+ * @method bool isFormula()
+ * @method bool isNotAbsolute()
+ * @method bool isNotPercentage()
+ * @method bool isNotFormula()
+ */
 enum SalaryAdjustmentValueTypeEnum: int implements HasLabel
 {
     use IsEnhanced;
@@ -23,5 +31,4 @@ enum SalaryAdjustmentValueTypeEnum: int implements HasLabel
             self::FORMULA => 'Formula',
         };
     }
-
 }

@@ -24,6 +24,14 @@ class SalaryAdjustmentParser
         array $customVariables = [],
     ) {
         $this->detail->loadMissing(['salaryAdjustments', 'incomes', 'deductions', 'payroll' => ['salaryAdjustments', 'incomes', 'deductions']]);
+        $parsedDeductions = $this->parseDeductions()->keyBy('id');
+        $this->detail->salaryAdjustments
+            ->transform(
+                fn (SalaryAdjustment $salaryAdjustment) => $parsedDeductions->has($salaryAdjustment->id)
+                    ? $parsedDeductions->get($salaryAdjustment->id)
+                    : $salaryAdjustment
+            );
+
         $this->parseVariablesFromPayrollDetail($customVariables);
     }
 
@@ -138,5 +146,32 @@ class SalaryAdjustmentParser
         }
 
         return $parsedVariables->union($finalVariables);
+    }
+
+    protected function parseDeductions(): Collection
+    {
+        $fixedDeductions = $this->detail->deductions;
+
+        $totalIncomesWithFullSalaryFormula = '(' . $this->detail->incomes->pluck('parser_alias')->push('SALARIO')->join(' + ') . ')';
+
+        $fixedDeductions
+            ->map(function (SalaryAdjustment $deduction) use ($totalIncomesWithFullSalaryFormula) {
+                $stringableValue = str($deduction->value);
+
+                $modifyAdjustment =
+                    !$deduction->requires_custom_value &&
+                    $deduction->value_type->isFormula() &&
+                    $this->detail->complementaryDetail?->deductions->contains(fn ($d) => $d->id === $deduction->id) &&
+                    $stringableValue->contains('TOTAL_INGRESOS');
+
+                if ($modifyAdjustment) {
+                    return $deduction;
+                }
+
+                $deduction->value = $stringableValue->replace('TOTAL_INGRESOS', $totalIncomesWithFullSalaryFormula)->toString();
+
+                return $deduction;
+            });
+        return $fixedDeductions;
     }
 }
