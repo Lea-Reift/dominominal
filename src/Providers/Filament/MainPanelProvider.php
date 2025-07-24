@@ -38,11 +38,15 @@ class MainPanelProvider extends PanelProvider
             ->id('main')
             ->path('main')
             ->login()
-            ->darkMode(isForced: true)
+            ->darkMode(false)
             ->profile(isSimple: false)
             ->colors([
-                'primary' => Color::Indigo,
-                'success' => Color::Blue,
+                'primary' => Color::Blue,
+                'gray' => Color::Slate,
+                'success' => Color::Emerald,
+                'danger' => Color::Red,
+                'warning' => Color::Amber,
+                'info' => Color::Sky,
             ])
             ->discoverPages(in: app_path('Support/Pages'), for: 'App\\Support\\Pages')
             ->pages([
@@ -206,6 +210,5 @@ class MainPanelProvider extends PanelProvider
         config([
             'mail.mailers.smtp' => $config->toArray() + $originalSMTPSettings
         ]);
-
     }
 }
