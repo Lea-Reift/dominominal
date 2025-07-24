@@ -54,7 +54,7 @@ class Payroll extends Model
             if ($payroll->type->isMonthly()) {
                 $period = Carbon::parse($payroll->period);
 
-                $payroll->period->setDay(match (true) {
+                $payroll->period = $payroll->period->setDay(match (true) {
                     $period->month === 2 => 28,
                     default => 30,
                 });
