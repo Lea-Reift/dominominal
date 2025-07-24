@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Facades\Process;
 
-class CompileApp extends Command
+class CompileAppCommand extends Command
 {
     /**
      * The name and signature of the console command.
