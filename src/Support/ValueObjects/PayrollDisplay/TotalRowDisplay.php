@@ -39,7 +39,7 @@ readonly class TotalRowDisplay
                 })];
             });
 
-        $this->incomes = $adjustments->get(SalaryAdjustmentTypeEnum::INCOME->value);
-        $this->deductions = $adjustments->get(SalaryAdjustmentTypeEnum::DEDUCTION->value);
+        $this->incomes = $adjustments->get(SalaryAdjustmentTypeEnum::INCOME->value, new Collection());
+        $this->deductions = $adjustments->get(SalaryAdjustmentTypeEnum::DEDUCTION->value, new Collection());
     }
 }

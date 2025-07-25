@@ -43,10 +43,8 @@ readonly class PayrollDisplay
 
         $this->dateString = $payroll->period->translatedFormat('d \d\e F \d\e\l Y');
 
-        [
-            SalaryAdjustmentTypeEnum::INCOME->getKey() => $this->incomes,
-            SalaryAdjustmentTypeEnum::DEDUCTION->getKey() => $this->deductions
-        ] = $payroll->salaryAdjustments
+
+        $parsedSalaryAdjustments = $payroll->salaryAdjustments
             ->groupBy('type')
             ->mapWithKeys(
                 fn (Collection $adjustments, int $type) =>
@@ -54,6 +52,9 @@ readonly class PayrollDisplay
                     SalaryAdjustmentTypeEnum::from($type)->getKey() => $adjustments->keyBy('parser_alias'),
                 ]
             );
+
+        $this->incomes = $parsedSalaryAdjustments->get(SalaryAdjustmentTypeEnum::INCOME->getKey(), new EloquentCollection());
+        $this->deductions = $parsedSalaryAdjustments->get(SalaryAdjustmentTypeEnum::DEDUCTION->getKey(), new EloquentCollection());
 
         $this->details = $payroll->details->mapInto(PayrollDetailDisplay::class)->toBase();
 
