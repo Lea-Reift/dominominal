@@ -20,6 +20,7 @@ use Filament\Tables\Columns\Summarizers\Summarizer;
 use Illuminate\Support\Facades\DB;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection as IlluminateCollection;
 
 class SalaryAdjustmentColumn extends TextInputColumn
 {
@@ -34,28 +35,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
     {
         parent::setUp();
 
-        $disabled = fn (PayrollDetail $record) =>  PayrollDetailSalaryAdjustment::query()
-            ->where('salary_adjustment_id', $this->adjustment->id)
-            ->whereIn(
-                'payroll_detail_id',
-                PayrollDetail::query()
-                    ->select(['id'])
-                    ->where('employee_id', $record->employee_id)
-                    ->whereHas(
-                        'payroll.monthlyPayroll',
-                        fn (Builder $query) => $query->where('id', $record->payroll_id)
-                    )
-            )
-            ->where(
-                fn (Builder $query) => $query
-                    ->whereNotNull('custom_value')
-                    ->where(
-                        'custom_value',
-                        '!=',
-                        floatval($record->salaryAdjustments->keyBy('id')->get($this->adjustment->id)?->detailSalaryAdjustmentValue?->custom_value) / 2
-                    )
-            )
-            ->exists();
+        $disabled = Closure::fromCallable([$this, 'disableInput']);
 
         $this
             ->label($this->adjustment->name)
@@ -94,7 +74,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
 
         return $static
             ->setAdjustment(SalaryAdjustment::query()->findOrFail($adjustmentId))
-            ->setPayroll(Payroll::query()->findOrFail($payrollId))
+            ->setPayroll(Payroll::query()->with(['biweeklyPayrolls' => ['details' => ['salaryAdjustments']]])->findOrFail($payrollId))
             ->configure();
     }
 
@@ -191,10 +171,12 @@ class SalaryAdjustmentColumn extends TextInputColumn
             )
             ->numericAggregate('sum', ['custom_value']);
 
+
         $monthlyEmployeePayrollDetailQuery = PayrollDetail::query()
             ->select('id')
             ->where('employee_id', $record->employee_id)
-            ->where('payroll_id', $monthlyPayrollId);
+            ->where('payroll_id', $monthlyPayrollId)
+            ->limit(1);
 
         PayrollDetailSalaryAdjustment::query()
             ->where('salary_adjustment_id', $this->adjustment->id)
@@ -202,5 +184,57 @@ class SalaryAdjustmentColumn extends TextInputColumn
             ->update([
                 'custom_value' => $biweeklyPayrollsTotalValue,
             ]);
+    }
+
+    protected function disableInput(PayrollDetail $record): bool
+    {
+        if ($this->payroll->type->isBiweekly()) {
+            return false;
+        }
+
+        /** @var ?SalaryAdjustment */
+        $recordAdjustment = $record->salaryAdjustments->find($this->adjustment);
+
+        if (!$recordAdjustment) {
+            return false;
+        }
+
+        $recordAdjustmentCustomValue = $recordAdjustment->detailSalaryAdjustmentValue?->custom_value;
+
+        if (is_null($recordAdjustmentCustomValue)) {
+            return false;
+        }
+
+        $biweeklyPayrolls = $this->payroll->biweeklyPayrolls;
+
+        if ($biweeklyPayrolls->isEmpty()) {
+            return false;
+        }
+
+        $biweeklyPayrollDetails = $biweeklyPayrolls
+            ->map(fn (Payroll $payroll) => $payroll->details->firstWhere('employee_id', $record->employee_id));
+
+        if ($biweeklyPayrollDetails->isEmpty()) {
+            return false;
+        }
+
+        $biweeklyPayrollDetailAdjustments = $biweeklyPayrollDetails
+            ->map(fn (PayrollDetail $detail) => $detail->salaryAdjustments->firstWhere('id', $this->adjustment->id));
+
+        if ($biweeklyPayrollDetailAdjustments->isEmpty()) {
+            return false;
+        }
+
+        /** @var IlluminateCollection<int, mixed> $biweeklyPayrollDetailAdjustmentsCustomValues */
+        $biweeklyPayrollDetailAdjustmentsCustomValues = $biweeklyPayrollDetailAdjustments
+            ->map(fn (SalaryAdjustment $adjustment) => $adjustment->detailSalaryAdjustmentValue?->custom_value)
+            ->toBase();
+
+        if ($biweeklyPayrollDetailAdjustmentsCustomValues->isEmpty()) {
+            return false;
+        }
+
+        return $biweeklyPayrollDetailAdjustmentsCustomValues
+            ->some(fn (mixed $value) => !is_null($value) && (float)$value !== ((float)$recordAdjustmentCustomValue / 2));
     }
 }
