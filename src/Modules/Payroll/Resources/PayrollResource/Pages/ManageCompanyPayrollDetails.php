@@ -133,6 +133,7 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                     Payroll::query()
                         ->whereMonth('period', $editedPayroll->period->month)
                         ->whereYear('period', $editedPayroll->period->year)
+                        ->where('id', '!=', $editedPayroll->id)
                         ->update([
                             'monthly_payroll_id' => $editedPayroll->id,
                         ]);
