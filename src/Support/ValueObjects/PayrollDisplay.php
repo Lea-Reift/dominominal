@@ -11,6 +11,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Support\ValueObjects\PayrollDisplay\PayrollDetailDisplay;
+use Barryvdh\DomPDF\Facade\Pdf as PDFFacade;
+use Barryvdh\DomPDF\PDF;
+use Illuminate\Http\Response;
 
 readonly class PayrollDisplay
 {
@@ -20,6 +23,8 @@ readonly class PayrollDisplay
     public EloquentCollection $deductions;
     public Collection $details;
     public TotalRowDisplay $totals;
+
+    protected PDF $PDF;
 
     public function __construct(
         Payroll $payroll
@@ -59,6 +64,17 @@ readonly class PayrollDisplay
         $this->details = $payroll->details->mapInto(PayrollDetailDisplay::class)->toBase();
 
         $this->totals = new TotalRowDisplay($payroll->salaryAdjustments, $this->details);
+
+        $this->PDF = PDFFacade::loadView('exports.payroll.index', [
+            'company_name' => $this->companyName,
+            'date_string' => $this->dateString,
+            'incomes' => $this->incomes,
+            'deductions' => $this->deductions,
+            'details' => $this->details,
+            'totals' => $this->totals,
+            'is_pdf_export' => true,
+        ])
+            ->setPaper('LETTER', 'landscape');
     }
 
     public function render(): View
@@ -71,5 +87,20 @@ readonly class PayrollDisplay
             'details' => $this->details,
             'totals' => $this->totals,
         ]);
+    }
+
+    protected function getPDF(): PDF
+    {
+        return $this->PDF;
+    }
+
+    public function renderPDF(): string
+    {
+        return $this->getPDF()->output();
+    }
+
+    public function streamPDF(): Response
+    {
+        return $this->getPDF()->stream();
     }
 }
