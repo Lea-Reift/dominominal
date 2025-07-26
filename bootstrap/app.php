@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Console\Commands\CompileApp;
+use App\Console\Commands\ClearCompilationResourcesCommand;
+use App\Console\Commands\CompileAppCommand;
 use App\Console\Commands\GenerateSplashscreenCommand;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -12,8 +13,8 @@ use App\Http\Middleware\CheckSetupIsCompletedMiddleware;
 $baseDir = dirname(__DIR__);
 return Application::configure(basePath: $baseDir)
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        commands: __DIR__.'/../routes/console.php',
+        web: __DIR__ . '/../routes/web.php',
+        commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -22,8 +23,9 @@ return Application::configure(basePath: $baseDir)
         ]);
     })
     ->withCommands([
-        CompileApp::class,
+        CompileAppCommand::class,
         GenerateSplashscreenCommand::class,
+        ClearCompilationResourcesCommand::class,
     ])
     ->withExceptions(function (Exceptions $exceptions): void {
         //

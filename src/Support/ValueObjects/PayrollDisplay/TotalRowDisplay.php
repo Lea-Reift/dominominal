@@ -32,14 +32,14 @@ readonly class TotalRowDisplay
         $this->netSalary = $details->sum('netSalary');
         $adjustments = $payrollSalaryAdjustments
             ->groupBy('type')
-            ->each
+            ->map
             ->mapWithKeys(function (SalaryAdjustment $adjustment) use ($details) {
                 return [$adjustment->parser_alias => $details->sum(function (PayrollDetailDisplay $detail) use ($adjustment) {
-                    return $detail->{"{$adjustment->type->getKey()}s"}->get($adjustment->parser_alias);
+                    return $detail->{$adjustment->type->getKey(true)}->get($adjustment->parser_alias);
                 })];
             });
 
-        $this->incomes = $adjustments->get(SalaryAdjustmentTypeEnum::INCOME->value);
-        $this->deductions = $adjustments->get(SalaryAdjustmentTypeEnum::DEDUCTION->value);
+        $this->incomes = $adjustments->get(SalaryAdjustmentTypeEnum::INCOME->value, new Collection());
+        $this->deductions = $adjustments->get(SalaryAdjustmentTypeEnum::DEDUCTION->value, new Collection());
     }
 }

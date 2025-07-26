@@ -117,11 +117,26 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                 ->databaseTransaction()
                 ->after(function (Payroll $editedPayroll) {
                     if ($editedPayroll->type->isBiweekly()) {
+                        $monthlyPayrollId = Payroll::query()
+                            ->whereDate('period', $editedPayroll->period->setDay(match (true) {
+                                $editedPayroll->period->month === 2 => 28,
+                                default => 30,
+                            }))
+                            ->value('id');
+
+                        $editedPayroll->update(['monthly_payroll_id' => $monthlyPayrollId]);
                         return;
                     }
 
                     $currentMontlyPayrollSalaryAdjustments = $editedPayroll->salaryAdjustments()->pluck('salary_adjustments.id')->toArray();
 
+                    Payroll::query()
+                        ->whereMonth('period', $editedPayroll->period->month)
+                        ->whereYear('period', $editedPayroll->period->year)
+                        ->where('id', '!=', $editedPayroll->id)
+                        ->update([
+                            'monthly_payroll_id' => $editedPayroll->id,
+                        ]);
 
                     $editedPayroll->details()->get()->each( # @phpstan-ignore-next-line
                         fn (PayrollDetail $detail) => $this->updateDetailSalaryAdjustmentsForEntity($detail, $currentMontlyPayrollSalaryAdjustments)
@@ -159,6 +174,21 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
 
                     return (new PayrollExport($this->record->display))
                         ->download("Nómina Administrativa {$this->record->company->name} {$filenameDate}.xlsx", Excel::XLSX);
+                }),
+            BaseAction::make('pdf_export')
+                ->label('Exportar PDF')
+                ->color('success')
+                ->icon('heroicon-o-document-arrow-down')
+                ->action(function () {
+                    $filenameDate = $this->record->period;
+
+                    $filenameDate = match (true) {
+                        $this->record->type->isMonthly() => $filenameDate->format('m-Y'),
+                        default => $filenameDate->toDateString()
+                    };
+
+                    return (new PayrollExport($this->record->display))
+                        ->download("Nómina Administrativa {$this->record->company->name} {$filenameDate}.pdf", Excel::DOMPDF);
                 }),
         ];
     }
@@ -569,10 +599,15 @@ class ManageCompanyPayrollDetails extends ManageRelatedRecords
                                 ->default(fn (PayrollDetail $record) => $record->salaryAdjustments->pluck('id')->toArray())
                                 ->columns(2)
                                 ->bulkToggleable()
+                                ->disableOptionWhen(function (PayrollDetail $record, string $value) {
+                                    $allAdjustments = $this->record->salaryAdjustments->pluck('name', 'id');
+                                    $missingInComplementary = $allAdjustments->except($record->complementaryDetail->salaryAdjustments->pluck('id'))->keys();
+                                    return $missingInComplementary->contains($value);
+                                })
                         ])
                         ->databaseTransaction()
                         ->action(function (array $data, PayrollDetail $record, Action $action) {
-                            $record->salaryAdjustments()->sync($data['available_adjustments']);
+                            $record->salaryAdjustments()->sync($data['available_salary_adjustments']);
                             return $action->sendSuccessNotification();
                         })
                         ->successNotification(
