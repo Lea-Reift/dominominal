@@ -11,7 +11,7 @@
         font-size: 12px;
     }
 
-    thead th {
+    thead tr:nth-child(4) th {
         background-color: #ddd;
         border: 1px solid black;
         padding: 6px;
@@ -25,20 +25,15 @@
         vertical-align: middle;
     }
 
-    /* Columnas de texto alineadas a la izquierda */
     td:first-child,
     td:nth-child(2),
     th:first-child,
     th:nth-child(2) {
+        white-space: nowrap;
+        width: 1%;
         text-align: left;
     }
 
-    /* Columnas numéricas alineadas a la derecha */
-    td:not(:first-child):not(:nth-child(2)) {
-        text-align: right;
-    }
-
-    /* Encabezado superior (nombre empresa + fecha) centrado y en negrita */
     thead tr:nth-child(1) th,
     thead tr:nth-child(2) th,
     thead tr:nth-child(3) th {
@@ -53,7 +48,6 @@
         font-size: 16px;
     }
 
-    /* Evitar bordes duplicados con colspan */
     thead tr:nth-child(-n+3) th[colspan] {
         border: none;
     }
