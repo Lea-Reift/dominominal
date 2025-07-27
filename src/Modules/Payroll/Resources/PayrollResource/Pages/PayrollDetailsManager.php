@@ -41,7 +41,6 @@ use App\Modules\Payroll\Actions\HeaderActions\EditPayrollAction;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Collection;
-use Filament\Support\Enums\ActionSize;
 use Illuminate\Support\Facades\DB;
 use Filament\Support\Enums\Alignment;
 use Filament\Support\Exceptions\Halt;
@@ -156,7 +155,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
 
     public function getTitle(): string
     {
-        return "Nómina #{$this->record->id}";
+        return "Nómina {$this->getHeading()} de {$this->record->company->name}";
     }
 
     public function table(Table $table): Table
