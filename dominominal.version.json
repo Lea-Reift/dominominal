@@ -3,7 +3,7 @@
     "notes": "Enable updater",
     "platforms": {
         "windows-x86_64": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUbDc5OEU0K1NrTFliOEtsVkMrMExRZW16UVZiZ2IyMXBETGlwMExUL3g0c1VzZlNuQXphRi9wOCswSnAyeUpxaDFqNWowVlVTSk9MclpDTHJDa3UxeTRtNHlOZ1pjbHdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzUzNTc0NzI5CWZpbGU6RG9taW5vbWluYWxfMC4xLjBfeDY0LXNldHVwLmV4ZQp3Q0MzQnE5TGJOU09DRkM0UGh3blNEVUw3MVgvSi81amkvNUFqR05ab0dwMXhJUWhqTmlHdjBuaGwxQmFoWjZnUGNOcCs0b1QwRVdjQmliMjJhRG9Bdz09Cg==",
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUbDc5OEU0K1NrTFYwZnlMK01ielJMU0NSTCs3aHJvY3l2M1pWWk9sN1BNeHVaT3AzSnliYnphd2FxK0VYSXM0MGlVTW1pb3BYbFYzd2xob2RLeW1HU1NDVjQxN0syMndvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzUzNTc1Nzc1CWZpbGU6RG9taW5vbWluYWxfMC4xLjBfeDY0LXNldHVwLmV4ZQoxUS9vOTJXelRSUFhmVk0xRFY5aGkvR0ZTcFVkUFZqeEtISlZUYXV0MjREaUlhdUZXTVlKS3pqT0twWDk3c1JjRnZ4Qkw2Q0F2RDFUQXB2V3I5R0xDdz09Cg==",
             "url": "https://github.com/Lea-Reift/dominominal/releases/download/v0.1.1/Dominominal_0.1.0_x64-setup.exe"
         }
     }
