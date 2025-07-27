@@ -18,7 +18,7 @@ use App\Modules\Company\Resources\CompanyResource\RelationManagers\EmployeesRela
 use App\Modules\Payroll\Resources\CompanyResource\RelationManagers\PayrollsRelationManager;
 use Filament\Forms\Get;
 use Filament\Tables\Actions\EditAction;
-use App\Modules\Payroll\Resources\PayrollResource\Pages\ManageCompanyPayrollDetails;
+use App\Modules\Payroll\Resources\PayrollResource\Pages\PayrollDetailsManager;
 use Filament\Navigation\NavigationItem;
 use App\Modules\Payroll\Resources\PayrollResource;
 
@@ -115,7 +115,7 @@ class CompanyResource extends Resource
         return [
             'index' => Pages\ListCompanies::route('/'),
             'view' => Pages\ViewCompany::route('/{record}'),
-            'payroll_details' => ManageCompanyPayrollDetails::route('/payrolls/{record}/details')
+            'payroll_details' => PayrollDetailsManager::route('/payrolls/{record}/details')
         ];
     }
 }

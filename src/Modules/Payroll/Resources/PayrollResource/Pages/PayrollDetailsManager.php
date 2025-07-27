@@ -54,7 +54,7 @@ use Filament\Forms\Components\Tabs\Tab;
  * @property Payroll $record
  * @property Collection<int, salaryAdjustment> $editableAdjustments
  */
-class ManageCompanyPayrollDetails extends ManageRelatedRecords
+class PayrollDetailsManager extends ManageRelatedRecords
 {
     use HasEmployeeForm;
 
