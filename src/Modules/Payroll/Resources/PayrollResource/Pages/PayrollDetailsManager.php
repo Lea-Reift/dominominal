@@ -18,7 +18,6 @@ use App\Modules\Payroll\Resources\PayrollResource;
 use App\Support\ValueObjects\PayrollDisplay\PayrollDetailDisplay;
 use App\Tables\Columns\SalaryAdjustmentColumn;
 use Filament\Actions\Action as BaseAction;
-use Filament\Actions\EditAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -40,6 +39,7 @@ use Maatwebsite\Excel\Excel;
 use Filament\Tables\Enums\ActionsPosition;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PaymentVoucherMail;
+use App\Modules\Payroll\Actions\HeaderActions\EditPayrollAction;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Collection;
 use Filament\Support\Enums\ActionSize;
@@ -112,54 +112,8 @@ class PayrollDetailsManager extends ManageRelatedRecords
     protected function getHeaderActions(): array
     {
         return [
-            EditAction::make()
-                ->form(fn (Form $form) => PayrollResource::form($form))
-                ->databaseTransaction()
-                ->after(function (Payroll $editedPayroll) {
-                    if ($editedPayroll->type->isBiweekly()) {
-                        $monthlyPayrollId = Payroll::query()
-                            ->whereDate('period', $editedPayroll->period->setDay(match (true) {
-                                $editedPayroll->period->month === 2 => 28,
-                                default => 30,
-                            }))
-                            ->value('id');
 
-                        $editedPayroll->update(['monthly_payroll_id' => $monthlyPayrollId]);
-                        return;
-                    }
-
-                    $currentMontlyPayrollSalaryAdjustments = $editedPayroll->salaryAdjustments()->pluck('salary_adjustments.id')->toArray();
-
-                    Payroll::query()
-                        ->whereMonth('period', $editedPayroll->period->month)
-                        ->whereYear('period', $editedPayroll->period->year)
-                        ->where('id', '!=', $editedPayroll->id)
-                        ->update([
-                            'monthly_payroll_id' => $editedPayroll->id,
-                        ]);
-
-                    $editedPayroll->details()->get()->each( # @phpstan-ignore-next-line
-                        fn (PayrollDetail $detail) => $this->updateDetailSalaryAdjustmentsForEntity($detail, $currentMontlyPayrollSalaryAdjustments)
-                    );
-
-                    $this->updateDetailSalaryAdjustmentsForEntity($editedPayroll, $currentMontlyPayrollSalaryAdjustments);
-
-                    $biweeklyPayrolls = $editedPayroll->biweeklyPayrolls()->with('details')->get();
-
-                    if ($biweeklyPayrolls->isEmpty()) {
-                        return;
-                    }
-
-                    // @phpstan-ignore-next-line
-                    $biweeklyPayrolls->each(function (Payroll $biweeklyPayroll) use ($currentMontlyPayrollSalaryAdjustments) {
-                        $this->updateDetailSalaryAdjustmentsForEntity($biweeklyPayroll, $currentMontlyPayrollSalaryAdjustments);
-                        $biweeklyPayroll->details->each(
-                            // @phpstan-ignore-next-line
-                            fn (PayrollDetail $detail) => $this->updateDetailSalaryAdjustmentsForEntity($detail, $currentMontlyPayrollSalaryAdjustments)
-                        );
-                    });
-                })
-                ->slideOver(),
+            EditPayrollAction::make(),
             BaseAction::make('excel_export')
                 ->label('Exportar a excel')
                 ->color('success')
@@ -179,17 +133,9 @@ class PayrollDetailsManager extends ManageRelatedRecords
                 ->label('Exportar PDF')
                 ->color('success')
                 ->icon('heroicon-o-document-arrow-down')
-                ->action(function () {
-                    $filenameDate = $this->record->period;
-
-                    $filenameDate = match (true) {
-                        $this->record->type->isMonthly() => $filenameDate->format('m-Y'),
-                        default => $filenameDate->toDateString()
-                    };
-
-                    return (new PayrollExport($this->record->display))
-                        ->download("Nómina Administrativa {$this->record->company->name} {$filenameDate}.pdf", Excel::DOMPDF);
-                }),
+                ->url(fn () => $this->getUrl(['record' => $this->record->id]).'export/pdf')
+                ->openUrlInNewTab()
+            ,
         ];
     }
 
@@ -388,19 +334,6 @@ class PayrollDetailsManager extends ManageRelatedRecords
 
             $newDetail->salaryAdjustments()->sync($detail->salaryAdjustments);
         }
-    }
-
-    public function updateDetailSalaryAdjustmentsForEntity(Payroll|PayrollDetail $entity, array $salaryAdjustmentsModification): void
-    {
-        $relation = $entity->salaryAdjustments();
-
-        $currentPayrollSalaryAdjustments = $relation->pluck($relation->getRelatedPivotKeyName())->toArray();
-
-        $salaryAdjustmentsToAdd = array_diff($salaryAdjustmentsModification, $currentPayrollSalaryAdjustments);
-        $salaryAdjustmentsToRemove = array_diff($currentPayrollSalaryAdjustments, $salaryAdjustmentsModification);
-
-        $relation->syncWithoutDetaching($salaryAdjustmentsToAdd);
-        $relation->detach($salaryAdjustmentsToRemove);
     }
 
     protected function secondaryPayrollsTableAction(bool $disableSecondaryPayrolls): Action
