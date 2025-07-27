@@ -147,18 +147,11 @@ class PayrollDetailsManager extends ManageRelatedRecords
 
     public function getHeading(): string
     {
+        $format = $this->record->type->isMonthly()
+            ? 'F \d\e\l Y'
+            : 'd \d\e F \d\e\l Y';
 
-        if ($this->record->type->isMonthly()) {
-            $connector = 'de';
-            $format = 'F \d\e\l Y';
-        } else {
-            $connector = 'al';
-            $format = 'd \d\e F \d\e\l Y';
-        }
-
-        $period = $connector . ' ' . str($this->record->period->translatedFormat($format))->headline();
-
-        return "Detalles de la nómina {$period} de {$this->record->company->name}";
+        return Str::headline($this->record->period->translatedFormat($format));
     }
 
     public function getTitle(): string
