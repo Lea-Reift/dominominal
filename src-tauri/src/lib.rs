@@ -4,24 +4,31 @@ use std::{
 };
 
 use tauri::{
-    async_runtime::Receiver, path::BaseDirectory, App, AppHandle, Manager, RunEvent, State,
+    async_runtime::Receiver, path::BaseDirectory, window::ProgressBarState, App, AppHandle,
+    Manager, RunEvent, State,
 };
 use tauri_plugin_shell::{
     process::{Command, CommandChild, CommandEvent},
     ShellExt,
 };
 
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+
+use tauri_plugin_updater::UpdaterExt;
+
 struct LaravelServer(pub Arc<Mutex<Option<CommandChild>>>);
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app: App = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(
             |app: &AppHandle, _args, _cwd| {
                 let _ = app
                     .get_webview_window("app")
-                    .expect("no main window")
+                    .expect("no app window")
                     .set_focus();
             },
         ))
@@ -33,6 +40,7 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![set_complete])
@@ -73,20 +81,7 @@ pub fn run() {
         }
 
         RunEvent::ExitRequested { .. } | RunEvent::Exit => {
-            let laravel_server_mutex: State<'_, LaravelServer> = handler
-                .try_state::<LaravelServer>()
-                .expect("Fail getting server instance");
-            let mut laravel_server_guard: MutexGuard<'_, Option<CommandChild>> =
-                laravel_server_mutex
-                    .0
-                    .lock()
-                    .expect("Fail getting server instance");
-            let laravel_server_process: CommandChild = laravel_server_guard
-                .take()
-                .expect("Failure getting server process");
-            laravel_server_process
-                .kill()
-                .expect("Fail killing laravel server");
+            kill_laravel_server(handler);
         }
         _ => {}
     });
@@ -100,7 +95,29 @@ async fn set_complete(app: AppHandle) -> Result<(), ()> {
     main_window.show().unwrap();
     splash_window.close().unwrap();
 
+    let handle = app.clone();
+
+    tauri::async_runtime::spawn(async move {
+        update(handle).await.expect("error updating app");
+    });
     Ok(())
+}
+
+fn kill_laravel_server(handler: &AppHandle) {
+    let laravel_server_mutex: State<'_, LaravelServer> = handler
+        .try_state::<LaravelServer>()
+        .expect("Fail getting server instance");
+
+    let mut laravel_server_guard: MutexGuard<'_, Option<CommandChild>> = laravel_server_mutex
+        .0
+        .lock()
+        .expect("Fail getting server instance");
+    let laravel_server_process: CommandChild = laravel_server_guard
+        .take()
+        .expect("Failure getting server process");
+    laravel_server_process
+        .kill()
+        .expect("Fail killing laravel server");
 }
 
 fn start_laravel_server(handler: &AppHandle) -> CommandChild {
@@ -119,10 +136,7 @@ fn start_laravel_server(handler: &AppHandle) -> CommandChild {
                 .canonicalize()
                 .expect("Failure canonizing app"),
         )
-        .args([
-            "-S",
-            "127.0.0.1:8000"
-        ])
+        .args(["-S", "127.0.0.1:8000"])
         .spawn()
         .expect("Failure starting server");
 
@@ -164,4 +178,79 @@ fn run_php_command(
         .current_dir(realpath.to_str().expect("Failure getting path"))
         .spawn()
         .expect(&format!("Failure running php command: {:?}", args));
+}
+
+async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
+    let app_clone = app.clone();
+
+    let updater = app
+        .updater_builder()
+        .version_comparator(|_current, _update| {
+            return true;
+        })
+        .on_before_exit(move || {
+            app_clone
+                .dialog()
+                .message("Se va a instalar la actualización. La app se va a cerrar")
+                .kind(MessageDialogKind::Warning)
+                .title("Instalando Actualización")
+                .blocking_show();
+            kill_laravel_server(&app_clone);
+        })
+        .build()?;
+
+    if let Some(update) = updater.check().await? {
+        let answer = app
+            .dialog()
+            .message("Hay una nueva actualización disponible. ¿Desea instalarla ahora?")
+            .title("Actualización Disponible")
+            .blocking_show();
+
+        if !answer {
+            return Ok(());
+        }
+
+        let mut downloaded: u64 = 0;
+
+        let downloaded_update = update
+            .download(
+                |chunk_length, content_length| {
+                    let content_length = content_length.unwrap_or(0);
+                    let window = app
+                        .get_webview_window("app")
+                        .expect("Cannot get app window");
+                    downloaded += chunk_length as u64;
+
+                    let progress = (downloaded * 100) / content_length;
+
+                    let state = ProgressBarState {
+                        status: Some(tauri::window::ProgressBarStatus::Normal),
+                        progress: Some(progress.into()),
+                    };
+                    window
+                        .set_progress_bar(state)
+                        .expect("Failure on update download: downloading");
+                },
+                || {
+                    let window = app
+                        .get_webview_window("app")
+                        .expect("Cannot get app window");
+                    let state = ProgressBarState {
+                        status: Some(tauri::window::ProgressBarStatus::None),
+                        progress: Some(0),
+                    };
+                    window
+                        .set_progress_bar(state)
+                        .expect("Failure on update download: downloaded");
+                },
+            )
+            .await?;
+
+        update
+            .install(downloaded_update)
+            .expect("Failure installing");
+        app.restart();
+    }
+
+    Ok(())
 }

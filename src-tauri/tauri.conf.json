@@ -37,6 +37,7 @@
         }
     },
     "bundle": {
+        "createUpdaterArtifacts": true,
         "active": true,
         "targets": [
             "nsis"
@@ -58,6 +59,14 @@
             "nsis": {
                 "languages": ["Spanish"]
             }
+        }
+    },
+    "plugins": {
+        "updater": {
+            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDJEQTRFNEUzMDRERkVGRTUKUldUbDc5OEU0K1NrTFN2c0lyT2hMVW54VlJKamdEMU91OE1IeWRPS2dmOC9vY1FKQ0NRdlRVQ1IK",
+            "endpoints": [
+                "https://gist.githubusercontent.com/lea-reift/74b7c0ad1562764336ca4038b8d6aeb4/raw/dominominal.version.json"
+            ]
         }
     }
 }
