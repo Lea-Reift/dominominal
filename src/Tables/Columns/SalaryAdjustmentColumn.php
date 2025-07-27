@@ -107,7 +107,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
             if ($validationFails) {
 
                 Notification::make('failed_adjustment_modification')
-                    ->title('Valor invalido ')
+                    ->title('Valor invalido')
                     ->body('El valor introducido no es correcto. Intente nuevamente')
                     ->danger()
                     ->color('danger')
