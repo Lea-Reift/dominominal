@@ -28,7 +28,7 @@ pub fn run() {
             |app: &AppHandle, _args, _cwd| {
                 let _ = app
                     .get_webview_window("app")
-                    .expect("no main window")
+                    .expect("no app window")
                     .set_focus();
             },
         ))
@@ -40,12 +40,6 @@ pub fn run() {
                         .build(),
                 )?;
             }
-
-            let handle = app.handle().clone();
-
-            tauri::async_runtime::spawn(async move {
-                update(handle).await.expect("error updating app");
-            });
 
             Ok(())
         })
@@ -87,20 +81,7 @@ pub fn run() {
         }
 
         RunEvent::ExitRequested { .. } | RunEvent::Exit => {
-            let laravel_server_mutex: State<'_, LaravelServer> = handler
-                .try_state::<LaravelServer>()
-                .expect("Fail getting server instance");
-            let mut laravel_server_guard: MutexGuard<'_, Option<CommandChild>> =
-                laravel_server_mutex
-                    .0
-                    .lock()
-                    .expect("Fail getting server instance");
-            let laravel_server_process: CommandChild = laravel_server_guard
-                .take()
-                .expect("Failure getting server process");
-            laravel_server_process
-                .kill()
-                .expect("Fail killing laravel server");
+            kill_laravel_server(handler);
         }
         _ => {}
     });
@@ -114,7 +95,29 @@ async fn set_complete(app: AppHandle) -> Result<(), ()> {
     main_window.show().unwrap();
     splash_window.close().unwrap();
 
+    let handle = app.clone();
+
+    tauri::async_runtime::spawn(async move {
+        update(handle).await.expect("error updating app");
+    });
     Ok(())
+}
+
+fn kill_laravel_server(handler: &AppHandle) {
+    let laravel_server_mutex: State<'_, LaravelServer> = handler
+        .try_state::<LaravelServer>()
+        .expect("Fail getting server instance");
+
+    let mut laravel_server_guard: MutexGuard<'_, Option<CommandChild>> = laravel_server_mutex
+        .0
+        .lock()
+        .expect("Fail getting server instance");
+    let laravel_server_process: CommandChild = laravel_server_guard
+        .take()
+        .expect("Failure getting server process");
+    laravel_server_process
+        .kill()
+        .expect("Fail killing laravel server");
 }
 
 fn start_laravel_server(handler: &AppHandle) -> CommandChild {
@@ -192,6 +195,7 @@ async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
                 .kind(MessageDialogKind::Warning)
                 .title("Instalando Actualización")
                 .blocking_show();
+            kill_laravel_server(&app_clone);
         })
         .build()?;
 
@@ -200,45 +204,51 @@ async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
             .dialog()
             .message("Hay una nueva actualización disponible. ¿Desea instalarla ahora?")
             .title("Actualización Disponible")
-            .buttons(MessageDialogButtons::OkCancelCustom(
-                "Absolutely".to_string(),
-                "Totally".to_string(),
-            ))
             .blocking_show();
 
         if !answer {
             return Ok(());
         }
 
+        let mut downloaded: u64 = 0;
+
         let downloaded_update = update
             .download(
                 |chunk_length, content_length| {
                     let content_length = content_length.unwrap_or(0);
                     let window = app
-                        .get_webview_window("main")
-                        .expect("Cannot get main window");
-                    let progres =
-                        (((chunk_length as u64) * 100) + content_length - 1) / content_length;
+                        .get_webview_window("app")
+                        .expect("Cannot get app window");
+                    downloaded += chunk_length as u64;
+
+                    let progress = (downloaded * 100) / content_length;
+
                     let state = ProgressBarState {
                         status: Some(tauri::window::ProgressBarStatus::Normal),
-                        progress: Some(progres.into()),
+                        progress: Some(progress.into()),
                     };
-                    window.set_progress_bar(state).expect("Failure on update download: downloading");
+                    window
+                        .set_progress_bar(state)
+                        .expect("Failure on update download: downloading");
                 },
                 || {
                     let window = app
-                        .get_webview_window("main")
-                        .expect("Cannot get main window");
+                        .get_webview_window("app")
+                        .expect("Cannot get app window");
                     let state = ProgressBarState {
                         status: Some(tauri::window::ProgressBarStatus::None),
                         progress: Some(0),
                     };
-                    window.set_progress_bar(state).expect("Failure on update download: downloaded");
+                    window
+                        .set_progress_bar(state)
+                        .expect("Failure on update download: downloaded");
                 },
             )
             .await?;
 
-        update.install(downloaded_update).expect("Failure installing");
+        update
+            .install(downloaded_update)
+            .expect("Failure installing");
         app.restart();
     }
 
