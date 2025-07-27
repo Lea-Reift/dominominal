@@ -10,7 +10,6 @@ use App\Modules\Company\Models\Employee;
 use App\Modules\Company\Resources\CompanyResource;
 use App\Modules\Company\Resources\CompanyResource\Pages\ViewCompany;
 use App\Modules\Payroll\Exceptions\DuplicatedPayrollException;
-use App\Modules\Payroll\Exports\PayrollExport;
 use App\Modules\Payroll\Models\Payroll;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Modules\Payroll\Models\SalaryAdjustment;
@@ -24,7 +23,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRelatedRecords;
 use Filament\Support\Enums\MaxWidth;
 use Filament\Tables\Actions\Action;
-use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Actions\ActionGroup as TableActionGroup;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Columns\Layout\Grid as TableGrid;
 use Filament\Tables\Columns\Layout\Split;
@@ -35,11 +34,11 @@ use Filament\Tables\Table;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Number;
-use Maatwebsite\Excel\Excel;
 use Filament\Tables\Enums\ActionsPosition;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PaymentVoucherMail;
 use App\Modules\Payroll\Actions\HeaderActions\EditPayrollAction;
+use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Collection;
 use Filament\Support\Enums\ActionSize;
@@ -49,6 +48,7 @@ use Filament\Support\Exceptions\Halt;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Tabs\Tab;
+use Illuminate\Support\Str;
 
 /**
  * @property Payroll $record
@@ -112,30 +112,23 @@ class PayrollDetailsManager extends ManageRelatedRecords
     protected function getHeaderActions(): array
     {
         return [
-
             EditPayrollAction::make(),
-            BaseAction::make('excel_export')
-                ->label('Exportar a excel')
+            ActionGroup::make([])
+                ->hiddenLabel(false)
+                ->button()
+                ->label('Exportar')
                 ->color('success')
                 ->icon('heroicon-o-document-arrow-down')
-                ->action(function () {
-                    $filenameDate = $this->record->period;
-
-                    $filenameDate = match (true) {
-                        $this->record->type->isMonthly() => $filenameDate->format('m-Y'),
-                        default => $filenameDate->toDateString()
-                    };
-
-                    return (new PayrollExport($this->record->display))
-                        ->download("Nómina Administrativa {$this->record->company->name} {$filenameDate}.xlsx", Excel::XLSX);
-                }),
-            BaseAction::make('pdf_export')
-                ->label('Exportar PDF')
-                ->color('success')
-                ->icon('heroicon-o-document-arrow-down')
-                ->url(fn () => $this->getUrl(['record' => $this->record->id]).'export/pdf')
-                ->openUrlInNewTab()
-            ,
+                ->actions([
+                    BaseAction::make('excel_export')
+                        ->label('Exportar a Excel')
+                        ->url(fn () => $this->getUrl(['record' => $this->record->id]) . '/export/excel')
+                        ->openUrlInNewTab(),
+                    BaseAction::make('pdf_export')
+                        ->label('Exportar a PDF')
+                        ->url(fn () => $this->getUrl(['record' => $this->record->id]) . '/export/pdf')
+                        ->openUrlInNewTab(),
+                ]),
         ];
     }
 
@@ -514,7 +507,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
     {
 
         return [
-            ActionGroup::make([])
+            TableActionGroup::make([])
                 ->button()
                 ->label('Opciones')
                 ->actions([
