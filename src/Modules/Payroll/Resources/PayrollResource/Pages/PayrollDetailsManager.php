@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Payroll\Resources\PayrollResource\Pages;
 
 use App\Concerns\HasEmployeeForm;
-use App\Modules\Company\Models\Employee;
 use App\Modules\Company\Resources\CompanyResource;
 use App\Modules\Company\Resources\CompanyResource\Pages\ViewCompany;
 use App\Modules\Payroll\Models\Payroll;
@@ -16,7 +15,6 @@ use App\Support\ValueObjects\PayrollDisplay\PayrollDetailDisplay;
 use App\Tables\Columns\SalaryAdjustmentColumn;
 use Filament\Actions\Action as BaseAction;
 use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRelatedRecords;
 use Filament\Support\Enums\MaxWidth;
@@ -35,12 +33,10 @@ use Filament\Tables\Enums\ActionsPosition;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PaymentVoucherMail;
 use App\Modules\Payroll\Actions\HeaderActions\EditPayrollAction;
+use App\Modules\Payroll\Actions\TableActions\AddEmployeeAction;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Collection;
-use Filament\Forms\Components\Tabs;
-use Filament\Forms\Components\Component;
-use Filament\Forms\Components\Tabs\Tab;
 use Illuminate\Support\Str;
 use App\Modules\Payroll\Actions\TableActions\GenerateSecondaryPayrollsAction;
 
@@ -53,36 +49,15 @@ class PayrollDetailsManager extends ManageRelatedRecords
     use HasEmployeeForm;
 
     protected static string $resource = PayrollResource::class;
-
-    protected string $formTabsId = 'add_employees_form_tabs';
-
-    public string $importEmployeeTabId;
-
-    public string $addEmployeeTabId;
-
-    public string $activeFormTab;
-
-    public bool $showImportEmployeeTab = true;
-
     protected static string $relationship = 'details';
-
     protected static ?string $modelLabel = 'registro';
-
     protected static ?string $title = 'Registro';
-
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    public function __construct()
-    {
-        $this->importEmployeeTabId = $this->formTabsId . '-import-employee-tab';
-        $this->addEmployeeTabId = $this->formTabsId . '-add-employee-tab';
-        $this->activeFormTab = $this->importEmployeeTabId;
-    }
 
     public function mount(int|string $record): void
     {
         parent::mount($record);
-        $this->showImportEmployeeTab = $this->record->company->employees->reject(fn (Employee $employee) => $this->record->employees->contains($employee))->isNotEmpty();
     }
 
     protected function resolveRecord(int|string $key): Payroll
@@ -160,7 +135,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
             ->recordTitleAttribute('employee_id')
             ->headerActions([
                 GenerateSecondaryPayrollsAction::make($this->record),
-                $this->addEmployeesTableAction(),
+                AddEmployeeAction::make($this->record),
             ])
             ->actionsPosition(ActionsPosition::BeforeColumns)
             ->actions($this->getTableActions());
@@ -242,126 +217,6 @@ class PayrollDetailsManager extends ManageRelatedRecords
             ->columns($this->record->salaryAdjustments->isEmpty() ? $regularColums : $columns->toArray());
     }
 
-    public function setCurrentFormTab(string $currentTab)
-    {
-        if (!$this->showImportEmployeeTab) {
-            $this->activeFormTab = $this->addEmployeeTabId;
-            return;
-        }
-
-        $tabsIndex = [
-            $this->importEmployeeTabId => 0,
-            $this->addEmployeeTabId => 1,
-        ];
-
-        if (is_numeric($currentTab)) {
-            $currentTab = array_search($currentTab, $tabsIndex);
-        }
-
-        $this->activeFormTab = $currentTab;
-    }
-
-    protected function addEmployeesTableAction(): Action
-    {
-        $action = function (array $data, Action $action) {
-            $isRegisteringEmployee = empty($data['employees']);
-            $payrollDetails = Collection::make()
-                ->unless(
-                    $isRegisteringEmployee,
-                    fn (Collection $payrollDetails) => $payrollDetails
-                        ->union(Employee::query()->whereIn('id', $data['employees'])->with('salary')->get(['id'])
-                            ->map(fn (Employee $employee) => new PayrollDetail([
-                                'employee_id' => $employee->id,
-                                'salary_id' => $employee->salary->id,
-                            ])))
-                )
-                ->when(
-                    $isRegisteringEmployee,
-                    function (Collection $payrollDetails) use ($data) {
-                        $employee = Employee::query()->create([
-                            ...$data,
-                            'company_id' => $this->record->company_id
-                        ]);
-
-                        $employee->salary()->create($data['salary']);
-                        $payrollDetails->push(new PayrollDetail(['employee_id' => $employee->id, 'salary_id' => $employee->salary->id]));
-                    }
-                );
-
-
-            /** @var Collection<int, salaryAdjustment> $details */
-            $details = $this->record->details()->saveMany($payrollDetails);
-
-            $adjustmentsForDetails = $this->record->salaryAdjustments->mapWithKeys(fn (SalaryAdjustment $payrollAdjustment) => [
-                $payrollAdjustment->id => ['custom_value' => null],
-            ]);
-
-            $details->each(fn (PayrollDetail $detail) => $detail->salaryAdjustments()->sync($adjustmentsForDetails));
-            $this->mount($this->record->id);
-            return $action->sendSuccessNotification();
-        };
-
-        $tabs = Tabs::make()
-            ->id($this->formTabsId);
-
-        $employeeListTab = Tab::make('import_employee')
-            ->label('Importar Empleados')
-            ->visible($this->showImportEmployeeTab)
-            ->live()
-            ->schema([
-                CheckboxList::make('employees')
-                    ->hiddenLabel()
-                    ->dehydrated(fn (Component $component) => $component->getContainer()->getParentComponent()->isDisabled())
-                    ->disabled(fn (Component $component) => $component->getContainer()->getParentComponent()->isDisabled())
-                    ->options(
-                        fn () => $this->record->company->employees()
-                            ->whereNotIn('id', $this->record->employees()->select('employees.id'))
-                            ->get()
-                            ->pluck('full_name', 'id')
-                    )
-                    ->bulkToggleable()
-                    ->searchable()
-                    ->columns(2)
-                    ->columnSpanFull(),
-            ]);
-
-        $employeeFormTab = Tab::make('add_employee')
-            ->label('Crear Empleado')
-            ->live()
-            ->columns(2)
-            ->schema(fn (Component $component) => $this->fields(enabled: ! $component->isDisabled(), nested: true));
-
-        return Action::make('add_employees')
-            ->mountUsing(function (Form $form) {
-                $form->fill();
-                $this->setCurrentFormTab('0');
-            })
-            ->modalHeading('')
-            ->label('Añadir empleados')
-            ->slideOver()
-            ->form([
-                $tabs
-                    ->tabs([
-                        $employeeListTab
-                            ->disabled(fn () => $this->activeFormTab === $this->addEmployeeTabId)
-                            ->dehydrated(fn () => $this->activeFormTab !== $this->addEmployeeTabId),
-                        $employeeFormTab
-                            ->disabled(fn () => $this->activeFormTab === $this->importEmployeeTabId)
-                            ->dehydrated(fn () => $this->activeFormTab !== $this->importEmployeeTabId),
-                    ])
-                    ->extraAttributes([
-                        'wire:click' => 'setCurrentFormTab(tab)',
-                    ]),
-            ])
-            ->databaseTransaction()
-            ->action($action)
-            ->successNotification(
-                Notification::make()
-                    ->success()
-                    ->title('Empleados agregados con éxito')
-            );
-    }
-
     protected function getTableActions(): array
     {
 
@@ -433,11 +288,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
                                 ->send();
                         }),
                     DeleteAction::make()
-                        ->modalHeading(fn (PayrollDetail $record) => "Eliminar a {$record->employee->full_name} de la nómina")
-                        ->after(function () {
-                            $this->mount($this->record->id);
-                            $this->setCurrentFormTab($this->activeFormTab);
-                        })
+                        ->modalHeading(fn (PayrollDetail $record) => "Eliminar a {$record->employee->full_name} de la nómina"),
                 ]),
         ];
     }
