@@ -24,7 +24,6 @@ class GenerateSecondaryPayrollsAction
     public function __construct(
         protected Payroll $record
     ) {
-
         $disableSecondaryPayrolls =  Payroll::query()
             ->whereIn(
                 'period',
@@ -38,43 +37,7 @@ class GenerateSecondaryPayrollsAction
             ->visible(fn () => $this->record->type->isMonthly())
             ->modalIcon('heroicon-s-clipboard-document')
             ->databaseTransaction()
-            ->form([
-                CheckboxList::make('dates')
-                    ->hiddenLabel()
-                    ->bulkToggleable()
-                    ->hint(function () use ($disableSecondaryPayrolls) {
-                        $hasEmployeesWithMonthlySalary = $this->record->employees
-                            ->filter(fn (Employee $employee) => $employee->salary->type->isMonthly())
-                            ->isNotEmpty();
-
-                        return match (true) {
-                            $disableSecondaryPayrolls => 'Las nóminas del mes ya fueron generadas',
-                            $hasEmployeesWithMonthlySalary => 'Los empleados con salarios mensuales no aparecerán en nominas de la primera quincena del mes',
-                            default => '',
-                        };
-                    })
-                    ->hintColor('warning')
-                    ->validationMessages([
-                        'required' => 'Debe seleccionar al menos una fecha'
-                    ])
-                    ->required()
-                    ->gridDirection('row')
-                    ->default(
-                        fn () => DB::query()
-                            ->from($this->record->getTable())
-                            ->select('period')
-                            ->whereIn(
-                                'period',
-                                Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->setDay($day)->toDateString()])
-                            )
-                            ->pluck('period')
-                            ->toArray()
-                    )
-                    ->columns(2)
-                    ->dehydrated(!$disableSecondaryPayrolls)
-                    ->disableOptionWhen(fn (string $value) => Payroll::query()->whereDate('period', $this->record->period->setDay(intval($value)))->exists())
-                    ->options(Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->translatedFormat("{$day} \\d\\e F")])),
-            ])
+            ->form($this->formSchema($disableSecondaryPayrolls))
             ->color('success')
             ->modalWidth(MaxWidth::Small)
             ->modalFooterActionsAlignment(Alignment::Center)
@@ -158,5 +121,46 @@ class GenerateSecondaryPayrollsAction
 
             $newDetail->salaryAdjustments()->sync($detail->salaryAdjustments);
         }
+    }
+
+    protected function formSchema(bool $disableSecondaryPayrolls): array
+    {
+        return [
+            CheckboxList::make('dates')
+                ->hiddenLabel()
+                ->bulkToggleable()
+                ->hint(function () use ($disableSecondaryPayrolls) {
+                    $hasEmployeesWithMonthlySalary = $this->record->employees
+                        ->filter(fn (Employee $employee) => $employee->salary->type->isMonthly())
+                        ->isNotEmpty();
+
+                    return match (true) {
+                        $disableSecondaryPayrolls => 'Las nóminas del mes ya fueron generadas',
+                        $hasEmployeesWithMonthlySalary => 'Los empleados con salarios mensuales no aparecerán en nominas de la primera quincena del mes',
+                        default => '',
+                    };
+                })
+                ->hintColor('warning')
+                ->validationMessages([
+                    'required' => 'Debe seleccionar al menos una fecha'
+                ])
+                ->required()
+                ->gridDirection('row')
+                ->default(
+                    fn () => DB::query()
+                        ->from($this->record->getTable())
+                        ->select('period')
+                        ->whereIn(
+                            'period',
+                            Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->setDay($day)->toDateString()])
+                        )
+                        ->pluck('period')
+                        ->toArray()
+                )
+                ->columns(2)
+                ->dehydrated(!$disableSecondaryPayrolls)
+                ->disableOptionWhen(fn (string $value) => Payroll::query()->whereDate('period', $this->record->period->setDay(intval($value)))->exists())
+                ->options(Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->translatedFormat("{$day} \\d\\e F")])),
+        ];
     }
 }

@@ -11,6 +11,7 @@ use App\Mail\PaymentVoucherMail;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Support\Facades\Mail;
 use App\Modules\Payroll\Models\PayrollDetail;
+use Closure;
 
 class ShowPaymentVoucherAction
 {
@@ -36,21 +37,7 @@ class ShowPaymentVoucherAction
                     ->required(),
             ])
             ->modalSubmitActionLabel('Enviar comprobante')
-            ->action(function (PayrollDetail $record, array $data) {
-                $employeeEmail = $record->employee->email ?? $data['employee_email'];
-                $pdfOutput = $record->display->renderPDF();
-
-                $mailSubject = "Volante de pago {$record->employee->full_name} {$record->payroll->period->format('d/m/Y')}";
-
-                $mail = new PaymentVoucherMail($mailSubject, $pdfOutput);
-
-                defer(fn () => Mail::to($employeeEmail)->send($mail));
-
-                Notification::make('send_payment_voucher')
-                    ->title('Voucher enviado con exito')
-                    ->success()
-                    ->send();
-            });
+            ->action(Closure::fromCallable([$this, 'actionCallback']));
     }
 
     public static function make(Payroll $payroll): Action
@@ -61,5 +48,22 @@ class ShowPaymentVoucherAction
     protected function getAction(): Action
     {
         return $this->action;
+    }
+
+    protected function actionCallback(PayrollDetail $record, array $data): void
+    {
+        $employeeEmail = $record->employee->email ?? $data['employee_email'];
+        $pdfOutput = $record->display->renderPDF();
+
+        $mailSubject = "Volante de pago {$record->employee->full_name} {$record->payroll->period->format('d/m/Y')}";
+
+        $mail = new PaymentVoucherMail($mailSubject, $pdfOutput);
+
+        defer(fn () => Mail::to($employeeEmail)->send($mail));
+
+        Notification::make('send_payment_voucher')
+            ->title('Voucher enviado con exito')
+            ->success()
+            ->send();
     }
 }

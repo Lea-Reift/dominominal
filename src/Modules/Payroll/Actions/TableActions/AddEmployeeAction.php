@@ -40,10 +40,8 @@ class AddEmployeeAction
 
         $this->tabs = Tabs::make()
             ->tabs([
-                $this->importEmployeeTab
-                    ->disabled(fn () => $this->getActiveTab() !== '-import-employee-tab'),
-                $this->addEmployeeTab
-                    ->disabled(fn () => $this->getActiveTab() !== '-add-employee-tab'),
+                $this->importEmployeeTab,
+                $this->addEmployeeTab,
             ])
             ->extraAttributes([
                 'x-on:click' => '$wire.set("mountedTableActionsData.0.active_add_employee_form_tab", tab)'
@@ -92,6 +90,7 @@ class AddEmployeeAction
         return Tab::make('import_employee')
             ->label('Importar Empleados')
             ->visible($this->record->company->employees->reject(fn (Employee $employee) => $this->record->employees->contains($employee))->isNotEmpty())
+            ->disabled(fn () => $this->getActiveTab() !== '-import-employee-tab')
             ->schema([
                 CheckboxList::make('employees')
                     ->hiddenLabel()
@@ -115,6 +114,7 @@ class AddEmployeeAction
         return Tab::make('add_employee')
             ->label('Crear Empleado')
             ->columns(2)
+            ->disabled(fn () => $this->getActiveTab() !== '-add-employee-tab')
             ->schema(fn (Component $component) => $this->fields(enabled: ! $component->isDisabled(), nested: true));
     }
 

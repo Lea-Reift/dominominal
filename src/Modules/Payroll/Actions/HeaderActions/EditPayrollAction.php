@@ -22,14 +22,7 @@ class EditPayrollAction
                 ->databaseTransaction()
                 ->after(function (Payroll $editedPayroll) {
                     if ($editedPayroll->type->isBiweekly()) {
-                        $monthlyPayrollId = Payroll::query()
-                            ->whereDate('period', $editedPayroll->period->setDay(match (true) {
-                                $editedPayroll->period->month === 2 => 28,
-                                default => 30,
-                            }))
-                            ->value('id');
-
-                        $editedPayroll->update(['monthly_payroll_id' => $monthlyPayrollId]);
+                        $this->updateMonthlyPayroll($editedPayroll);
                         return;
                     }
 
@@ -88,5 +81,17 @@ class EditPayrollAction
 
         $relation->syncWithoutDetaching($salaryAdjustmentsToAdd);
         $relation->detach($salaryAdjustmentsToRemove);
+    }
+
+    protected function updateMonthlyPayroll(Payroll $editedPayroll): void
+    {
+        $monthlyPayrollId = Payroll::query()
+            ->whereDate('period', $editedPayroll->period->setDay(match (true) {
+                $editedPayroll->period->month === 2 => 28,
+                default => 30,
+            }))
+            ->value('id');
+
+        $editedPayroll->update(['monthly_payroll_id' => $monthlyPayrollId]);
     }
 }
