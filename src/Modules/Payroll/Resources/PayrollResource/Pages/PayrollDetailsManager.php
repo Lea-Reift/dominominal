@@ -14,11 +14,7 @@ use App\Modules\Payroll\Resources\PayrollResource;
 use App\Support\ValueObjects\PayrollDisplay\PayrollDetailDisplay;
 use App\Tables\Columns\SalaryAdjustmentColumn;
 use Filament\Actions\Action as BaseAction;
-use Filament\Forms\Components\CheckboxList;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRelatedRecords;
-use Filament\Support\Enums\MaxWidth;
-use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\ActionGroup as TableActionGroup;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Columns\Layout\Grid as TableGrid;
@@ -30,15 +26,14 @@ use Filament\Tables\Table;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Number;
 use Filament\Tables\Enums\ActionsPosition;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\PaymentVoucherMail;
 use App\Modules\Payroll\Actions\HeaderActions\EditPayrollAction;
 use App\Modules\Payroll\Actions\TableActions\AddEmployeeAction;
 use Filament\Actions\ActionGroup;
-use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 use App\Modules\Payroll\Actions\TableActions\GenerateSecondaryPayrollsAction;
+use App\Modules\Payroll\Actions\TableRowActions\EditAvailableAdjustmentsAction;
+use App\Modules\Payroll\Actions\TableRowActions\ShowPaymentVoucherAction;
 
 /**
  * @property Payroll $record
@@ -138,7 +133,17 @@ class PayrollDetailsManager extends ManageRelatedRecords
                 AddEmployeeAction::make($this->record),
             ])
             ->actionsPosition(ActionsPosition::BeforeColumns)
-            ->actions($this->getTableActions());
+            ->actions([
+                TableActionGroup::make([])
+                    ->button()
+                    ->label('Opciones')
+                    ->actions([
+                        EditAvailableAdjustmentsAction::make($this->record),
+                        ShowPaymentVoucherAction::make($this->record),
+                        DeleteAction::make()
+                            ->modalHeading(fn (PayrollDetail $record) => "Eliminar a {$record->employee->full_name} de la nómina"),
+                    ])
+            ]);
 
         $hasAdjustments = $this->record->salaryAdjustments->isNotEmpty();
 
@@ -215,81 +220,5 @@ class PayrollDetailsManager extends ManageRelatedRecords
 
         return $table
             ->columns($this->record->salaryAdjustments->isEmpty() ? $regularColums : $columns->toArray());
-    }
-
-    protected function getTableActions(): array
-    {
-
-        return [
-            TableActionGroup::make([])
-                ->button()
-                ->label('Opciones')
-                ->actions([
-                    Action::make('edit_available_adjustments')
-                        ->disabled($this->record->type->isMonthly())
-                        ->hidden($this->record->type->isMonthly())
-                        ->label('Editar ajustes salariales')
-                        ->icon('heroicon-m-pencil-square')
-                        ->color('success')
-                        ->modalWidth(MaxWidth::Large)
-                        ->form([
-                            CheckboxList::make('available_salary_adjustments')
-                                ->hiddenLabel()
-                                ->options($this->record->salaryAdjustments->pluck('name', 'id'))
-                                ->default(fn (PayrollDetail $record) => $record->salaryAdjustments->pluck('id')->toArray())
-                                ->columns(2)
-                                ->bulkToggleable()
-                                ->disableOptionWhen(function (PayrollDetail $record, string $value) {
-                                    $allAdjustments = $this->record->salaryAdjustments->pluck('name', 'id');
-                                    $missingInComplementary = $allAdjustments->except($record->complementaryDetail->salaryAdjustments->pluck('id'))->keys();
-                                    return $missingInComplementary->contains($value);
-                                })
-                        ])
-                        ->databaseTransaction()
-                        ->action(function (array $data, PayrollDetail $record, Action $action) {
-                            $record->salaryAdjustments()->sync($data['available_salary_adjustments']);
-                            return $action->sendSuccessNotification();
-                        })
-                        ->successNotification(
-                            Notification::make('edit_available_adjustments')
-                                ->title('Datos guardados')
-                                ->success()
-                        ),
-                    Action::make('show_payment_voucher')
-                        ->label('Mostrar volante')
-                        ->icon('heroicon-s-inbox-arrow-down')
-                        ->modalHeading(fn (PayrollDetail $record) => $record->employee->full_name)
-                        ->color('info')
-                        ->modalContent(fn (PayrollDetail $record) => view(
-                            'show-pdf',
-                            ['pdf_base64_string' => base64_encode($record->display->renderPDF())],
-                        ))
-                        ->form([
-                            TextInput::make('employee_email')
-                                ->label('Correo del empleado')
-                                ->email()
-                                ->default(fn (PayrollDetail $record) => $record->employee->email)
-                                ->required(),
-                        ])
-                        ->modalSubmitActionLabel('Enviar comprobante')
-                        ->action(function (PayrollDetail $record, array $data) {
-                            $employeeEmail = $record->employee->email ?? $data['employee_email'];
-                            $pdfOutput = $record->display->renderPDF();
-
-                            $mailSubject = "Volante de pago {$record->employee->full_name} {$record->payroll->period->format('d/m/Y')}";
-
-                            $mail = new PaymentVoucherMail($mailSubject, $pdfOutput);
-
-                            defer(fn () => Mail::to($employeeEmail)->send($mail));
-
-                            Notification::make('send_payment_voucher')
-                                ->title('Voucher enviado con exito')
-                                ->success()
-                                ->send();
-                        }),
-                    DeleteAction::make()
-                        ->modalHeading(fn (PayrollDetail $record) => "Eliminar a {$record->employee->full_name} de la nómina"),
-                ]),
-        ];
     }
 }
