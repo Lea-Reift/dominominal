@@ -17,6 +17,7 @@ use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Component;
 use Filament\Notifications\Notification;
 use Filament\Forms\Components\Hidden;
+use App\Modules\Payroll\Models\SalaryAdjustment;
 
 class AddEmployeeAction
 {
