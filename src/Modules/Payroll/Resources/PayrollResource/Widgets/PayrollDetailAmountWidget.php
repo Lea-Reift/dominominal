@@ -18,6 +18,8 @@ class PayrollDetailAmountWidget extends StatsOverviewWidget
     protected static ?string $pollingInterval = null;
     protected static bool $isLazy = false;
 
+    protected static string $view = 'components.widgets.overview';
+
     public array $totalRowDisplay;
 
     protected function getColumns(): int
