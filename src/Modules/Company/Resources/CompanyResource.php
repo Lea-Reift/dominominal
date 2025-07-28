@@ -88,6 +88,7 @@ class CompanyResource extends Resource
                     ->label('Nombre')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('document_type')
+                    ->label('Documento')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('address')
                     ->label('Dirección')
