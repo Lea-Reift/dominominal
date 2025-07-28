@@ -23,6 +23,8 @@ use Livewire\Component as Livewire;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Modules\Company\Models\Employee;
 use App\Modules\Payroll\Models\SalaryAdjustment;
+use App\Modules\Company\Models\Salary;
+use Illuminate\Support\Collection;
 
 class ImportRawEmployeeAction
 {
@@ -180,18 +182,21 @@ class ImportRawEmployeeAction
             $salary = $data['salary'];
             unset($data['salary']);
 
+            /** @var Employee */
             $employee = Employee::query()->firstOrCreate([
                 ...$data,
                 'company_id' => $this->payroll->company_id
             ]);
 
-            $salary = $employee->salary()->create([
+            /** @var Salary */
+            $salary = $employee->salary()->firstOrCreate([
                 'amount' => $salary,
             ]);
 
             $payrollDetails->push(new PayrollDetail(['employee_id' => $employee->id, 'salary_id' => $salary->id]));
         });
 
+        /** @var Collection */
         $details = $this->payroll->details()->saveMany($payrollDetails);
 
         $adjustmentsForDetails = $this->payroll->salaryAdjustments->mapWithKeys(fn (SalaryAdjustment $payrollAdjustment) => [

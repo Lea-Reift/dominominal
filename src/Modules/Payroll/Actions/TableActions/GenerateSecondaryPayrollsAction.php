@@ -16,6 +16,8 @@ use Filament\Notifications\Notification;
 use App\Modules\Payroll\Exceptions\DuplicatedPayrollException;
 use App\Enums\SalaryTypeEnum;
 use App\Modules\Company\Models\Employee;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use App\Modules\Payroll\Models\PayrollDetail;
 
 class GenerateSecondaryPayrollsAction
 {
@@ -100,7 +102,7 @@ class GenerateSecondaryPayrollsAction
         $details = $this->record->details
             ->when(
                 $period->day === 14,
-                fn (Collection $details) => $details->reject(
+                fn (EloquentCollection $details) => $details->reject(
                     fn (PayrollDetail $detail) => $detail->salary->type->isMonthly()
                 )
             );
