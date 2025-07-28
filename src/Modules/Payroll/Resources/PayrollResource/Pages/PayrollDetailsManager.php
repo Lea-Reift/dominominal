@@ -11,7 +11,6 @@ use App\Modules\Payroll\Models\Payroll;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Modules\Payroll\Models\SalaryAdjustment;
 use App\Modules\Payroll\Resources\PayrollResource;
-use App\Support\ValueObjects\PayrollDisplay\PayrollDetailDisplay;
 use App\Tables\Columns\SalaryAdjustmentColumn;
 use Filament\Actions\Action as BaseAction;
 use Filament\Resources\Pages\ManageRelatedRecords;
@@ -126,7 +125,6 @@ class PayrollDetailsManager extends ManageRelatedRecords
     {
         $table
             ->paginated(false)
-            ->recordTitleAttribute('employee_id')
             ->headerActions([
                 GenerateSecondaryPayrollsAction::make($this->record),
                 AddEmployeeAction::make($this->record),
@@ -173,7 +171,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
                 ->label('Empleado'),
             TextColumn::make('salary')
                 ->label('Salario')
-                ->formatStateUsing(fn (PayrollDetail $record) => 'Salario: ' . Number::currency($record->getParsedPayrollSalary()))
+                ->state(fn (PayrollDetail $record) => 'Salario: ' . Number::currency($record->getParsedPayrollSalary()))
                 ->summarize(
                     Summarizer::make()
                         ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('rawSalary'))
@@ -182,8 +180,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
                 ),
             TextColumn::make('incomes')
                 ->label('Ingresos')
-                ->money()
-                ->state(fn (PayrollDetail $record) => ($hasAdjustments ? 'Ingresos: ' : '') . Number::currency((new PayrollDetailDisplay($record))->incomeTotal))
+                ->state(fn (PayrollDetail $record) => ($hasAdjustments ? 'Ingresos: ' : '') . Number::currency($record->display->incomeTotal))
                 ->summarize(
                     Summarizer::make()
                         ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('incomeTotal'))
@@ -192,8 +189,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
                 ),
             TextColumn::make('deductions')
                 ->label('Deducciones')
-                ->money()
-                ->state(fn (PayrollDetail $record) => ($hasAdjustments ? 'Deducciones: ' : '') . Number::currency((new PayrollDetailDisplay($record))->deductionTotal))
+                ->state(fn (PayrollDetail $record) => ($hasAdjustments ? 'Deducciones: ' : '') . Number::currency($record->display->deductionTotal))
                 ->summarize(
                     Summarizer::make()
                         ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('deductionTotal'))
@@ -202,13 +198,12 @@ class PayrollDetailsManager extends ManageRelatedRecords
                 ),
             TextColumn::make('salaryAdjustments')
                 ->label('Total a pagar')
-                ->money()
                 ->state(
-                    fn (PayrollDetail $record) => ($hasAdjustments ? 'Total a Pagar: ' : '') . Number::currency((new PayrollDetailDisplay($record))->netSalary)
+                    fn (PayrollDetail $record) => ($hasAdjustments ? 'Total a Pagar: ' : '') . Number::currency($record->display->netSalary)
                 ),
         ];
 
-        return [Stack::make($columns)];
+        return $hasAdjustments ? [Stack::make($columns)] : $columns;
     }
 
     protected function adjustmentsColumnsSchema(?PayrollDetail $record): array
