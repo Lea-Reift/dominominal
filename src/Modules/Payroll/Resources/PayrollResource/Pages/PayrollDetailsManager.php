@@ -34,6 +34,7 @@ use Illuminate\Support\Str;
 use App\Modules\Payroll\Actions\TableActions\GenerateSecondaryPayrollsAction;
 use App\Modules\Payroll\Actions\TableRowActions\EditAvailableAdjustmentsAction;
 use App\Modules\Payroll\Actions\TableRowActions\ShowPaymentVoucherAction;
+use Closure;
 
 /**
  * @property Payroll $record
@@ -133,21 +134,43 @@ class PayrollDetailsManager extends ManageRelatedRecords
                 AddEmployeeAction::make($this->record),
             ])
             ->actionsPosition(ActionsPosition::BeforeColumns)
-            ->actions([
-                TableActionGroup::make([])
-                    ->button()
-                    ->label('Opciones')
-                    ->actions([
-                        EditAvailableAdjustmentsAction::make($this->record),
-                        ShowPaymentVoucherAction::make($this->record),
-                        DeleteAction::make()
-                            ->modalHeading(fn (PayrollDetail $record) => "Eliminar a {$record->employee->full_name} de la nómina"),
-                    ])
-            ]);
+            ->actions(TableActionGroup::make([])
+                ->button()
+                ->label('Opciones')
+                ->actions([
+                    EditAvailableAdjustmentsAction::make($this->record),
+                    ShowPaymentVoucherAction::make($this->record),
+                    DeleteAction::make()
+                        ->modalHeading(fn (PayrollDetail $record) => "Eliminar a {$record->employee->full_name} de la nómina"),
+                ]));
 
+        $regularColumns = $this->defaultColumnsSchema();
+
+        $columns = collect([
+            TableGrid::make(10)
+                ->schema([
+                    Split::make([])
+                        ->schema($regularColumns)
+                        ->extraAttributes([
+                            'x-tooltip' => '{content: "El salario, los ingresos y las deducciones se calculan en base a los datos del empleado y la información de la nomina.",theme: $store.theme,}',
+                        ])
+                        ->columnSpan(2),
+                    Split::make([])
+                        ->schema(Closure::fromCallable([$this, 'adjustmentsColumnsSchema']))
+                        ->columnSpan(8),
+                ]),
+
+        ]);
+
+        return $table
+            ->columns($this->record->salaryAdjustments->isEmpty() ? $regularColumns : $columns->toArray());
+    }
+
+    protected function defaultColumnsSchema(): array
+    {
         $hasAdjustments = $this->record->salaryAdjustments->isNotEmpty();
 
-        $regularColums = [
+        $columns = [
             TextColumn::make('employee.full_name')
                 ->label('Empleado'),
             TextColumn::make('salary')
@@ -187,38 +210,27 @@ class PayrollDetailsManager extends ManageRelatedRecords
                 ),
         ];
 
-        $columns = collect([
-            TableGrid::make(10)
-                ->schema([
-                    Split::make([Stack::make($regularColums)])
-                        ->extraAttributes(merge: true, attributes: [
-                            'x-tooltip' => '{content: "El salario, los ingresos y las deducciones se calculan en base a los datos del empleado y la información de la nomina.",theme: $store.theme,}',
-                        ])
-                        ->columnSpan(2),
-                    Split::make([])
-                        ->schema(fn (?PayrollDetail $record) => [
-                            TableGrid::make()
-                                ->columns([
-                                    'sm' => 2,
-                                    'xl' => 3,
-                                    '2xl' => 4,
-                                ])
-                                ->schema(
-                                    ($record->editableSalaryAdjustments ?? $this->record->editableSalaryAdjustments)
-                                        ->sortBy('type')
-                                        ->map(
-                                            fn (SalaryAdjustment $adjustment) =>
-                                            SalaryAdjustmentColumn::make("salaryAdjustments.{$adjustment->id}.{$this->record->id}")
-                                        )
-                                        ->toArray()
-                                ),
-                        ])
-                        ->columnSpan(8),
-                ]),
+        return [Stack::make($columns)];
+    }
 
-        ]);
-
-        return $table
-            ->columns($this->record->salaryAdjustments->isEmpty() ? $regularColums : $columns->toArray());
+    protected function adjustmentsColumnsSchema(?PayrollDetail $record): array
+    {
+        return [
+            TableGrid::make()
+                ->columns([
+                    'sm' => 2,
+                    'xl' => 3,
+                    '2xl' => 4,
+                ])
+                ->schema(
+                    ($record->editableSalaryAdjustments ?? $this->record->editableSalaryAdjustments)
+                        ->sortBy('type')
+                        ->map(
+                            fn (SalaryAdjustment $adjustment) =>
+                            SalaryAdjustmentColumn::make("salaryAdjustments.{$adjustment->id}.{$this->record->id}")
+                        )
+                        ->toArray()
+                ),
+        ];
     }
 }
