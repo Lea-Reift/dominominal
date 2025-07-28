@@ -33,6 +33,7 @@ use Illuminate\Support\Str;
 use App\Modules\Payroll\Actions\TableActions\GenerateSecondaryPayrollsAction;
 use App\Modules\Payroll\Actions\TableRowActions\EditAvailableAdjustmentsAction;
 use App\Modules\Payroll\Actions\TableRowActions\ShowPaymentVoucherAction;
+use App\Modules\Payroll\Resources\PayrollResource\Widgets\PayrollDetailAmountWidget;
 use Closure;
 
 /**
@@ -95,6 +96,15 @@ class PayrollDetailsManager extends ManageRelatedRecords
             : 'd \d\e F \d\e\l Y';
 
         return Str::headline($this->record->period->translatedFormat($format));
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            PayrollDetailAmountWidget::make([
+                'totalRowDisplay' => (array)$this->record->display->totals,
+            ]),
+        ];
     }
 
     protected function getHeaderActions(): array
