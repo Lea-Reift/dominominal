@@ -46,10 +46,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
 
     protected static string $resource = PayrollResource::class;
     protected static string $relationship = 'details';
-    protected static ?string $modelLabel = 'registro';
-    protected static ?string $title = 'Registro';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-
 
     public function mount(int|string $record): void
     {
