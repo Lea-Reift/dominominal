@@ -213,6 +213,10 @@ class PayrollDetailsManager extends ManageRelatedRecords
 
     protected function adjustmentsColumnsSchema(?PayrollDetail $record): array
     {
+        $adjustments = $record?->editableSalaryAdjustments->isNotEmpty()
+            ? $record->editableSalaryAdjustments
+            : $this->record->editableSalaryAdjustments;
+
         return [
             TableGrid::make()
                 ->columns([
@@ -221,13 +225,10 @@ class PayrollDetailsManager extends ManageRelatedRecords
                     '2xl' => 4,
                 ])
                 ->schema(
-                    ($record->editableSalaryAdjustments ?? $this->record->editableSalaryAdjustments)
-                        ->sortBy('type')
-                        ->map(
-                            fn (SalaryAdjustment $adjustment) =>
-                            SalaryAdjustmentColumn::make("salaryAdjustments.{$adjustment->id}.{$this->record->id}")
-                        )
-                        ->toArray()
+                    SalaryAdjustmentColumn::fromIterable(
+                        $adjustments->sortBy(fn (SalaryAdjustment $adjustment) => $adjustment->type->value)->pluck('id'),
+                        $this->record
+                    )
                 ),
         ];
     }

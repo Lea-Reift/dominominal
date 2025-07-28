@@ -237,4 +237,15 @@ class SalaryAdjustmentColumn extends TextInputColumn
         return $biweeklyPayrollDetailAdjustmentsCustomValues
             ->some(fn (mixed $value) => !is_null($value) && (float)$value !== ((float)$recordAdjustmentCustomValue / 2));
     }
+
+    public static function fromIterable(iterable $adjustments, Payroll $payroll): array
+    {
+        $columns = [];
+
+        foreach ($adjustments as $adjustmentId) {
+            $columns[] = static::make("salaryAdjustments.{$adjustmentId}.{$payroll->id}");
+        }
+
+        return $columns;
+    }
 }
