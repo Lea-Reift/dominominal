@@ -74,27 +74,9 @@ class PayrollDetailsManager extends ManageRelatedRecords
             ->findOrFail($key);
     }
 
-    protected function getHeaderActions(): array
+    public function getTitle(): string
     {
-        return [
-            EditPayrollAction::make(),
-            ActionGroup::make([])
-                ->hiddenLabel(false)
-                ->button()
-                ->label('Exportar')
-                ->color('success')
-                ->icon('heroicon-o-document-arrow-down')
-                ->actions([
-                    BaseAction::make('excel_export')
-                        ->label('Exportar a Excel')
-                        ->url(fn () => $this->getUrl(['record' => $this->record->id]) . '/export/excel')
-                        ->openUrlInNewTab(),
-                    BaseAction::make('pdf_export')
-                        ->label('Exportar a PDF')
-                        ->url(fn () => $this->getUrl(['record' => $this->record->id]) . '/export/pdf')
-                        ->openUrlInNewTab(),
-                ]),
-        ];
+        return "Nómina {$this->getHeading()} de {$this->record->company->name}";
     }
 
     public function getBreadcrumbs(): array
@@ -119,10 +101,29 @@ class PayrollDetailsManager extends ManageRelatedRecords
         return Str::headline($this->record->period->translatedFormat($format));
     }
 
-    public function getTitle(): string
+    protected function getHeaderActions(): array
     {
-        return "Nómina {$this->getHeading()} de {$this->record->company->name}";
+        return [
+            EditPayrollAction::make(),
+            ActionGroup::make([])
+                ->hiddenLabel(false)
+                ->button()
+                ->label('Exportar')
+                ->color('success')
+                ->icon('heroicon-o-document-arrow-down')
+                ->actions([
+                    BaseAction::make('excel_export')
+                        ->label('Exportar a Excel')
+                        ->url(fn () => $this->getUrl(['record' => $this->record->id]) . '/export/excel')
+                        ->openUrlInNewTab(),
+                    BaseAction::make('pdf_export')
+                        ->label('Exportar a PDF')
+                        ->url(fn () => $this->getUrl(['record' => $this->record->id]) . '/export/pdf')
+                        ->openUrlInNewTab(),
+                ]),
+        ];
     }
+
 
     public function table(Table $table): Table
     {
