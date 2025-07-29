@@ -40,7 +40,6 @@ pub fn run() {
                         .build(),
                 )?;
             }
-
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![set_complete])
@@ -75,6 +74,56 @@ pub fn run() {
                 });
             }
 
+            let database_path: std::path::PathBuf = handler
+                .path()
+                .resource_dir()
+                .expect("Fail getting path")
+                .join("resources/app/database/dominominal.sqlite");
+
+            if !std::fs::exists(&database_path).unwrap() {
+                let _ = std::fs::File::create_new(&database_path);
+            }
+
+            let connection = sqlite::open(database_path).expect("Error opening database");
+
+            let mut statement = connection
+                .prepare(
+                    "SELECT EXISTS(SELECT name FROM sqlite_master WHERE TYPE ='table' AND name = 'migrations') AS has_migrations_table"
+                )
+                .unwrap();
+
+            statement.next().unwrap();
+
+            let has_migrations_table: i64 = statement.read::<i64, _>("has_migrations_table").unwrap();
+
+            if has_migrations_table == 1 {
+                let mut statement: sqlite::Statement<'_> = connection
+                    .prepare(
+                        "SELECT COUNT(migration) as migrations_count FROM migrations ORDER BY id DESC LIMIT 1"
+                    )
+                    .unwrap();
+                statement.next().unwrap();
+                let migrations_count: i64 = statement.read::<i64, _>("migrations_count").unwrap();
+
+                let migrations_path: std::path::PathBuf = handler
+                    .path()
+                    .resource_dir()
+                    .expect("Fail getting path")
+                    .join("resources/app/database/migrations");
+
+                let migration_files_count: usize = std::fs::read_dir(migrations_path)
+                    .expect("Couldn't access local directory")
+                    .flatten()
+                    .count();
+
+                println!("files count {migration_files_count}; migrations count: {migrations_count}");
+                if migration_files_count > (migrations_count as usize) {
+                    migrate_app(handler);
+                }
+            } else {
+                migrate_app(handler);
+            }
+
             handler.manage(LaravelServer(Arc::new(Mutex::new(Some(
                 start_laravel_server(handler),
             )))));
@@ -89,13 +138,14 @@ pub fn run() {
 
 #[tauri::command]
 async fn set_complete(app: AppHandle) -> Result<(), ()> {
-    let splash_window = app.get_webview_window("splashscreen").unwrap();
-    let main_window = app.get_webview_window("app").unwrap();
+    let splash_window: tauri::WebviewWindow = app.get_webview_window("splashscreen").unwrap();
+    let main_window: tauri::WebviewWindow = app.get_webview_window("app").unwrap();
 
-    main_window.show().unwrap();
     splash_window.close().unwrap();
+    main_window.show().unwrap();
+    main_window.set_focus().unwrap();
 
-    let handle = app.clone();
+    let handle: AppHandle = app.clone();
 
     tauri::async_runtime::spawn(async move {
         update(handle).await.expect("error updating app");
@@ -112,12 +162,13 @@ fn kill_laravel_server(handler: &AppHandle) {
         .0
         .lock()
         .expect("Fail getting server instance");
-    let laravel_server_process: CommandChild = laravel_server_guard
-        .take()
-        .expect("Failure getting server process");
-    laravel_server_process
-        .kill()
-        .expect("Fail killing laravel server");
+    let laravel_server_process_option: Option<CommandChild> = laravel_server_guard.take();
+
+    if let Some(laravel_server_process) = laravel_server_process_option {
+        laravel_server_process
+            .kill()
+            .expect("Fail killing laravel server");
+    }
 }
 
 fn start_laravel_server(handler: &AppHandle) -> CommandChild {
@@ -152,8 +203,6 @@ fn start_laravel_server(handler: &AppHandle) -> CommandChild {
             }
         }
     });
-
-    println!("Server Started in port 8000");
     return child;
 }
 
@@ -185,9 +234,6 @@ async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
 
     let updater = app
         .updater_builder()
-        .version_comparator(|_current, _update| {
-            return true;
-        })
         .on_before_exit(move || {
             app_clone
                 .dialog()
@@ -204,6 +250,7 @@ async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
             .dialog()
             .message("Hay una nueva actualización disponible. ¿Desea instalarla ahora?")
             .title("Actualización Disponible")
+            .buttons(MessageDialogButtons::OkCancelCustom("Si, instalar".to_string(), "No, cancelar".to_string()))
             .blocking_show();
 
         if !answer {
@@ -249,8 +296,20 @@ async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
         update
             .install(downloaded_update)
             .expect("Failure installing");
+
         app.restart();
     }
 
     Ok(())
+}
+
+fn migrate_app(handler: &AppHandle) {
+    let (mut receiver, _) =
+                        run_php_command(handler, ["artisan", "migrate", "--force"].to_vec(), None);
+
+                    tauri::async_runtime::block_on(async move {
+                        println!("Running artisan migrate...");
+                        receiver.recv().await;
+                        println!("Artisan migrate done!");
+                    });
 }

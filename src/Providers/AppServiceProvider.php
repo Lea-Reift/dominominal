@@ -6,8 +6,6 @@ namespace App\Providers;
 
 use Illuminate\Support\Number;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Artisan;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,10 +34,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (!Schema::hasTable('settings') && !$this->app->runningInConsole()) {
-            Artisan::call('migrate --force');
-        }
-
         Number::useLocale('en');
         Number::useCurrency('USD');
     }

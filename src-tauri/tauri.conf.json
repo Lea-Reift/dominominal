@@ -18,15 +18,13 @@
                 "width": 180,
                 "height": 50,
                 "resizable": false,
-                "visible": true,
-                "alwaysOnTop": true
+                "visible": true
             },
             {
                 "label": "app",
                 "url": "http://localhost:8000",
                 "title": "Dominominal",
                 "resizable": true,
-                "fullscreen": false,
                 "zoomHotkeysEnabled": true,
                 "visible": false,
                 "maximized": true
