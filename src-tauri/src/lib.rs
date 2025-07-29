@@ -7,6 +7,7 @@ use tauri::{
     async_runtime::Receiver, path::BaseDirectory, window::ProgressBarState, App, AppHandle,
     Manager, RunEvent, State,
 };
+
 use tauri_plugin_shell::{
     process::{Command, CommandChild, CommandEvent},
     ShellExt,
@@ -252,7 +253,10 @@ async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
             .dialog()
             .message("Hay una nueva actualización disponible. ¿Desea instalarla ahora?")
             .title("Actualización Disponible")
-            .buttons(MessageDialogButtons::OkCancelCustom("Si, instalar".to_string(), "No, cancelar".to_string()))
+            .buttons(MessageDialogButtons::OkCancelCustom(
+                "Si, instalar".to_string(),
+                "No, cancelar".to_string(),
+            ))
             .blocking_show();
 
         if !answer {
@@ -307,13 +311,13 @@ async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
 
 fn migrate_app(handler: &AppHandle) {
     let (mut receiver, _) =
-                        run_php_command(handler, ["artisan", "migrate", "--force"].to_vec(), None);
+        run_php_command(handler, ["artisan", "migrate", "--force"].to_vec(), None);
 
-                    tauri::async_runtime::block_on(async move {
-                        println!("Running artisan migrate...");
-                        receiver.recv().await;
-                        println!("Artisan migrate done!");
-                    });
+    tauri::async_runtime::block_on(async move {
+        println!("Running artisan migrate...");
+        receiver.recv().await;
+        println!("Artisan migrate done!");
+    });
 }
 
 fn extract_from_state_wrapper<T>(app: &AppHandle) -> Option<T>
@@ -321,5 +325,5 @@ where
     T: Send + 'static,
 {
     let state: State<'_, Wrapper<T>> = app.try_state::<Wrapper<T>>().expect("State not found");
-    return state.extract()
+    return state.extract();
 }
