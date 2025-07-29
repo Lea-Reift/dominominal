@@ -138,13 +138,14 @@ pub fn run() {
 
 #[tauri::command]
 async fn set_complete(app: AppHandle) -> Result<(), ()> {
-    let splash_window = app.get_webview_window("splashscreen").unwrap();
-    let main_window = app.get_webview_window("app").unwrap();
+    let splash_window: tauri::WebviewWindow = app.get_webview_window("splashscreen").unwrap();
+    let main_window: tauri::WebviewWindow = app.get_webview_window("app").unwrap();
 
-    main_window.show().unwrap();
     splash_window.close().unwrap();
+    main_window.show().unwrap();
+    main_window.set_focus().unwrap();
 
-    let handle = app.clone();
+    let handle: AppHandle = app.clone();
 
     tauri::async_runtime::spawn(async move {
         update(handle).await.expect("error updating app");
@@ -161,12 +162,13 @@ fn kill_laravel_server(handler: &AppHandle) {
         .0
         .lock()
         .expect("Fail getting server instance");
-    let laravel_server_process: CommandChild = laravel_server_guard
-        .take()
-        .expect("Failure getting server process");
-    laravel_server_process
-        .kill()
-        .expect("Fail killing laravel server");
+    let laravel_server_process_option: Option<CommandChild> = laravel_server_guard.take();
+
+    if let Some(laravel_server_process) = laravel_server_process_option {
+        laravel_server_process
+            .kill()
+            .expect("Fail killing laravel server");
+    }
 }
 
 fn start_laravel_server(handler: &AppHandle) -> CommandChild {
@@ -201,8 +203,6 @@ fn start_laravel_server(handler: &AppHandle) -> CommandChild {
             }
         }
     });
-
-    println!("Server Started in port 8000");
     return child;
 }
 
@@ -234,9 +234,6 @@ async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
 
     let updater = app
         .updater_builder()
-        .version_comparator(|_current, _update| {
-            return true;
-        })
         .on_before_exit(move || {
             app_clone
                 .dialog()
@@ -253,6 +250,7 @@ async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
             .dialog()
             .message("Hay una nueva actualización disponible. ¿Desea instalarla ahora?")
             .title("Actualización Disponible")
+            .buttons(MessageDialogButtons::OkCancelCustom("Si, instalar".to_string(), "No, cancelar".to_string()))
             .blocking_show();
 
         if !answer {
