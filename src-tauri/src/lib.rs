@@ -16,7 +16,18 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 use tauri_plugin_updater::UpdaterExt;
 
-struct LaravelServer(pub Arc<Mutex<Option<CommandChild>>>);
+struct Wrapper<T>(pub Arc<Mutex<Option<T>>>);
+
+impl<T> Wrapper<T> {
+    pub fn with_value(value: T) -> Self {
+        Wrapper(Arc::new(Mutex::new(Some(value))))
+    }
+
+    pub fn extract(&self) -> Option<T> {
+        let mut guard = self.0.lock().expect("Failed to lock mutex");
+        guard.take()
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -124,9 +135,8 @@ pub fn run() {
                 migrate_app(handler);
             }
 
-            handler.manage(LaravelServer(Arc::new(Mutex::new(Some(
-                start_laravel_server(handler),
-            )))));
+            let server_wrapper: Wrapper<CommandChild> = Wrapper::with_value(start_laravel_server(handler));
+            handler.manage(server_wrapper);
         }
 
         RunEvent::ExitRequested { .. } | RunEvent::Exit => {
@@ -154,15 +164,7 @@ async fn set_complete(app: AppHandle) -> Result<(), ()> {
 }
 
 fn kill_laravel_server(handler: &AppHandle) {
-    let laravel_server_mutex: State<'_, LaravelServer> = handler
-        .try_state::<LaravelServer>()
-        .expect("Fail getting server instance");
-
-    let mut laravel_server_guard: MutexGuard<'_, Option<CommandChild>> = laravel_server_mutex
-        .0
-        .lock()
-        .expect("Fail getting server instance");
-    let laravel_server_process_option: Option<CommandChild> = laravel_server_guard.take();
+    let laravel_server_process_option: Option<CommandChild> = extract_from_state_wrapper(handler);
 
     if let Some(laravel_server_process) = laravel_server_process_option {
         laravel_server_process
@@ -312,4 +314,12 @@ fn migrate_app(handler: &AppHandle) {
                         receiver.recv().await;
                         println!("Artisan migrate done!");
                     });
+}
+
+fn extract_from_state_wrapper<T>(app: &AppHandle) -> Option<T>
+where
+    T: Send + 'static,
+{
+    let state: State<'_, Wrapper<T>> = app.try_state::<Wrapper<T>>().expect("State not found");
+    return state.extract()
 }
