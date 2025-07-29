@@ -46,8 +46,19 @@ pub fn run() {
                         .build(),
                 )?;
 
+                let database_path: std::path::PathBuf = app.handle()
+                    .path()
+                    .app_local_data_dir()
+                    .expect("Fail getting path")
+                    .join("dominominal.sqlite");
+
+                let laravel_information: LaravelInformation = LaravelInformation {
+                    database_path: Some(database_path),
+                    server: None,
+                };
+
                 app.handle()
-                    .manage(Mutex::new(LaravelInformation::default()));
+                    .manage(Mutex::new(laravel_information));
             }
             Ok(())
         })
@@ -57,6 +68,8 @@ pub fn run() {
 
     app.run(|handler: &AppHandle, event: RunEvent| match event {
         RunEvent::Ready => {
+            prepare_database(handler);
+
             let storage_path: std::path::PathBuf = handler
                 .path()
                 .resource_dir()
@@ -64,8 +77,7 @@ pub fn run() {
                 .join("resources/app/storage");
 
             if !std::fs::exists(storage_path).unwrap_or(false) {
-                let (mut receiver, _) =
-                    run_php_command(handler, ["artisan", "optimize"].to_vec(), None);
+                let (mut receiver, _) = run_artisan_command(handler, ["optimize"].to_vec());
 
                 tauri::async_runtime::block_on(async move {
                     println!("Running artisan optimize...");
@@ -74,7 +86,7 @@ pub fn run() {
                 });
 
                 let (mut receiver, _) =
-                    run_php_command(handler, ["artisan", "filament:optimize"].to_vec(), None);
+                    run_artisan_command(handler, ["filament:optimize"].to_vec());
 
                 tauri::async_runtime::block_on(async move {
                     println!("Running artisan filament:optimize...");
@@ -83,19 +95,13 @@ pub fn run() {
                 });
             }
 
-            let database_path: std::path::PathBuf = handler
-                .path()
-                .resource_dir()
-                .expect("Fail getting path")
-                .join("resources/app/database/dominominal.sqlite");
+            let laravel_server: Option<CommandChild> = Some(start_laravel_server(handler));
 
             let laravel_state: State<'_, Mutex<LaravelInformation>> = laravel_state(handler);
             let mut laravel_information: MutexGuard<'_, LaravelInformation> =
                 laravel_state.lock().expect("Failure getting information");
-            laravel_information.database_path = Some(database_path);
-            laravel_information.server = Some(start_laravel_server(handler));
+            laravel_information.server = laravel_server;
             drop(laravel_information);
-            prepare_database(handler);
         }
 
         RunEvent::ExitRequested { .. } | RunEvent::Exit => {
@@ -142,18 +148,15 @@ fn start_laravel_server(handler: &AppHandle) -> CommandChild {
         .expect("Fail getting path")
         .join("resources/app/public");
 
-    let (mut receiver, child) = handler
-        .shell()
-        .sidecar("php")
-        .expect("Fail getting php sidecar")
-        .current_dir(
+    let (mut receiver, child) = run_php_command(
+        handler,
+        ["-S", "127.0.0.1:8000"].to_vec(),
+        Some(
             resources_path
                 .canonicalize()
                 .expect("Failure canonizing app"),
-        )
-        .args(["-S", "127.0.0.1:8000"])
-        .spawn()
-        .expect("Failure starting server");
+        ),
+    );
 
     tauri::async_runtime::spawn(async move {
         while let Some(event) = receiver.recv().await {
@@ -173,24 +176,60 @@ fn start_laravel_server(handler: &AppHandle) -> CommandChild {
 fn run_php_command(
     handler: &AppHandle,
     args: Vec<&str>,
-    directory: Option<&str>,
+    directory: Option<PathBuf>,
 ) -> (Receiver<CommandEvent>, CommandChild) {
     let php: Command = handler.shell().sidecar("php").unwrap();
-    let command_directory = match directory {
-        None => "./resources/app",
+    let realpath = match directory {
+        None => handler
+            .path()
+            .resolve("./resources/app", BaseDirectory::Resource)
+            .expect("Fail getting route"),
         _ => directory.unwrap(),
     };
 
-    let realpath: PathBuf = handler
-        .path()
-        .resolve(command_directory, BaseDirectory::Resource)
-        .expect("Fail getting route");
+    let laravel_state: State<'_, Mutex<LaravelInformation>> = laravel_state(handler);
+    let laravel_information: MutexGuard<'_, LaravelInformation> = laravel_state
+        .try_lock()
+        .expect("Failure getting information");
+    let database_path_wrapper: Option<PathBuf> = laravel_information.database_path.clone();
+    let database_path: PathBuf = database_path_wrapper.expect("Missing database path");
+    drop(laravel_information);
 
     return php
         .args(args.clone())
+        .env("DB_DATABASE", database_path.to_str().unwrap())
         .current_dir(realpath.to_str().expect("Failure getting path"))
         .spawn()
         .expect(&format!("Failure running php command: {:?}", args));
+}
+
+fn run_artisan_command(
+    handler: &AppHandle,
+    mut args: Vec<&str>,
+) -> (Receiver<CommandEvent>, CommandChild) {
+    let php: Command = handler.shell().sidecar("php").unwrap();
+
+    let realpath: PathBuf = handler
+        .path()
+        .resolve("./resources/app", BaseDirectory::Resource)
+        .expect("Fail getting route");
+
+    args.insert(0, "artisan");
+
+    let laravel_state: State<'_, Mutex<LaravelInformation>> = laravel_state(handler);
+    let laravel_information: MutexGuard<'_, LaravelInformation> = laravel_state
+        .try_lock()
+        .expect("Failure getting information");
+    let database_path_wrapper: Option<PathBuf> = laravel_information.database_path.clone();
+    let database_path: PathBuf = database_path_wrapper.expect("Missing database path");
+    drop(laravel_information);
+
+    return php
+        .args(args.clone())
+        .env("DB_DATABASE", database_path.to_str().unwrap())
+        .current_dir(realpath.to_str().expect("Failure getting path"))
+        .spawn()
+        .expect(&format!("Failure running artisan command: {:?}", args));
 }
 
 async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
@@ -271,8 +310,7 @@ async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
 }
 
 fn migrate_app(handler: &AppHandle) {
-    let (mut receiver, _) =
-        run_php_command(handler, ["artisan", "migrate", "--force"].to_vec(), None);
+    let (mut receiver, _) = run_artisan_command(handler, ["migrate", "--force"].to_vec());
 
     tauri::async_runtime::block_on(async move {
         println!("Running artisan migrate...");
@@ -283,11 +321,13 @@ fn migrate_app(handler: &AppHandle) {
 
 fn prepare_database(handler: &AppHandle) {
     let laravel_state: State<'_, Mutex<LaravelInformation>> = laravel_state(handler);
-    let laravel_information: MutexGuard<'_, LaravelInformation> = laravel_state.try_lock().expect("Failure getting information");
+    let laravel_information: MutexGuard<'_, LaravelInformation> = laravel_state
+        .try_lock()
+        .expect("Failure getting information");
     let database_path_wrapper: Option<PathBuf> = laravel_information.database_path.clone();
     let database_path: PathBuf = database_path_wrapper.expect("Missing database path");
-
     drop(laravel_information);
+
     if !std::fs::exists(&database_path).unwrap() {
         let _ = std::fs::File::create_new(&database_path);
     }
