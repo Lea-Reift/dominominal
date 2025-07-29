@@ -92,51 +92,12 @@ pub fn run() {
                 .expect("Fail getting path")
                 .join("resources/app/database/dominominal.sqlite");
 
-            if !std::fs::exists(&database_path).unwrap() {
-                let _ = std::fs::File::create_new(&database_path);
-            }
+            handler.manage(Wrapper::with_value(database_path.clone()));
 
-            let connection = sqlite::open(database_path).expect("Error opening database");
+            prepare_database(handler);
 
-            let mut statement = connection
-                .prepare(
-                    "SELECT EXISTS(SELECT name FROM sqlite_master WHERE TYPE ='table' AND name = 'migrations') AS has_migrations_table"
-                )
-                .unwrap();
-
-            statement.next().unwrap();
-
-            let has_migrations_table: i64 = statement.read::<i64, _>("has_migrations_table").unwrap();
-
-            if has_migrations_table == 1 {
-                let mut statement: sqlite::Statement<'_> = connection
-                    .prepare(
-                        "SELECT COUNT(migration) as migrations_count FROM migrations ORDER BY id DESC LIMIT 1"
-                    )
-                    .unwrap();
-                statement.next().unwrap();
-                let migrations_count: i64 = statement.read::<i64, _>("migrations_count").unwrap();
-
-                let migrations_path: std::path::PathBuf = handler
-                    .path()
-                    .resource_dir()
-                    .expect("Fail getting path")
-                    .join("resources/app/database/migrations");
-
-                let migration_files_count: usize = std::fs::read_dir(migrations_path)
-                    .expect("Couldn't access local directory")
-                    .flatten()
-                    .count();
-
-                println!("files count {migration_files_count}; migrations count: {migrations_count}");
-                if migration_files_count > (migrations_count as usize) {
-                    migrate_app(handler);
-                }
-            } else {
-                migrate_app(handler);
-            }
-
-            let server_wrapper: Wrapper<CommandChild> = Wrapper::with_value(start_laravel_server(handler));
+            let server_wrapper: Wrapper<CommandChild> =
+                Wrapper::with_value(start_laravel_server(handler));
             handler.manage(server_wrapper);
         }
 
@@ -326,4 +287,53 @@ where
 {
     let state: State<'_, Wrapper<T>> = app.try_state::<Wrapper<T>>().expect("State not found");
     return state.extract();
+}
+
+fn prepare_database(handler: &AppHandle) {
+    let database_path_wrapper: Option<PathBuf> = extract_from_state_wrapper(handler);
+    let database_path: PathBuf = database_path_wrapper.expect("Missing database path");
+
+    if !std::fs::exists(&database_path).unwrap() {
+        let _ = std::fs::File::create_new(&database_path);
+    }
+
+    let connection = sqlite::open(database_path).expect("Error opening database");
+
+    let mut statement = connection
+                .prepare(
+                    "SELECT EXISTS(SELECT name FROM sqlite_master WHERE TYPE ='table' AND name = 'migrations') AS has_migrations_table"
+                )
+                .unwrap();
+
+    statement.next().unwrap();
+
+    let has_migrations_table: bool = statement.read::<i64, _>("has_migrations_table").unwrap() == 1;
+
+    if !has_migrations_table {
+        migrate_app(handler);
+        return;
+    }
+
+    let mut statement: sqlite::Statement<'_> = connection
+        .prepare(
+            "SELECT COUNT(migration) as migrations_count FROM migrations ORDER BY id DESC LIMIT 1",
+        )
+        .unwrap();
+    statement.next().unwrap();
+    let migrations_count: i64 = statement.read::<i64, _>("migrations_count").unwrap();
+
+    let migrations_path: std::path::PathBuf = handler
+        .path()
+        .resource_dir()
+        .expect("Fail getting path")
+        .join("resources/app/database/migrations");
+
+    let migration_files_count: usize = std::fs::read_dir(migrations_path)
+        .expect("Couldn't access local directory")
+        .flatten()
+        .count();
+
+    if migration_files_count > (migrations_count as usize) {
+        migrate_app(handler);
+    }
 }
