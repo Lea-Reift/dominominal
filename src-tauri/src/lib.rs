@@ -1,6 +1,6 @@
 use std::{
     path::PathBuf,
-    sync::{Arc, Mutex, MutexGuard},
+    sync::{Mutex, MutexGuard},
 };
 
 use tauri::{
@@ -17,17 +17,11 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 use tauri_plugin_updater::UpdaterExt;
 
-struct Wrapper<T>(pub Arc<Mutex<Option<T>>>);
+#[derive(Default)]
 
-impl<T> Wrapper<T> {
-    pub fn with_value(value: T) -> Self {
-        Wrapper(Arc::new(Mutex::new(Some(value))))
-    }
-
-    pub fn extract(&self) -> Option<T> {
-        let mut guard = self.0.lock().expect("Failed to lock mutex");
-        guard.take()
-    }
+struct LaravelInformation {
+    server: Option<CommandChild>,
+    database_path: Option<PathBuf>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -51,6 +45,9 @@ pub fn run() {
                         .level(log::LevelFilter::Info)
                         .build(),
                 )?;
+
+                app.handle()
+                    .manage(Mutex::new(LaravelInformation::default()));
             }
             Ok(())
         })
@@ -92,13 +89,13 @@ pub fn run() {
                 .expect("Fail getting path")
                 .join("resources/app/database/dominominal.sqlite");
 
-            handler.manage(Wrapper::with_value(database_path.clone()));
-
+            let laravel_state: State<'_, Mutex<LaravelInformation>> = laravel_state(handler);
+            let mut laravel_information: MutexGuard<'_, LaravelInformation> =
+                laravel_state.lock().expect("Failure getting information");
+            laravel_information.database_path = Some(database_path);
+            laravel_information.server = Some(start_laravel_server(handler));
+            drop(laravel_information);
             prepare_database(handler);
-
-            let server_wrapper: Wrapper<CommandChild> =
-                Wrapper::with_value(start_laravel_server(handler));
-            handler.manage(server_wrapper);
         }
 
         RunEvent::ExitRequested { .. } | RunEvent::Exit => {
@@ -126,13 +123,16 @@ async fn set_complete(app: AppHandle) -> Result<(), ()> {
 }
 
 fn kill_laravel_server(handler: &AppHandle) {
-    let laravel_server_process_option: Option<CommandChild> = extract_from_state_wrapper(handler);
+    let laravel_state: State<'_, Mutex<LaravelInformation>> = laravel_state(handler);
+    let mut laravel_information = laravel_state.lock().expect("Failure getting information");
 
-    if let Some(laravel_server_process) = laravel_server_process_option {
+    if let Some(laravel_server_process) = laravel_information.server.take() {
         laravel_server_process
             .kill()
             .expect("Fail killing laravel server");
     }
+
+    drop(laravel_information);
 }
 
 fn start_laravel_server(handler: &AppHandle) -> CommandChild {
@@ -281,18 +281,13 @@ fn migrate_app(handler: &AppHandle) {
     });
 }
 
-fn extract_from_state_wrapper<T>(app: &AppHandle) -> Option<T>
-where
-    T: Send + 'static,
-{
-    let state: State<'_, Wrapper<T>> = app.try_state::<Wrapper<T>>().expect("State not found");
-    return state.extract();
-}
-
 fn prepare_database(handler: &AppHandle) {
-    let database_path_wrapper: Option<PathBuf> = extract_from_state_wrapper(handler);
+    let laravel_state: State<'_, Mutex<LaravelInformation>> = laravel_state(handler);
+    let laravel_information: MutexGuard<'_, LaravelInformation> = laravel_state.try_lock().expect("Failure getting information");
+    let database_path_wrapper: Option<PathBuf> = laravel_information.database_path.clone();
     let database_path: PathBuf = database_path_wrapper.expect("Missing database path");
 
+    drop(laravel_information);
     if !std::fs::exists(&database_path).unwrap() {
         let _ = std::fs::File::create_new(&database_path);
     }
@@ -336,4 +331,11 @@ fn prepare_database(handler: &AppHandle) {
     if migration_files_count > (migrations_count as usize) {
         migrate_app(handler);
     }
+}
+
+fn laravel_state(handler: &AppHandle) -> State<'_, Mutex<LaravelInformation>> {
+    let state: State<'_, Mutex<LaravelInformation>> = handler
+        .try_state::<Mutex<LaravelInformation>>()
+        .expect("State not found");
+    return state;
 }
