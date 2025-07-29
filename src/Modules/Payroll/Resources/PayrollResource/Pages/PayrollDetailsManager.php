@@ -31,7 +31,6 @@ use Filament\Actions\ActionGroup;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 use App\Modules\Payroll\Actions\TableActions\GenerateSecondaryPayrollsAction;
-use App\Modules\Payroll\Actions\TableActions\ImportRawEmployeeAction;
 use App\Modules\Payroll\Actions\TableRowActions\EditAvailableAdjustmentsAction;
 use App\Modules\Payroll\Actions\TableRowActions\ShowPaymentVoucherAction;
 use App\Modules\Payroll\Resources\PayrollResource\Widgets\PayrollDetailAmountWidget;
@@ -139,7 +138,6 @@ class PayrollDetailsManager extends ManageRelatedRecords
             ->headerActions([
                 GenerateSecondaryPayrollsAction::make($this->record),
                 AddEmployeeAction::make($this->record),
-                ImportRawEmployeeAction::make($this->record),
             ])
             ->actionsPosition(ActionsPosition::BeforeColumns)
             ->actions(TableActionGroup::make([])
