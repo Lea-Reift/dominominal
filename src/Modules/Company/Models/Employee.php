@@ -25,6 +25,7 @@ use App\Modules\Payroll\Models\Payroll;
  * @property int $company_id
  * @property string $name
  * @property string $surname
+ * @property ?string $job_title
  * @property DocumentTypeEnum $document_type
  * @property string $document_number
  * @property string $address
@@ -46,6 +47,7 @@ class Employee extends Model
         'company_id',
         'name',
         'surname',
+        'job_title',
         'address',
         'email',
     ];

@@ -107,7 +107,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
             if ($validationFails) {
 
                 Notification::make('failed_adjustment_modification')
-                    ->title('Valor invalido ')
+                    ->title('Valor invalido')
                     ->body('El valor introducido no es correcto. Intente nuevamente')
                     ->danger()
                     ->color('danger')
@@ -236,5 +236,16 @@ class SalaryAdjustmentColumn extends TextInputColumn
 
         return $biweeklyPayrollDetailAdjustmentsCustomValues
             ->some(fn (mixed $value) => !is_null($value) && (float)$value !== ((float)$recordAdjustmentCustomValue / 2));
+    }
+
+    public static function fromIterable(iterable $adjustments, Payroll $payroll): array
+    {
+        $columns = [];
+
+        foreach ($adjustments as $adjustmentId) {
+            $columns[] = static::make("salaryAdjustments.{$adjustmentId}.{$payroll->id}");
+        }
+
+        return $columns;
     }
 }

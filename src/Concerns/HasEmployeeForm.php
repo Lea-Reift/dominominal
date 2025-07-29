@@ -25,7 +25,7 @@ trait HasEmployeeForm
             'amount',
             'distribution_format',
             'distribution_value',
-            'salary_type',
+            'type',
         ];
 
         $salaryFieldNames = array_combine($salaryFieldNames, $salaryFieldNames);
@@ -73,14 +73,20 @@ trait HasEmployeeForm
         ];
 
         return [
-            TextInput::make('name')
-                ->label('Nombres')
-                ->required($enabled)
-                ->maxLength(255),
-            TextInput::make('surname')
-                ->label('Apellidos')
-                ->required($enabled)
-                ->maxLength(255),
+            Grid::make(3)
+                ->schema([
+                    TextInput::make('name')
+                        ->label('Nombres')
+                        ->required($enabled)
+                        ->maxLength(255),
+                    TextInput::make('surname')
+                        ->label('Apellidos')
+                        ->required($enabled)
+                        ->maxLength(255),
+                    TextInput::make('job_title')
+                        ->label('Cargo')
+                        ->maxLength(255),
+                ]),
             Select::make('document_type')
                 ->label('Tipo de documento')
                 ->options(DocumentTypeEnum::class)
@@ -98,7 +104,6 @@ trait HasEmployeeForm
             TextInput::make('email')
                 ->email()
                 ->maxLength(255),
-
             Grid::make(3)
                 ->schema([
                     Fieldset::make('Salario')
@@ -114,7 +119,7 @@ trait HasEmployeeForm
                                 ->minValue(0)
                                 ->live()
                                 ->label('Valor'),
-                            ToggleButtons::make($salaryFieldNames['salary_type'])
+                            ToggleButtons::make($salaryFieldNames['type'])
                                 ->options(SalaryTypeEnum::class)
                                 ->label('Tipo de salario')
                                 ->helperText('Esto define la cantidad de pagos al mes que recibe el empleado')
@@ -126,7 +131,7 @@ trait HasEmployeeForm
                                 ->description('Esta configuración se utiliza en las nominas quincenales para distribuir el salario del empleado')
                                 ->compact()
                                 ->columns(2)
-                                ->hidden(fn (Get $get) => (int)$get($salaryFieldNames['salary_type']) === SalaryTypeEnum::MONTHLY->value)
+                                ->hidden(fn (Get $get) => (int)$get($salaryFieldNames['type']) === SalaryTypeEnum::MONTHLY->value)
                                 ->schema($salaryDistribution),
                         ]),
                     PhoneRepeater::make('phones')

@@ -4,18 +4,30 @@ declare(strict_types=1);
 
 use App\Modules\Payroll\Models\Payroll;
 use App\Support\Pages\Setup;
-use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Route;
+use Maatwebsite\Excel\Excel;
+use App\Modules\Payroll\Exports\PayrollExport;
 
 Route::get('/', Setup::class);
 
-$panel = Filament::getPanel('main');
+Route::prefix('main/payrolls/{payroll}/details/export')
+    ->name('filament.main.payrolls.details.export.')
+    ->group(function () {
+        Route::name('pdf')
+            ->get('pdf', function (Payroll $payroll) {
+                return $payroll->display->streamPDF();
+            });
 
-if ($panel && ($resource = $panel->getModelResource(Payroll::class))) {
-    $panelId = $panel->getId();
+        Route::name('excel')
+            ->get('excel', function (Payroll $payroll) {
+                $filenameDate = $payroll->period;
 
-    $resourceId = $resource::getRoutePrefix();
-    Route::get("{$panelId}/{$resourceId}/{payroll}/details/pdf", function (Payroll $payroll) {
-        return $payroll->display->streamPDF();
+                $filenameDate = match (true) {
+                    $payroll->type->isMonthly() => $filenameDate->format('m-Y'),
+                    default => $filenameDate->toDateString()
+                };
+
+                return (new PayrollExport($payroll->display))
+                    ->download("Nómina Administrativa {$payroll->company->name} {$filenameDate}.xlsx", Excel::XLSX);
+            });
     });
-}

@@ -8,7 +8,7 @@ use App\Modules\Payroll\Models\Payroll;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
-use App\Modules\Payroll\Resources\PayrollResource\Pages\ManageCompanyPayrollDetails;
+use App\Modules\Payroll\Resources\PayrollResource\Pages\PayrollDetailsManager;
 use Filament\Forms\Components\Select;
 use App\Enums\SalaryTypeEnum;
 use Coolsam\Flatpickr\Forms\Components\Flatpickr;
@@ -148,7 +148,7 @@ class PayrollResource extends Resource
     {
         return $table
             ->recordTitleAttribute('period')
-            ->recordUrl(fn (Payroll $record) => ManageCompanyPayrollDetails::getUrl(['record' => $record]))
+            ->recordUrl(fn (Payroll $record) => PayrollDetailsManager::getUrl(['record' => $record]))
             ->defaultGroup(
                 Group::make('type')
                     ->titlePrefixedWithLabel(false)
@@ -163,7 +163,7 @@ class PayrollResource extends Resource
             ])
             ->headerActions([
                 CreateAction::make()
-                    ->successRedirectUrl(fn (Payroll $record): string => ManageCompanyPayrollDetails::getUrl(['record' => $record])),
+                    ->successRedirectUrl(fn (Payroll $record): string => PayrollDetailsManager::getUrl(['record' => $record])),
             ])
             ->actions([
                 DeleteAction::make()
@@ -181,7 +181,7 @@ class PayrollResource extends Resource
     public static function getPages(): array
     {
         return [
-            'payroll_details' => ManageCompanyPayrollDetails::route('{record}/details'),
+            'payroll_details' => PayrollDetailsManager::route('{record}/details'),
         ];
     }
 }
