@@ -70,6 +70,7 @@ class AddEmployeeAction
             ->modalHeading('')
             ->label('Añadir empleados')
             ->slideOver()
+            ->beforeFormFilled(fn () => session(['active_add_employee_form_tab' => '-add-employees-tab']))
             ->form([
                 $this->tabs,
                 Hidden::make('active_add_employee_form_tab')
