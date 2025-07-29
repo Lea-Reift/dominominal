@@ -67,9 +67,20 @@ class CompileAppCommand extends Command
             'composer_install' => 'composer install --optimize-autoloader --no-dev -a',
         ];
 
+        $compilationKeys = config('app.compilation');
+        $tauriCompilationFlags = $this->option('debug') ? '--debug --no-bundle' : '';
+
         $tauriCompileCommand = [
-            'tauri_build' => 'npx tauri build' . ($this->option('debug') ? ' --debug --no-bundle' : ''),
+            'tauri_build' => <<<COMMAND
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "& {
+                \$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = '{$compilationKeys['password']}';
+                \$env:TAURI_SIGNING_PRIVATE_KEY = '{$compilationKeys['private_key']}';
+                npx tauri build {$tauriCompilationFlags}
+            }"
+            COMMAND,
+            'clear_compilation_assets' => 'php artisan compile:clear',
         ];
+
 
         if ($this->option('assets')) {
             $commands = [...$commands, ...$assetsCommands];
@@ -97,6 +108,7 @@ class CompileAppCommand extends Command
             'tauri_build',
             'copy_project',
             'generate_splash',
+            'clear_compilation_assets'
         ];
 
         try {
