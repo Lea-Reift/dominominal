@@ -7,9 +7,9 @@ window.addEventListener('DOMContentLoaded', async (e) => {
         serverStarted = serverStarted;
 
         if (![301, 302, 200].includes(response?.status)) {
-            await new Promise(resolve => setTimeout(resolve, 1000)); // solo espera si no está OK
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
     } while (!serverStarted);
-    
+
     invoke('set_complete');
 });
