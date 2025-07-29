@@ -125,4 +125,14 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Compilation keys
+    |--------------------------------------------------------------------------
+    */
+
+    'compilation' => [
+        'password' => env('APP_ENV', 'production') === 'production' ? '' : env('COMPILATION_PASSWORD', ''),
+        'private_key' => env('APP_ENV', 'production') === 'production' ? '' : env('COMPILATION_SIGNATURE_PRIVATE_KEY', ''),
+    ]
 ];
