@@ -111,6 +111,8 @@ class CompileAppCommand extends Command
             'clear_compilation_assets'
         ];
 
+        $productionEnvVars = $this->parseEnvFile(base_path('.env.production'));
+
         try {
 
             foreach ($commands as $commandKey => $command) {
@@ -121,8 +123,10 @@ class CompileAppCommand extends Command
                 $process = Process::timeout(0)
                     ->unless(
                         in_array($commandKey, $originalPathCommands),
-                        fn (PendingProcess $process) => $process->path($tauriResourcesAppPath)
+                        fn (PendingProcess $process) => $process
+                            ->path($tauriResourcesAppPath)
                     )
+                    ->env($productionEnvVars)
                     ->run($command, function (string $type, string $output) {
                         $this->line($output);
                     });
@@ -141,5 +145,35 @@ class CompileAppCommand extends Command
 
         $this->info('Programa compilado con exito!!!!');
         return Command::SUCCESS;
+    }
+
+    public function parseEnvFile(string $path): array
+    {
+        $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $env = [];
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+
+            if (str_starts_with($line, '#')) {
+                continue;
+            }
+
+            [$key, $value] = explode('=', $line, 2);
+
+            $key = trim($key);
+            $value = trim($value);
+
+            if (
+                (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
+                (str_starts_with($value, "'") && str_ends_with($value, "'"))
+            ) {
+                $value = substr($value, 1, -1);
+            }
+
+            $env[$key] = $value;
+        }
+
+        return $env;
     }
 }
