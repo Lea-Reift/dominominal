@@ -33,6 +33,7 @@ class Setup extends SimplePage
     public function mount(): void
     {
         if ($this->setupIsCompletedSetting->value) {
+            Auth::loginUsingId(User::value('id'), true);
             redirect(Filament::getPanel()->getUrl());
         }
     }
