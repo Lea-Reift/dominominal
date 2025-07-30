@@ -45,26 +45,26 @@ pub fn run() {
                         .level(log::LevelFilter::Info)
                         .build(),
                 )?;
-
-                let database_path: std::path::PathBuf = app.handle()
-                    .path()
-                    .app_local_data_dir()
-                    .expect("Fail getting path")
-                    .join("dominominal.sqlite");
-
-                let laravel_information: LaravelInformation = LaravelInformation {
-                    database_path: Some(database_path),
-                    server: None,
-                };
-
-                app.handle()
-                    .manage(Mutex::new(laravel_information));
             }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![set_complete])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
+
+    let database_path: std::path::PathBuf = app
+        .handle()
+        .path()
+        .app_local_data_dir()
+        .expect("Fail getting path")
+        .join("dominominal.sqlite");
+
+    let laravel_information: LaravelInformation = LaravelInformation {
+        database_path: Some(database_path),
+        server: None,
+    };
+
+    app.handle().manage(Mutex::new(laravel_information));
 
     app.run(|handler: &AppHandle, event: RunEvent| match event {
         RunEvent::Ready => {
