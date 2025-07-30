@@ -4,7 +4,7 @@ window.addEventListener('DOMContentLoaded', async (e) => {
     let serverStarted = false;
     do {
         try {
-            const response = await fetch("http://localhost:8000/up", { redirect: 'manual' });
+            const response = await fetch("http://localhost:8000/up");
             serverStarted = [301, 302, 200].includes(response?.status);
         } catch (e) {
             serverStarted = false;

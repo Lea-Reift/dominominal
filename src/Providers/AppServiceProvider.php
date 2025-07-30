@@ -14,6 +14,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $frameworkCompiledViewPath = storage_path('framework/views');
+
+        if (!is_dir($frameworkCompiledViewPath)) {
+            mkdir($frameworkCompiledViewPath, recursive: true);
+        }
     }
 
     /**
