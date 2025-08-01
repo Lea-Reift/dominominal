@@ -19,6 +19,9 @@ use App\Modules\Company\Models\Employee;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Modules\Payroll\Models\SalaryAdjustment;
+use Filament\Notifications\Actions\Action as NotificationAction;
+use stdClass;
+use App\Modules\Payroll\Resources\PayrollResource\Pages\PayrollDetailsManager;
 
 class GenerateSecondaryPayrollsAction
 {
@@ -32,6 +35,7 @@ class GenerateSecondaryPayrollsAction
                 'period',
                 Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->setDay($day)->toDateString()])
             )
+            ->where('monthly_payroll_id', $this->record->id)
             ->exists();
 
         $this->action = Action::make('secondary_payrolls')
@@ -46,9 +50,10 @@ class GenerateSecondaryPayrollsAction
             ->modalFooterActionsAlignment(Alignment::Center)
             ->modalSubmitAction($disableSecondaryPayrolls ? false : null)
             ->action(function (array $data) {
+                $payrolls = [];
                 foreach ($data['dates'] as $day) {
                     try {
-                        $this->generateSecondaryPayroll(intval($day));
+                        $payrolls[] = $this->generateSecondaryPayroll(intval($day));
                     } catch (DuplicatedPayrollException $e) {
                         Notification::make()
                             ->title('Nóminas Secundarias')
@@ -59,11 +64,19 @@ class GenerateSecondaryPayrollsAction
                         throw new Halt();
                     }
                 }
+                $actions = Arr::map(
+                    $payrolls,
+                    fn (Payroll $payroll) => NotificationAction::make("got_to_{$payroll->period->day}_payroll")
+                        ->label("Ir a la nómina del {$payroll->period->day}")
+                        ->button()
+                        ->url(PayrollDetailsManager::getUrl(['record' => $payroll->id]))
+                );
 
                 Notification::make()
                     ->title('Nóminas Secundarias')
                     ->success()
                     ->body('Nóminas generadas con éxito')
+                    ->actions($actions)
                     ->send();
             });
     }
@@ -78,9 +91,9 @@ class GenerateSecondaryPayrollsAction
         return (new self($payroll))->getAction();
     }
 
-    protected function generateSecondaryPayroll(int $day): void
+    protected function generateSecondaryPayroll(int $day): Payroll
     {
-        $period = $this->record->period->clone()->setDay($day);
+        $period = $this->record->period->clone()->setDay($day)->startOfDay();
 
         throw_if(
             condition: Payroll::query()->where('period', $period)->exists(),
@@ -132,10 +145,14 @@ class GenerateSecondaryPayrollsAction
                 ]);
             $newDetail->salaryAdjustments()->sync($adjustments);
         }
+
+        return $payroll->fresh();
     }
 
     protected function formSchema(bool $disableSecondaryPayrolls): array
     {
+        $existingSecondaryPayrollsDates = $this->record->biweeklyPayrolls->map(fn (Payroll $secondaryPayroll) => $secondaryPayroll->period->day);
+
         return [
             CheckboxList::make('dates')
                 ->hiddenLabel()
@@ -165,13 +182,14 @@ class GenerateSecondaryPayrollsAction
                             'period',
                             Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->setDay($day)->toDateString()])
                         )
-                        ->pluck('period')
+                        ->get()
+                        ->map(fn (stdClass $secondaryPayroll) => $secondaryPayroll->period->day)
                         ->toArray()
                 )
                 ->columns(2)
                 ->dehydrated(!$disableSecondaryPayrolls)
-                ->disableOptionWhen(fn (string $value) => Payroll::query()->whereDate('period', $this->record->period->setDay(intval($value)))->exists())
-                ->options(Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->translatedFormat("{$day} \\d\\e F")])),
+                ->options(Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->translatedFormat("{$day} \\d\\e F")]))
+                ->disableOptionWhen(fn (string $value) => $existingSecondaryPayrollsDates->contains($value)),
         ];
     }
 }
