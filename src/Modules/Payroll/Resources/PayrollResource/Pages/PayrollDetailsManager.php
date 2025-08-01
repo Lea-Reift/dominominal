@@ -35,6 +35,8 @@ use App\Modules\Payroll\Actions\TableRowActions\EditAvailableAdjustmentsAction;
 use App\Modules\Payroll\Actions\TableRowActions\ShowPaymentVoucherAction;
 use App\Modules\Payroll\Resources\PayrollResource\Widgets\PayrollDetailAmountWidget;
 use Closure;
+use App\Modules\Payroll\Exports\PayrollExport;
+use Maatwebsite\Excel\Excel;
 
 /**
  * @property Payroll $record
@@ -120,8 +122,18 @@ class PayrollDetailsManager extends ManageRelatedRecords
                 ->actions([
                     BaseAction::make('excel_export')
                         ->label('Exportar a Excel')
-                        ->url(fn () => $this->getUrl(['record' => $this->record->id]) . '/export/excel')
-                        ->openUrlInNewTab(),
+                        ->action(function () {
+                            $payroll = $this->record;
+                            $filenameDate = $payroll->period;
+
+                            $filenameDate = match (true) {
+                                $payroll->type->isMonthly() => $filenameDate->format('m-Y'),
+                                default => $filenameDate->toDateString()
+                            };
+
+                            return (new PayrollExport($payroll->display))
+                                ->download("Nómina Administrativa {$payroll->company->name} {$filenameDate}.xlsx", Excel::XLSX);
+                        }),
                     BaseAction::make('pdf_export')
                         ->label('Exportar a PDF')
                         ->url(fn () => $this->getUrl(['record' => $this->record->id]) . '/export/pdf')
