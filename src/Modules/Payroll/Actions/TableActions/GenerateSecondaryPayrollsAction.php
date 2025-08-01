@@ -18,6 +18,7 @@ use App\Enums\SalaryTypeEnum;
 use App\Modules\Company\Models\Employee;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use App\Modules\Payroll\Models\PayrollDetail;
+use App\Modules\Payroll\Models\SalaryAdjustment;
 
 class GenerateSecondaryPayrollsAction
 {
@@ -113,15 +114,23 @@ class GenerateSecondaryPayrollsAction
              * @var PayrollDetail $newDetail
              * @var PayrollDetail $detail
              */
-            $newDetail = tap(
-                $detail->replicate()
-                    ->unsetRelations()
-                    ->fill([
-                        'payroll_id' => $payroll->id,
-                    ])
-            )->save();
+            $newDetail =  $detail->replicate()
+                ->unsetRelations()
+                ->fill([
+                    'payroll_id' => $payroll->id,
+                ]);
 
-            $newDetail->salaryAdjustments()->sync($detail->salaryAdjustments);
+            $newDetail->save();
+
+            $adjustments = $detail->salaryAdjustments
+                ->mapWithKeys(fn (SalaryAdjustment $adjustment) => [
+                    $adjustment->id => [
+                        'custom_value' => $adjustment?->detailSalaryAdjustmentValue?->custom_value !== null
+                            ? $adjustment->detailSalaryAdjustmentValue->custom_value / 2
+                            : null
+                    ]
+                ]);
+            $newDetail->salaryAdjustments()->sync($adjustments);
         }
     }
 
