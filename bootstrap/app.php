@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Console\Commands\ClearCompilationResourcesCommand;
 use App\Console\Commands\CompileAppCommand;
 use App\Console\Commands\GenerateSplashscreenCommand;
+use App\Console\Commands\SendTestEmail;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -26,6 +27,7 @@ return Application::configure(basePath: $baseDir)
         CompileAppCommand::class,
         GenerateSplashscreenCommand::class,
         ClearCompilationResourcesCommand::class,
+        SendTestEmail::class,
     ])
     ->withExceptions(function (Exceptions $exceptions): void {
         //
