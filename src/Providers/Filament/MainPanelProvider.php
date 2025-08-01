@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
-use App\Models\Setting;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Support\SalaryAdjustmentParser;
 use Filament\Http\Middleware\Authenticate;
@@ -25,9 +24,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use DirectoryIterator;
 use Filament\Support\Enums\MaxWidth;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Schema;
 
 class MainPanelProvider extends PanelProvider
 {
@@ -85,7 +82,6 @@ class MainPanelProvider extends PanelProvider
         Table::$defaultNumberLocale = 'en';
 
         $this->setSalaryParserDefaultVariables();
-        $this->loadEmailConfiguration();
     }
 
     public function setSalaryParserDefaultVariables(): void
@@ -179,36 +175,4 @@ class MainPanelProvider extends PanelProvider
         }
     }
 
-    public function loadEmailConfiguration(): void
-    {
-        if (!Schema::hasTable('settings')) {
-            return;
-        }
-
-        /** @var Collection<string, Setting> $config */
-        $config = Setting::query()->getSettings('email')->keyBy('name');
-
-        if ($config->isEmpty()) {
-            return;
-        }
-
-        $originalSMTPSettings = config('mail.mailers.smtp');
-
-        config(['mail.default' => 'smtp']);
-
-        if ($config->has('username') && $config->has('from_name')) {
-            config([
-                'mail.from.address' => $config->get('username')->value,
-                'mail.from.name' => $config->get('from_name')->value,
-            ]);
-        }
-
-        $config = $config
-            ->filter(fn (Setting $emailSetting) => array_key_exists($emailSetting->name, $originalSMTPSettings))
-            ->pluck('value', 'name');
-
-        config([
-            'mail.mailers.smtp' => $config->toArray() + $originalSMTPSettings
-        ]);
-    }
 }
