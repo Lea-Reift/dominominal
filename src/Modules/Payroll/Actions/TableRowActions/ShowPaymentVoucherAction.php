@@ -56,7 +56,7 @@ class ShowPaymentVoucherAction
         $pdfOutput = $record->display->renderPDF();
 
         $mailSubject = "Volante de pago {$record->employee->full_name} {$record->payroll->period->format('d/m/Y')}";
-        $pdfName = 'Volante-' . str_replace(' ', '-', $record->employee->full_name) . '-' . $record->payroll->period->format('d-m-Y') . '.pdf';
+        $pdfName = 'Volante-' . $record->employee->document_number . '-' . $record->payroll->period->format('d-m-Y') . '.pdf';
 
         $mail = new PaymentVoucherMail(
             subjectText: $mailSubject,
