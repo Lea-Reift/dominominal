@@ -23,6 +23,7 @@ class PaymentVoucherMail extends Mailable
         public readonly string $subjectText,
         public readonly string $pdfOutput,
         public readonly string $pdfName = 'voucher.pdf',
+        public readonly ?object $payrollDisplay = null,
     ) {
         //
     }
@@ -42,22 +43,13 @@ class PaymentVoucherMail extends Mailable
      */
     public function content(): Content
     {
-        $senderEmail = config('mail.from.address');
-        $text = <<<TEXT
-            Este correo se envió automaticamente y no requiere una respuesta.<br>
-            En caso de necesitarlo, puede contactar al correo {$senderEmail}.<br><br>
-
-            <b>Justina M. Villar Suazo</b><br>
-            Contador Público Autorizado<br>
-            Horario de trabajo<br>
-            Lunes a Viernes<br>
-            8:00 A.M a 5:00 P.M<br>
-            Tel. 809-245-9233<br>
-            Cel. 849-881-3340<br>
-            TEXT;
-
         return new Content(
-            htmlString: $text
+            view: 'emails.payment-voucher',
+            with: [
+                'detail' => $this->payrollDisplay,
+                'pdfOutput' => $this->pdfOutput,
+                'pdfName' => $this->pdfName,
+            ],
         );
     }
 

@@ -26,8 +26,8 @@ class ShowPaymentVoucherAction
             ->modalHeading(fn (PayrollDetail $record) => $record->employee->full_name)
             ->color('info')
             ->modalContent(fn (PayrollDetail $record) => view(
-                'show-pdf',
-                ['pdf_base64_string' => base64_encode($record->display->renderPDF())],
+                'components.voucher-table',
+                ['detail' => $record->display, 'mode' => 'modal'],
             ))
             ->form([
                 TextInput::make('employee_email')
@@ -56,8 +56,14 @@ class ShowPaymentVoucherAction
         $pdfOutput = $record->display->renderPDF();
 
         $mailSubject = "Volante de pago {$record->employee->full_name} {$record->payroll->period->format('d/m/Y')}";
+        $pdfName = 'Volante-' . str_replace(' ', '-', $record->employee->full_name) . '-' . $record->payroll->period->format('d-m-Y') . '.pdf';
 
-        $mail = new PaymentVoucherMail($mailSubject, $pdfOutput);
+        $mail = new PaymentVoucherMail(
+            subjectText: $mailSubject,
+            pdfOutput: $pdfOutput,
+            pdfName: $pdfName,
+            payrollDisplay: $record->display
+        );
 
         defer(fn () => Mail::to($employeeEmail)->send($mail));
 
