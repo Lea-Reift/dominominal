@@ -171,7 +171,7 @@
                     <!-- Anti-Gmail-collapse wrapper -->
                     <div style="background-color: #ffffff; padding: 1px; margin: 1px 0;"></div>
 
-                    @include('exports.payroll.payment-voucher', ['detail' => $detail])
+                    @include('components.payment-voucher-table', ['detail' => $detail])
                 </div>
             </div>
 
