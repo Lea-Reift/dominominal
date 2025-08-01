@@ -31,6 +31,12 @@ class AppServiceProvider extends ServiceProvider
         Number::useLocale('en');
         Number::useCurrency('USD');
 
+        Number::macro(
+            'dominicanCurrency',
+            fn (int|float $number, string $in = '', ?string $locale = null, ?int $precision = null) =>
+            'RD'.Number::currency($number, $in, $locale, $precision)
+        );
+
         Mail::extend('brevo', function (array $config = []) {
             return new BrevoTransport($config['key']);
         });
