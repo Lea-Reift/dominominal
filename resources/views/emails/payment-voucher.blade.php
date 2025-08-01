@@ -154,7 +154,7 @@
                             {{ explode(' ', $detail?->name ?? 'Empleado')[0] }},</strong>
                     </p>
                     <p style="margin: 8px 0 0 0; color: #64748b; font-size: 14px;">
-                        Su documento de nómina está disponible para revisión.
+                        Su volante de pago de nómina está disponible para revisión.
                     </p>
                     <!-- Anti-preview barrier -->
                     <span
