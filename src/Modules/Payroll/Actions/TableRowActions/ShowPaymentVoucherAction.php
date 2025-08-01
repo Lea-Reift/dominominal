@@ -26,7 +26,7 @@ class ShowPaymentVoucherAction
             ->modalHeading(fn (PayrollDetail $record) => $record->employee->full_name)
             ->color('info')
             ->modalContent(fn (PayrollDetail $record) => view(
-                'components.voucher-table',
+                'exports.payroll.payment-voucher',
                 ['detail' => $record->display, 'mode' => 'modal'],
             ))
             ->form([
