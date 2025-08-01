@@ -11,6 +11,7 @@
         "coolsam/flatpickr": "^4.1",
         "dompdf/dompdf": "^3.1",
         "filament/filament": "3.3",
+        "getbrevo/brevo-php": "^2.0",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1",
