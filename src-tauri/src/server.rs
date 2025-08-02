@@ -1,8 +1,8 @@
 use std::{
     path::PathBuf,
-    sync::{Mutex, MutexGuard},
+    sync::Mutex,
 };
-use tauri::{AppHandle, Manager, State};
+use tauri::{Manager, State};
 use tauri_plugin_shell::{
     process::{CommandChild, CommandEvent},
 };
@@ -13,8 +13,8 @@ pub struct LaravelInformation {
     pub database_path: Option<PathBuf>,
 }
 
-pub fn kill_laravel_server(handler: &AppHandle) {
-    let laravel_state: State<'_, Mutex<LaravelInformation>> = laravel_state(handler);
+pub fn kill_laravel_server() {
+    let laravel_state: State<'_, Mutex<LaravelInformation>> = laravel_state();
     let mut laravel_information = laravel_state.lock().expect("Failure getting information");
 
     if let Some(laravel_server_process) = laravel_information.server.take() {
@@ -26,7 +26,8 @@ pub fn kill_laravel_server(handler: &AppHandle) {
     drop(laravel_information);
 }
 
-pub fn start_laravel_server(handler: &AppHandle, database_path: &PathBuf) -> CommandChild {
+pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
+    let handler = crate::global::get_app_handle();
     let resources_path = handler
         .path()
         .resource_dir()
@@ -34,7 +35,6 @@ pub fn start_laravel_server(handler: &AppHandle, database_path: &PathBuf) -> Com
         .join("resources/app/public");
 
     let (mut receiver, child) = crate::commands::run_php_command(
-        handler,
         ["-S", "127.0.0.1:8000"].to_vec(),
         Some(
             resources_path
@@ -59,7 +59,8 @@ pub fn start_laravel_server(handler: &AppHandle, database_path: &PathBuf) -> Com
     return child;
 }
 
-pub fn laravel_state(handler: &AppHandle) -> State<'_, Mutex<LaravelInformation>> {
+pub fn laravel_state() -> State<'static, Mutex<LaravelInformation>> {
+    let handler = crate::global::get_app_handle();
     let state: State<'_, Mutex<LaravelInformation>> = handler
         .try_state::<Mutex<LaravelInformation>>()
         .expect("State not found");

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 use tauri::{
-    async_runtime::Receiver, path::BaseDirectory, AppHandle, Manager
+    async_runtime::Receiver, path::BaseDirectory, Manager
 };
 use tauri_plugin_shell::{
     process::{Command, CommandChild, CommandEvent},
@@ -8,11 +8,11 @@ use tauri_plugin_shell::{
 };
 
 pub fn run_php_command(
-    handler: &AppHandle,
     args: Vec<&str>,
     directory: Option<PathBuf>,
     database_path: &PathBuf,
 ) -> (Receiver<CommandEvent>, CommandChild) {
+    let handler = crate::global::get_app_handle();
     let php: Command = handler.shell().sidecar("php").unwrap();
     let realpath = match directory {
         None => handler
@@ -31,10 +31,10 @@ pub fn run_php_command(
 }
 
 pub fn run_artisan_command(
-    handler: &AppHandle,
     mut args: Vec<&str>,
     database_path: &PathBuf,
 ) -> (Receiver<CommandEvent>, CommandChild) {
+    let handler = crate::global::get_app_handle();
     let php: Command = handler.shell().sidecar("php").unwrap();
 
     let realpath: PathBuf = handler

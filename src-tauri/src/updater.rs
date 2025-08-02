@@ -1,20 +1,21 @@
-use tauri::{window::ProgressBarState, AppHandle, Manager};
+use tauri::{window::ProgressBarState, Manager};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use tauri_plugin_updater::UpdaterExt;
 
-pub async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
-    let app_clone = app.clone();
+pub async fn update() -> tauri_plugin_updater::Result<()> {
+    let app = crate::global::get_app_handle();
 
     let updater = app
         .updater_builder()
         .on_before_exit(move || {
-            app_clone
+            let handler = crate::global::get_app_handle();
+            handler
                 .dialog()
                 .message("Se va a instalar la actualización. La app se va a cerrar")
                 .kind(MessageDialogKind::Warning)
                 .title("Instalando Actualización")
                 .blocking_show();
-            crate::server::kill_laravel_server(&app_clone);
+            crate::server::kill_laravel_server();
         })
         .build()?;
 

@@ -1,8 +1,8 @@
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::Manager;
 
-pub fn migrate_app(handler: &AppHandle, database_path: &PathBuf) {
-    let (mut receiver, _) = crate::commands::run_artisan_command(handler, ["migrate", "--force"].to_vec(), database_path);
+pub fn migrate_app(database_path: &PathBuf) {
+    let (mut receiver, _) = crate::commands::run_artisan_command(["migrate", "--force"].to_vec(), database_path);
 
     tauri::async_runtime::block_on(async move {
         println!("Running artisan migrate...");
@@ -11,7 +11,7 @@ pub fn migrate_app(handler: &AppHandle, database_path: &PathBuf) {
     });
 }
 
-pub fn prepare_database(handler: &AppHandle, database_path: &PathBuf) {
+pub fn prepare_database(database_path: &PathBuf) {
     if !std::fs::exists(&database_path).unwrap() {
         let _ = std::fs::File::create_new(&database_path);
     }
@@ -29,7 +29,7 @@ pub fn prepare_database(handler: &AppHandle, database_path: &PathBuf) {
     let has_migrations_table: bool = statement.read::<i64, _>("has_migrations_table").unwrap() == 1;
 
     if !has_migrations_table {
-        migrate_app(handler, database_path);
+        migrate_app(database_path);
         return;
     }
 
@@ -41,6 +41,7 @@ pub fn prepare_database(handler: &AppHandle, database_path: &PathBuf) {
     statement.next().unwrap();
     let migrations_count: i64 = statement.read::<i64, _>("migrations_count").unwrap();
 
+    let handler = crate::global::get_app_handle();
     let migrations_path: std::path::PathBuf = handler
         .path()
         .resource_dir()
@@ -56,6 +57,6 @@ pub fn prepare_database(handler: &AppHandle, database_path: &PathBuf) {
     };
 
     if migration_files_count > (migrations_count as usize) {
-        migrate_app(handler, database_path);
+        migrate_app(database_path);
     }
 }

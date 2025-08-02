@@ -9,6 +9,7 @@ use tauri::{
 
 mod commands;
 mod database;
+mod global;
 mod server;
 mod updater;
 mod window;
@@ -56,16 +57,19 @@ pub fn run() {
     };
 
     app.handle().manage(Mutex::new(laravel_information));
+    
+    // Initialize global app handle
+    global::init_app_handle(app.handle().clone());
 
     app.run(|handler: &AppHandle, event: RunEvent| match event {
         RunEvent::Ready => {
-            let laravel_state: State<'_, Mutex<LaravelInformation>> = server::laravel_state(handler);
+            let laravel_state: State<'_, Mutex<LaravelInformation>> = server::laravel_state();
             let laravel_information: MutexGuard<'_, LaravelInformation> =
                 laravel_state.lock().expect("Failure getting information");
             let database_path: PathBuf = laravel_information.database_path.clone().expect("Missing database path");
             drop(laravel_information);
             
-            database::prepare_database(handler, &database_path);
+            database::prepare_database(&database_path);
 
             let storage_path: std::path::PathBuf = handler
                 .path()
@@ -74,7 +78,7 @@ pub fn run() {
                 .join("resources/app/storage");
 
             if !std::fs::exists(storage_path).unwrap_or(false) {
-                let (mut receiver, _) = commands::run_artisan_command(handler, ["optimize"].to_vec(), &database_path);
+                let (mut receiver, _) = commands::run_artisan_command(["optimize"].to_vec(), &database_path);
 
                 tauri::async_runtime::block_on(async move {
                     println!("Running artisan optimize...");
@@ -83,7 +87,7 @@ pub fn run() {
                 });
 
                 let (mut receiver, _) =
-                    commands::run_artisan_command(handler, ["filament:optimize"].to_vec(), &database_path);
+                    commands::run_artisan_command(["filament:optimize"].to_vec(), &database_path);
 
                 tauri::async_runtime::block_on(async move {
                     println!("Running artisan filament:optimize...");
@@ -92,9 +96,9 @@ pub fn run() {
                 });
             }
 
-            let laravel_server: Option<tauri_plugin_shell::process::CommandChild> = Some(server::start_laravel_server(handler, &database_path));
+            let laravel_server: Option<tauri_plugin_shell::process::CommandChild> = Some(server::start_laravel_server(&database_path));
 
-            let laravel_state: State<'_, Mutex<LaravelInformation>> = server::laravel_state(handler);
+            let laravel_state: State<'_, Mutex<LaravelInformation>> = server::laravel_state();
             let mut laravel_information: MutexGuard<'_, LaravelInformation> =
                 laravel_state.lock().expect("Failure getting information");
             laravel_information.server = laravel_server;
@@ -102,7 +106,7 @@ pub fn run() {
         }
 
         RunEvent::ExitRequested { .. } | RunEvent::Exit => {
-            server::kill_laravel_server(handler);
+            server::kill_laravel_server();
         }
         _ => {}
     });
