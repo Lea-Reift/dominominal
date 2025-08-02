@@ -35,7 +35,19 @@ pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
         .join("resources/app/public");
 
     let (mut receiver, child) = crate::commands::run_php_command(
-        ["-S", "127.0.0.1:8000"].to_vec(),
+        [
+            "-S", "127.0.0.1:8000",
+            "-d", "opcache.enable=1",
+            "-d", "opcache.enable_cli=1", 
+            "-d", "opcache.memory_consumption=256",
+            "-d", "opcache.max_accelerated_files=20000",
+            "-d", "opcache.validate_timestamps=0",
+            "-d", "opcache.revalidate_freq=0",
+            "-d", "realpath_cache_size=4096K",
+            "-d", "realpath_cache_ttl=600",
+            "-d", "memory_limit=512M",
+            "-d", "max_execution_time=300"
+        ].to_vec(),
         Some(
             resources_path
                 .canonicalize()
@@ -56,6 +68,14 @@ pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
             }
         }
     });
+
+    // Warmup server with a background request after a short delay
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
+        let _ = reqwest::get("http://127.0.0.1:8000/main").await;
+        println!("Server warmed up");
+    });
+
     return child;
 }
 

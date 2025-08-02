@@ -78,22 +78,23 @@ pub fn run() {
                 .join("resources/app/storage");
 
             if !std::fs::exists(storage_path).unwrap_or(false) {
-                let (mut receiver, _) = commands::run_artisan_command(["optimize"].to_vec(), &database_path);
+                // Run comprehensive optimization commands
+                let optimization_commands = vec![
+                    ["config:cache"],
+                    ["route:cache"],
+                    ["view:cache"],
+                    ["optimize"],
+                    ["filament:optimize"],
+                ];
 
-                tauri::async_runtime::block_on(async move {
-                    println!("Running artisan optimize...");
-                    receiver.recv().await;
-                    println!("Artisan optimize done!");
-                });
-
-                let (mut receiver, _) =
-                    commands::run_artisan_command(["filament:optimize"].to_vec(), &database_path);
-
-                tauri::async_runtime::block_on(async move {
-                    println!("Running artisan filament:optimize...");
-                    receiver.recv().await;
-                    println!("Artisan filament:optimize done!");
-                });
+                for cmd in optimization_commands {
+                    let (mut receiver, _) = commands::run_artisan_command(cmd.to_vec(), &database_path);
+                    tauri::async_runtime::block_on(async move {
+                        println!("Running artisan {}...", cmd.join(" "));
+                        receiver.recv().await;
+                        println!("Artisan {} done!", cmd.join(" "));
+                    });
+                }
             }
 
             let laravel_server: Option<tauri_plugin_shell::process::CommandChild> = Some(server::start_laravel_server(&database_path));
