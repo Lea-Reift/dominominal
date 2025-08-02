@@ -58,8 +58,7 @@ class CompileAppCommand extends Command
         ];
 
         $migrateProjectCommands = [
-            'delete_dir' => "rm -rf {$tauriResourcesAppPath}",
-            'create_dir' => "mkdir {$tauriResourcesAppPath}",
+            'clear_compilation_assets' => 'php artisan compile:clear',
             'set_env' => "cp {$envProdPath} {$tauriResourcesAppPath}/.env",
             'copy_project' => "cp -r ./{{$projectFilesConcant}} {$tauriResourcesAppPath}",
             'add_storage_folders' => "mkdir {$tauriResourcesAppPath}\\storage\\framework\\sessions {$tauriResourcesAppPath}\\storage\\framework\\cache {$tauriResourcesAppPath}\\storage\\framework\\views",
@@ -78,7 +77,6 @@ class CompileAppCommand extends Command
                 npx tauri build {$tauriCompilationFlags}
             }"
             COMMAND,
-            'clear_compilation_assets' => 'php artisan compile:clear',
         ];
 
 
