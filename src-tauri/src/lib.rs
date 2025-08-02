@@ -40,7 +40,7 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![window::set_complete])
+        .invoke_handler(tauri::generate_handler![window::set_complete, window::reset_retry_count, window::start_window_load_monitoring])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 
