@@ -2,7 +2,7 @@
     $emailForm = $this->getEmailSettingsForm();
 @endphp
 <x-filament::page>
-    <x-filament::section heading="Correo Electrónico"  class="mb-6">
+    <x-filament::section heading="Correo Electrónico"  class="mb-6 w-1/2">
         <form wire:submit.prevent="submitEmailSettings" class="space-y-4">
             {{ $emailForm }}
             <x-filament::button type="submit" wire:target="submitEmailSettings" wire:loading.attr="disabled">
