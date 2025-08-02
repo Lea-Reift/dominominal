@@ -44,9 +44,16 @@ pub async fn start_window_load_monitoring() -> Result<(), ()> {
                 continue;
             };
             
-            // Handle successful response - stop monitoring
+            // Handle successful response - accept both main page and login page
             if response.status().is_success() {
-                break;
+                let final_url = response.url().as_str();
+                if !final_url.contains("/login") {
+                    // Main page loaded successfully (authenticated)
+                    break;
+                } else {
+                    // Login page loaded - this is also a valid state
+                    break;
+                }
             }
             
             // Handle 500 error
