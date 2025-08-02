@@ -29,8 +29,8 @@ class ClearCompilationResourcesCommand extends Command
     {
         $directories = [
             'src-tauri\resources\app',
-            'src-tauri\target\debug\resources\app',
-            'src-tauri\target\release\resources\app',
+            'src-tauri\target\debug\resources',
+            'src-tauri\target\release\resources',
         ];
 
         foreach ($directories as $directory) {
