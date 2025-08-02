@@ -47,10 +47,13 @@ pub fn prepare_database(handler: &AppHandle, database_path: &PathBuf) {
         .expect("Fail getting path")
         .join("resources/app/database/migrations");
 
-    let migration_files_count: usize = std::fs::read_dir(migrations_path)
-        .expect("Couldn't access local directory")
-        .flatten()
-        .count();
+    let migration_files_count: usize = match std::fs::read_dir(&migrations_path) {
+        Ok(entries) => entries.flatten().count(),
+        Err(_) => {
+            println!("Migrations directory not found at: {:?}", migrations_path);
+            0 // If directory doesn't exist, assume no migrations
+        }
+    };
 
     if migration_files_count > (migrations_count as usize) {
         migrate_app(handler, database_path);
