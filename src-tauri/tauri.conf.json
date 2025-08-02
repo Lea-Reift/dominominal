@@ -18,7 +18,8 @@
                 "width": 180,
                 "height": 50,
                 "resizable": false,
-                "visible": true
+                "visible": true,
+                "alwaysOnTop": true
             },
             {
                 "label": "app",

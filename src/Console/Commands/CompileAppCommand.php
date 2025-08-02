@@ -34,6 +34,9 @@ class CompileAppCommand extends Command
 
         $tauriResourcesAppPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, base_path('src-tauri/resources/app'));
 
+        $tauriDebugAppPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, base_path('src-tauri/target/debug/resources/app'));
+        $tauriReleaseAppPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, base_path('src-tauri/target/release/resources/app'));
+
         $projectProductionFiles = [
             'bootstrap',
             'config',
@@ -64,6 +67,8 @@ class CompileAppCommand extends Command
             'add_storage_folders' => "mkdir {$tauriResourcesAppPath}\\storage\\framework\\sessions {$tauriResourcesAppPath}\\storage\\framework\\cache {$tauriResourcesAppPath}\\storage\\framework\\views",
             'remove_dev_database' => 'rm -f ./database/dominominal.sqlite',
             'composer_install' => 'composer install --optimize-autoloader --no-dev -a',
+            'copy_project_to_debug' => "xcopy {$tauriResourcesAppPath} {$tauriDebugAppPath} /h /i /c /k /e /r /y",
+            'copy_project_to_release' => "xcopy {$tauriResourcesAppPath} {$tauriReleaseAppPath} /h /i /c /k /e /r /y",
         ];
 
         $compilationKeys = config('app.compilation');
@@ -113,6 +118,7 @@ class CompileAppCommand extends Command
 
         try {
 
+            $basePath = base_path();
             foreach ($commands as $commandKey => $command) {
                 $this->newLine();
                 $this->info("Ejecutando: {$command}...");
@@ -121,8 +127,11 @@ class CompileAppCommand extends Command
                 $process = Process::timeout(0)
                     ->unless(
                         in_array($commandKey, $originalPathCommands),
-                        fn (PendingProcess $process) => $process
-                            ->path($tauriResourcesAppPath)
+                        fn (PendingProcess $process) => $process->path($tauriResourcesAppPath)
+                    )
+                    ->when(
+                        in_array($commandKey, $originalPathCommands),
+                        fn (PendingProcess $process) => $process->path($basePath)
                     )
                     ->env($productionEnvVars)
                     ->run($command, function (string $type, string $output) {
