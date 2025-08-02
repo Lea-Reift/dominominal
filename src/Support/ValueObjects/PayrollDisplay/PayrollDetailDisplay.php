@@ -73,15 +73,13 @@ readonly class PayrollDetailDisplay
         $this->deductionTotal = $this->deductions->sum();
         $this->netSalary = $this->incomeTotal - $this->deductionTotal;
 
-        $maxAdjustmentCount = $this->incomes->count() > $this->deductions->count() ? $this->incomes->count() : $this->deductions->count();
 
-        $this->PDF = FacadePdf::loadView('exports.payroll.payment-voucher', ['detail' => $this])
-            ->setPaper([0.0, 0.0, $maxAdjustmentCount > 5 ? (($maxAdjustmentCount * 6) * 10) : 300, 550], 'landscape');
+        $this->PDF = FacadePdf::loadView('components.payment-voucher-table', ['detail' => $this]);
     }
 
     public function render(): View
     {
-        return view('exports.payroll.payment-voucher', ['detail' => $this]);
+        return view('components.payment-voucher-table', ['detail' => $this]);
     }
 
     protected function getPDF(): PDF
