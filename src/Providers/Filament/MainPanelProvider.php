@@ -25,6 +25,7 @@ use DirectoryIterator;
 use Filament\Support\Enums\MaxWidth;
 use Filament\Tables\Table;
 use Illuminate\Support\Arr;
+use App\Models\Setting;
 
 class MainPanelProvider extends PanelProvider
 {
@@ -82,6 +83,26 @@ class MainPanelProvider extends PanelProvider
         Table::$defaultNumberLocale = 'en';
 
         $this->setSalaryParserDefaultVariables();
+        $this->configureVerifiedEmail();
+    }
+
+    protected function configureVerifiedEmail(): void
+    {
+        try {
+            $emailSettings = Setting::query()->getSettings('email');
+            $emailSetting = $emailSettings->where('name', 'username')->first();
+            $verifiedSetting = $emailSettings->where('name', 'is_verified')->first();
+
+            $hasEmail = $emailSetting && $emailSetting->value;
+            $isVerified = $verifiedSetting && $verifiedSetting->value;
+
+            if ($hasEmail && $isVerified) {
+                config([
+                    'mail.from.address' => $emailSetting->value,
+                ]);
+            }
+        } catch (\Exception) {
+        }
     }
 
     public function setSalaryParserDefaultVariables(): void
