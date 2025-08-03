@@ -20,9 +20,10 @@ pub fn kill_laravel_server() {
     let mut laravel_information = laravel_state.lock().expect("Failure getting information");
 
     if let Some(laravel_server_process) = laravel_information.server.take() {
-        laravel_server_process
-            .kill()
-            .expect("Fail killing laravel server");
+        match laravel_server_process.kill() {
+            Ok(_) => println!("Laravel server terminated successfully"),
+            Err(e) => eprintln!("Failed to kill Laravel server: {}", e),
+        }
     }
 
     drop(laravel_information);
@@ -67,7 +68,15 @@ pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
         
         // Check if main page is accessible
         loop {
-            if let Ok(response) = reqwest::get("http://127.0.0.1:8000/main").await {
+            let client = reqwest::Client::new();
+            let mut request = client.get("http://127.0.0.1:8000/main");
+            
+            // Add stored cookies if available
+            if let Some(cookies) = crate::window::get_stored_cookies() {
+                request = request.header("Cookie", cookies);
+            }
+            
+            if let Ok(response) = request.send().await {
                 if response.status().is_success() {
                     break;
                 }

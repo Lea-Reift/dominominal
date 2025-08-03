@@ -40,7 +40,7 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![window::set_complete, window::reset_retry_count, window::start_window_load_monitoring])
+        .invoke_handler(tauri::generate_handler![window::set_complete, window::reset_retry_count, window::start_window_load_monitoring, window::store_session_cookies])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 
@@ -60,6 +60,13 @@ pub fn run() {
     
     // Initialize global app handle
     global::init_app_handle(app.handle().clone());
+
+    std::thread::spawn(move || {
+        let _ = ctrlc::set_handler(move || {
+            server::kill_laravel_server();
+            std::process::exit(0);
+        });
+    });
 
     app.run(|handler: &AppHandle, event: RunEvent| match event {
         RunEvent::Ready => {
@@ -108,6 +115,13 @@ pub fn run() {
 
         RunEvent::ExitRequested { .. } | RunEvent::Exit => {
             server::kill_laravel_server();
+        }
+        RunEvent::WindowEvent { event, label, .. } => {
+            if let tauri::WindowEvent::CloseRequested { .. } = event {
+                if label == "app" {
+                    server::kill_laravel_server();
+                }
+            }
         }
         _ => {}
     });
