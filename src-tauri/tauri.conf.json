@@ -11,7 +11,7 @@
         "windows": [
             {
                 "label": "splashscreen",
-                "url": "splashscreen.html",
+                "url": "http://localhost:8000/splashscreen.html",
                 "center": true,
                 "closable": false,
                 "decorations": false,
