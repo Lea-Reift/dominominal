@@ -1,19 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 
-window.addEventListener('DOMContentLoaded', async (e) => {
-    let serverStarted = false;
-    do {
-        try {
-            const response = await fetch("http://localhost:8000/up");
-            serverStarted = [301, 302, 200].includes(response?.status);
-        } catch (e) {
-            serverStarted = false;
-        }
-
-        if (!serverStarted) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-    } while (!serverStarted);
-
-    invoke('set_complete');
+window.addEventListener('DOMContentLoaded', async () => {
+    const cookies = await window.cookieStore.getAll();
+    if (cookies && cookies.length > 0) {
+        await invoke('store_session_cookies', { cookies });
+        console.log(`Stored ${cookies.length} cookies:`, cookies);
+    } else {
+        console.log('No cookies found to store');
+    }
 });

@@ -1,29 +1,46 @@
-<html>
-
+<!DOCTYPE html>
+<html lang="es">
 <head>
-    <style type="text/css" id="operaUserStyle"></style>
-    <style type="text/css">
-        @import url('https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap');
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dominominal - Cargando</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-
-<body>
-    <div>
-      <div class="flex items-stretch">
-            <svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
-                class="animate-spin w-10 text-center">
-                <path clip-rule="evenodd"
-                    d="M12 19C15.866 19 19 15.866 19 12C19 8.13401 15.866 5 12 5C8.13401 5 5 8.13401 5 12C5 15.866 8.13401 19 12 19ZM12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                    fill-rule="evenodd" fill="currentColor" opacity="0.2"></path>
-                <path d="M2 12C2 6.47715 6.47715 2 12 2V5C8.13401 5 5 8.13401 5 12H2Z" fill="currentColor"></path>
-            </svg>
-            <div class="fi-logo flex text-xl font-bold leading-5 tracking-tight text-black-950 mt-2">
-                Dominominal
+<body class="bg-gray-50 text-gray-950 antialiased" style="margin: 0; padding: 0; overflow: hidden; width: 180px; height: 240px; position: relative;">
+    <!-- Absolutely centered content -->
+    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+        <!-- Logo Section -->
+        <div class="relative inline-block mb-4">
+            <div class="absolute inset-0 bg-blue-600/20 rounded-full animate-ping"></div>
+            <div class="relative bg-blue-600 rounded-full p-3 flex items-center justify-center">
+                <svg class="h-7 w-7 text-white" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"/>
+                </svg>
             </div>
         </div>
+
+        <!-- Brand Section -->
+        <div class="mb-4">
+            <h1 class="text-xl font-bold text-gray-950 leading-tight mb-1">
+                Dominominal
+            </h1>
+            <p class="text-sm text-gray-600">
+                Sistema de Gestión
+            </p>
+        </div>
+
+        <!-- Loading Section -->
+        <div class="flex flex-col items-center">
+            <div class="flex space-x-1.5 mb-3">
+                <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+                <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+            </div>
+            
+            <p class="text-sm text-gray-500 font-medium">
+                Cargando...
+            </p>
+        </div>
     </div>
-    <tldx-lmi-shadow-root data-wxt-shadow-root=""></tldx-lmi-shadow-root>
-    <div id="tldx-toast-container"></div>
 </body>
 </html>

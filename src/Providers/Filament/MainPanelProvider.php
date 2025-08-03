@@ -26,6 +26,7 @@ use Filament\Support\Enums\MaxWidth;
 use Filament\Tables\Table;
 use Illuminate\Support\Arr;
 use App\Models\Setting;
+use Filament\Support\Assets\Js;
 
 class MainPanelProvider extends PanelProvider
 {
@@ -51,6 +52,9 @@ class MainPanelProvider extends PanelProvider
                 Pages\Dashboard::class,
             ])
             ->spa()
+            ->assets([
+                Js::make('prefetch', resource_path('js/prefetch.js')),
+            ])
             ->widgets([
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
