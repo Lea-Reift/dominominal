@@ -8,17 +8,13 @@ const addHoverNavigationToMainLinks = () => {
     });
 };
 
-// Run on DOM content loaded
 document.addEventListener('livewire:init', () => {
-    addHoverNavigationToMainLinks()
-});
-
-// Also run when new content is dynamically loaded
-const observer = new MutationObserver(() => {
     addHoverNavigationToMainLinks();
+    window.Livewire.hook('morphed', () => {
+        addHoverNavigationToMainLinks()
+    });
 });
 
-observer.observe(document.body, {
-    childList: true,
-    subtree: true
+document.addEventListener('livewire:navigated', () => {
+    addHoverNavigationToMainLinks()
 });

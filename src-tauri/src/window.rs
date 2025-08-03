@@ -54,7 +54,10 @@ pub async fn start_window_load_monitoring() -> Result<(), ()> {
             }
             
             // Try to get response from server with stored cookies
-            let client = reqwest::Client::new();
+            let client = reqwest::Client::builder()
+                .timeout(tokio::time::Duration::from_secs(3))
+                .build()
+                .expect("Failed to create HTTP client");
             let mut request = client.get("http://127.0.0.1:8000/main");
             
             // Add stored cookies if available
