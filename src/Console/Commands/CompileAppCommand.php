@@ -105,13 +105,19 @@ class CompileAppCommand extends Command
             ];
         }
 
+        if (empty(array_diff_assoc($commands, $assetsCommands))) {
+            $commands['copy_to_debug_target'] = "rm -rf {$tauriDebugAppPath}/public && ".
+            "cp -r ./public {$tauriDebugAppPath}/public";
+        }
+
         $originalPathCommands = [
             'delete_dir',
             'create_dir',
             'tauri_build',
             'copy_project',
             'generate_splash',
-            'clear_compilation_assets'
+            'clear_compilation_assets',
+            'copy_to_debug_target'
         ];
 
         $productionEnvVars = $this->parseEnvFile(base_path('.env.production'));
