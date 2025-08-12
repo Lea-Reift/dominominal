@@ -16,6 +16,8 @@ mod window;
 
 use server::LaravelInformation;
 
+use crate::global::init_app_handle;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app: App = tauri::Builder::default()
@@ -38,6 +40,7 @@ pub fn run() {
                         .build(),
                 )?;
             }
+            init_app_handle(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![window::set_complete, window::reset_retry_count, window::start_window_load_monitoring, window::store_session_cookies])
@@ -57,9 +60,6 @@ pub fn run() {
     };
 
     app.handle().manage(Mutex::new(laravel_information));
-    
-    // Initialize global app handle
-    global::init_app_handle(app.handle().clone());
 
     std::thread::spawn(move || {
         let _ = ctrlc::set_handler(move || {
