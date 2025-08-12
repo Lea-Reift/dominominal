@@ -50,7 +50,7 @@ readonly class PayrollDetailDisplay
         $this->documentNumber = $detail->employee->document_number;
 
         $this->rawSalary = (float) $detail->getParsedPayrollSalary();
-        $adjustments = $detail->payroll->salaryAdjustments->keyBy('parser_alias');
+        $adjustments = $detail->salaryAdjustments->keyBy('parser_alias');
 
         $this->adjustmentNames = $adjustments->pluck('name', 'parser_alias');
 
