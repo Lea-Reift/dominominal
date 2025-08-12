@@ -153,10 +153,10 @@ class MainPanelProvider extends PanelProvider
                         'amount_to_add' => 31_216.00,
                     ],
                     [
-                        'base' => 0,
-                        'top' => 416_220,
-                        'rate' => 0,
-                        'amount_to_add' => 0,
+                        'base' => 867_123.00,
+                        'top' => 867_123.00,
+                        'rate' => 25,
+                        'amount_to_add' => 79_776.00,
                     ],
                 ];
 
