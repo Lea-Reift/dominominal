@@ -18,7 +18,6 @@ use Filament\Notifications\Notification;
 use Illuminate\Support\Number;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Illuminate\Support\Facades\DB;
-use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection as IlluminateCollection;
 
@@ -35,7 +34,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
     {
         parent::setUp();
 
-        $disabled = Closure::fromCallable([$this, 'disableInput']);
+        $disabled = $this->disableInput(...);
 
         $this
             ->label($this->adjustment->name)
@@ -63,7 +62,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
                     ->money()
                     ->label("Total {$this->adjustment->name}")
             )
-            ->updateStateUsing(Closure::fromCallable([$this, 'updateDetailAdjustmet']));
+            ->updateStateUsing($this->updateDetailAdjustmet(...));
     }
 
     public static function make(string $name): static
@@ -120,7 +119,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
         DB::transaction(function () use ($record, $state) {
             $record->salaryAdjustments()->syncWithoutDetaching([$this->adjustment->id => ['custom_value' => $state]]);
 
-            if ($record->payroll->monthlyPayroll()->doesntExist()) {
+            if ($record->payroll->biweeklyPayrolls()->exists()) {
                 $this->updateBiweeklyPayrolls($record, $state);
                 return;
             }
@@ -212,14 +211,16 @@ class SalaryAdjustmentColumn extends TextInputColumn
         }
 
         $biweeklyPayrollDetails = $biweeklyPayrolls
-            ->map(fn (Payroll $payroll) => $payroll->details->firstWhere('employee_id', $record->employee_id));
+            ->map(fn (Payroll $payroll) => $payroll->details->firstWhere('employee_id', $record->employee_id))
+            ->filter();
 
         if ($biweeklyPayrollDetails->isEmpty()) {
             return false;
         }
 
         $biweeklyPayrollDetailAdjustments = $biweeklyPayrollDetails
-            ->map(fn (PayrollDetail $detail) => $detail->salaryAdjustments->firstWhere('id', $this->adjustment->id));
+            ->map(fn (PayrollDetail $detail) => $detail->salaryAdjustments->firstWhere('id', $this->adjustment->id))
+            ->filter();
 
         if ($biweeklyPayrollDetailAdjustments->isEmpty()) {
             return false;
