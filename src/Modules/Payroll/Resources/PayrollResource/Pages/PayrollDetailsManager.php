@@ -229,7 +229,10 @@ class PayrollDetailsManager extends ManageRelatedRecords
 
     protected function adjustmentsColumnsSchema(?PayrollDetail $record): array
     {
-        $adjustments = collect()->union($record?->editableSalaryAdjustments);
+        // Cant use value from records. It fails the update
+        $adjustments = $record?->editableSalaryAdjustments->isNotEmpty()
+            ? $record->editableSalaryAdjustments
+            : $this->record->editableSalaryAdjustments;
 
         return [
             TableGrid::make()
