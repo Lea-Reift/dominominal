@@ -114,22 +114,22 @@ class MainPanelProvider extends PanelProvider
         SalaryAdjustmentParser::setDefaultVariables([
             'SALARIO' => 'DETALLE.salary.amount',
             'SALARIO_QUINCENA' => 'DETALLE.getParsedPayrollSalary()',
-            'RENGLON_ISR' => fn (PayrollDetail $detail) => $detail->payroll->salaryAdjustments->pluck('parser_alias')->contains('ISR')
+            'RENGLON_ISR' => fn (PayrollDetail $detail) => $detail->salaryAdjustments->pluck('parser_alias')->contains('ISR')
                 ? 'SALARIO_BASE_ISR < 416_220.01 ? 0 : ( SALARIO_BASE_ISR < 624_329.01 ? 1 : ( SALARIO_BASE_ISR < 867_123.01 ? 2 : 3 ))'
                 : '0',
             'TOTAL_INGRESOS' => fn (PayrollDetail $detail) => $detail->incomes->pluck('parser_alias')->push('SALARIO_QUINCENA')->join(' + '),
             'TOTAL_DEDUCCIONES' => fn (PayrollDetail $detail) => ($deductions = $detail->deductions)->isNotEmpty()
                 ? $deductions->pluck('parser_alias')->join(' + ')
                 : '0',
-            'HORAS_EXTRA' => fn (PayrollDetail $detail) => $detail->payroll->salaryAdjustments->pluck('parser_alias')->contains('HORAS_EXTRA')
-                ? $detail->payroll->salaryAdjustments->keyBy('name')->get('HORAS_EXTRA')?->value
+            'HORAS_EXTRA' => fn (PayrollDetail $detail) => $detail->salaryAdjustments->pluck('parser_alias')->contains('HORAS_EXTRA')
+                ? $detail->salaryAdjustments->keyBy('name')->get('HORAS_EXTRA')?->value
                 : '0',
             'SALARIO_BASE_ISR' =>
-            fn (PayrollDetail $detail) => $detail->payroll->salaryAdjustments->pluck('parser_alias')->contains(['ISR', 'AFP', 'SFS'])
+            fn (PayrollDetail $detail) => $detail->salaryAdjustments->pluck('parser_alias')->contains('ISR')
                 ? '((TOTAL_INGRESOS - AFP - SFS) * ' . ($detail->payroll->type->isMonthly() ? 12 : 24) . ')'
                 : '0',
             'RENGLONES_ISR' => function (PayrollDetail $detail) {
-                if ($detail->payroll->salaryAdjustments->pluck('parser_alias')->doesntContain('ISR')) {
+                if ($detail->salaryAdjustments->pluck('parser_alias')->doesntContain('ISR')) {
                     return array_fill(0, 4, '0');
                 }
 
