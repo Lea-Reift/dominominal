@@ -32,12 +32,14 @@ class SalaryAdjustment extends Model
         'value_type',
         'value',
         'requires_custom_value',
+        'ignore_in_deductions',
     ];
 
     protected $casts = [
         'type' => SalaryAdjustmentTypeEnum::class,
         'value_type' => SalaryAdjustmentValueTypeEnum::class,
-        'requires_custom_value' => 'boolean'
+        'requires_custom_value' => 'boolean',
+        'ignore_in_deductions' => 'boolean',
     ];
 
     public function payrolls(): BelongsToMany

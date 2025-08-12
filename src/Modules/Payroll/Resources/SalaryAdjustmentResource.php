@@ -79,6 +79,16 @@ class SalaryAdjustmentResource extends Resource
                     ->disabled(fn (Get $get) => !is_null($get('requires_custom_value')) && ((bool)$get('requires_custom_value')))
                     ->columnSpanFull()
                     ->autosize(),
+                ToggleButtons::make('ignore_in_deductions')
+                    ->label('Ignorar en deducciones')
+                    ->helperText('El valor se incluira en el calculo de deducciones del seguro social')
+                    ->live()
+                    ->required(fn (SalaryAdjustment $record) => $record->type->isIncome())
+                    ->visible(fn (SalaryAdjustment $record) => $record->type->isIncome())
+                    ->disabled(fn (SalaryAdjustment $record) => $record->type->isDeduction())
+                    ->required()
+                    ->boolean()
+                    ->grouped(),
             ]);
     }
 
