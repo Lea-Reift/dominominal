@@ -34,7 +34,6 @@ use App\Modules\Payroll\Actions\TableActions\GenerateSecondaryPayrollsAction;
 use App\Modules\Payroll\Actions\TableRowActions\EditAvailableAdjustmentsAction;
 use App\Modules\Payroll\Actions\TableRowActions\ShowPaymentVoucherAction;
 use App\Modules\Payroll\Resources\PayrollResource\Widgets\PayrollDetailAmountWidget;
-use Closure;
 use App\Modules\Payroll\Exports\PayrollExport;
 use Maatwebsite\Excel\Excel;
 
@@ -174,7 +173,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
                         ])
                         ->columnSpan(2),
                     Split::make([])
-                        ->schema(Closure::fromCallable([$this, 'adjustmentsColumnsSchema']))
+                        ->schema($this->adjustmentsColumnsSchema(...))
                         ->columnSpan(8),
                 ]),
 
@@ -230,9 +229,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
 
     protected function adjustmentsColumnsSchema(?PayrollDetail $record): array
     {
-        $adjustments = $record?->editableSalaryAdjustments->isNotEmpty()
-            ? $record->editableSalaryAdjustments
-            : $this->record->editableSalaryAdjustments;
+        $adjustments = collect()->union($record?->editableSalaryAdjustments);
 
         return [
             TableGrid::make()
