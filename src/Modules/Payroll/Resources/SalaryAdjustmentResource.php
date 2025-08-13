@@ -8,6 +8,7 @@ use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Enums\SalaryAdjustmentValueTypeEnum;
 use App\Modules\Payroll\Resources\SalaryAdjustmentResource\Pages;
 use App\Modules\Payroll\Models\SalaryAdjustment;
+use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Form;
@@ -62,16 +63,33 @@ class SalaryAdjustmentResource extends Resource
                     ->helperText('Este sera el valor utilizado en las formulas de este y los demás ajustes')
                     ->required()
                     ->maxLength(255),
-                ToggleButtons::make('requires_custom_value')
-                    ->label('¿Requiere valor modificado?')
-                    ->helperText('El valor modificado se solicitará al momento de registrar el ajuste en una nómina')
-                    ->live()
-                    ->required(fn (Get $get) => !is_null($get('value_type')) && $get('value_type') !== SalaryAdjustmentValueTypeEnum::FORMULA->value)
-                    ->visible(fn (Get $get) => !is_null($get('value_type')) && $get('value_type') !== SalaryAdjustmentValueTypeEnum::FORMULA->value)
-                    ->disabled(fn (Get $get) => !is_null($get('value_type')) && $get('value_type') === SalaryAdjustmentValueTypeEnum::FORMULA->value)
-                    ->required()
-                    ->boolean()
-                    ->grouped(),
+                Grid::make(3)
+                    ->schema([
+                        ToggleButtons::make('requires_custom_value')
+                            ->label('¿Requiere valor modificado?')
+                            ->helperText('El valor modificado se solicitará al momento de registrar el ajuste en una nómina')
+                            ->live()
+                            ->required(fn (Get $get) => !is_null($get('value_type')) && $get('value_type') !== SalaryAdjustmentValueTypeEnum::FORMULA->value)
+                            ->visible(fn (Get $get) => !is_null($get('value_type')) && $get('value_type') !== SalaryAdjustmentValueTypeEnum::FORMULA->value)
+                            ->disabled(fn (Get $get) => !is_null($get('value_type')) && $get('value_type') === SalaryAdjustmentValueTypeEnum::FORMULA->value)
+                            ->required()
+                            ->boolean()
+                            ->grouped(),
+                        ToggleButtons::make('ignore_in_deductions')
+                            ->label('Ignorar en deducciones')
+                            ->helperText('El valor se incluira en el calculo de deducciones del seguro social')
+                            ->visible(fn (SalaryAdjustment $record) => $record->type->isIncome())
+                            ->disabled(fn (SalaryAdjustment $record) => $record->type->isDeduction())
+                            ->required()
+                            ->boolean()
+                            ->grouped(),
+                        ToggleButtons::make('is_absolute_adjustment')
+                            ->label('¿Es un ajuste absoluto?')
+                            ->helperText('Los ajustes absolutos se obtienen de la nómina mensual (si existe)')
+                            ->required()
+                            ->boolean()
+                            ->grouped(),
+                    ]),
                 Textarea::make('value')
                     ->label('Valor')
                     ->required(fn (Get $get) => !is_null($get('requires_custom_value')) && !((bool)$get('requires_custom_value')))
@@ -79,16 +97,6 @@ class SalaryAdjustmentResource extends Resource
                     ->disabled(fn (Get $get) => !is_null($get('requires_custom_value')) && ((bool)$get('requires_custom_value')))
                     ->columnSpanFull()
                     ->autosize(),
-                ToggleButtons::make('ignore_in_deductions')
-                    ->label('Ignorar en deducciones')
-                    ->helperText('El valor se incluira en el calculo de deducciones del seguro social')
-                    ->live()
-                    ->required(fn (SalaryAdjustment $record) => $record->type->isIncome())
-                    ->visible(fn (SalaryAdjustment $record) => $record->type->isIncome())
-                    ->disabled(fn (SalaryAdjustment $record) => $record->type->isDeduction())
-                    ->required()
-                    ->boolean()
-                    ->grouped(),
             ]);
     }
 
