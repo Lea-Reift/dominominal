@@ -115,41 +115,22 @@ class MainPanelProvider extends PanelProvider
 
     public function setSalaryParserDefaultVariables(): void
     {
-        $adjustmentForBiweeklyPayroll = function (string $adjustmentParserAlias, PayrollDetail $detail) {
-            $formula = SalaryAdjustment::query()->where('parser_alias', $adjustmentParserAlias)->value('value');
-            if (!is_string($formula)) {
-                return '0';
-            }
-
-            return str($formula)
-                ->replace(
-                    'SALARIO_BASE_DEDUCCIONES',
-                    'SALARIO_BASE_DEDUCCIONES + '.
-                    (
-                        $detail->complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($adjustmentParserAlias)
-                        ? 'SALARIO_QUINCENA'
-                        : 'SALARIO'
-                    )
-                )
-                ->toString();
-        };
-
         SalaryAdjustmentParser::setDefaultVariables([
             'SALARIO' => fn (PayrollDetail $detail) => $detail->salary->amount,
             'SALARIO_QUINCENA' => fn (PayrollDetail $detail) => $detail->getParsedPayrollSalary(),
             'RENGLON_ISR' => fn (PayrollDetail $detail) => $detail->salaryAdjustments->pluck('parser_alias')->contains('ISR')
                 ? 'SALARIO_BASE_ISR < 416_220.01 ? 0 : ( SALARIO_BASE_ISR < 624_329.01 ? 1 : ( SALARIO_BASE_ISR < 867_123.01 ? 2 : 3 ))'
                 : '0',
+            'EXTRA' => 'TOTAL_INGRESOS - (HORAS_EXTRA ?? 0)',
             'TOTAL_INGRESOS' => fn (PayrollDetail $detail) => $detail->incomes->pluck('parser_alias')->push('SALARIO_QUINCENA')->join(' + '),
             'TOTAL_DEDUCCIONES' => fn (PayrollDetail $detail) => $detail->deductions->pluck('parser_alias')->push('0')->join(' + '),
             'SALARIO_BASE_DEDUCCIONES' => fn (PayrollDetail $detail) => $detail->salaryAdjustments
                 ->where('ignore_in_deductions', false)
                 ->pluck('parser_alias')
-                ->map(fn (string $value) => "({$value} ?? 0)")
                 ->push('0')
                 ->join(' + '),
-            'AFP' => fn (PayrollDetail $detail) => $adjustmentForBiweeklyPayroll('AFP', $detail),
-            'SFS' => fn (PayrollDetail $detail) => $adjustmentForBiweeklyPayroll('SFS', $detail),
+            'AFP' => SalaryAdjustment::query()->where('parser_alias', 'AFP')->value('value'),
+            'SFS' => SalaryAdjustment::query()->where('parser_alias', 'SFS')->value('value'),
             'HORAS_EXTRA' => fn (PayrollDetail $detail) => $detail->salaryAdjustments->keyBy('name')->get('HORAS_EXTRA')->value ?? '0',
             'SALARIO_BASE_ISR' => fn (PayrollDetail $detail) => '((TOTAL_INGRESOS - AFP - SFS) * ' . ($detail->payroll->type->isMonthly() ? 12 : 24) . ')',
             'RENGLONES_ISR' => function (PayrollDetail $detail) {
