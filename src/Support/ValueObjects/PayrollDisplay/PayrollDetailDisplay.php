@@ -74,7 +74,7 @@ readonly class PayrollDetailDisplay
                 ->transform(
                     fn ($value, $key) =>
                     $detail->salaryAdjustments->keyBy('parser_alias')->get($key)->is_absolute_adjustment &&
-                    !$detail->complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($key)
+                    $detail->complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($key)
                         ? $monthlyPayrollDetailDisplay->incomes->get($key)
                         : $value
                 );
@@ -83,7 +83,7 @@ readonly class PayrollDetailDisplay
                 ->transform(
                     fn ($value, $key) =>
                     $detail->salaryAdjustments->keyBy('parser_alias')->get($key)->is_absolute_adjustment &&
-                    !$detail->complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($key)
+                    $detail->complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($key)
                         ? $monthlyPayrollDetailDisplay->deductions->get($key)
                         : $value
                 );
