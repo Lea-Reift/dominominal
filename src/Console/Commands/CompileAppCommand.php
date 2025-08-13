@@ -256,12 +256,16 @@ class CompileAppCommand extends Command
         $commands = [
             'git add .',
             "git commit -m 'Upgrade to version {$currentVersion}'",
+            'git push origin main',
             "git tag -a {$tag}",
             "git push origin {$tag}",
         ];
 
         foreach ($commands as $command) {
-            Process::path(base_path())->run($command);
+            Process::path(base_path())
+                ->run($command, function (string $type, string $output) {
+                    $this->line($output);
+                });
         }
 
         $this->info('Tag creada con exito');
