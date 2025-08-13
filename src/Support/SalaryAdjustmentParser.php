@@ -75,6 +75,7 @@ class SalaryAdjustmentParser
 
                 return [$adjustment->parser_alias => is_numeric($value) ? floatval($value) : ($value ?? 0)];
             })
+            ->toBase()
 
             // Add custom and default variables
             ->merge($defaultVariables)
