@@ -96,6 +96,10 @@ class CompileAppCommand extends Command
 
         if ($this->option('tauri')) {
             $commands = [...$commands, ...$tauriCompileCommand];
+
+            if (!$this->option('debug')) {
+                $this->upgradeAppVersion();
+            }
         }
 
         if (empty($commands)) {
@@ -163,6 +167,7 @@ class CompileAppCommand extends Command
         $this->newLine();
 
         $this->updateAppSignature();
+        $this->addGitTag();
         $this->info('Programa compilado con exito!!!!');
         return Command::SUCCESS;
     }
@@ -212,7 +217,7 @@ class CompileAppCommand extends Command
             base_path('src-tauri\Cargo.toml'),
         ];
 
-        preg_match('/(.*?)(\d+)$/', '0.1.0', $matches);
+        preg_match('/(.*?)(\d+)$/', $currentVersion, $matches);
         $newVersion = $matches[1] . ($matches[2] + 1);
 
         foreach ($files as $file) {
@@ -239,5 +244,26 @@ class CompileAppCommand extends Command
         $versionData['platforms']['windows-x86_64']['signature'] = $signature;
 
         file_put_contents($versionFilePath, json_encode($versionData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
+
+    protected function addGitTag(): void
+    {
+        $currentVersion = $this->getCurrentVersion();
+
+        $tag = "v{$currentVersion}";
+
+
+        $commands = [
+            'git add .',
+            "git commit -m 'Upgrade to version {$currentVersion}'",
+            "git tag -a {$tag}",
+            "git push origin {$tag}",
+        ];
+
+        foreach ($commands as $command) {
+            Process::path(base_path())->run($command);
+        }
+
+        $this->info('Tag creada con exito');
     }
 }
