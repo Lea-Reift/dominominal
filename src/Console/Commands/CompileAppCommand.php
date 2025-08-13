@@ -255,10 +255,10 @@ class CompileAppCommand extends Command
 
         $commands = [
             'git add .',
-            "git commit -m 'Upgrade to version {$currentVersion}'",
+            'git commit -m "Upgrade to version ' . $currentVersion . '"',
             'git push origin main',
-            "git tag -a {$tag}",
-            "git push origin {$tag}",
+            'git tag -a ' . $tag . ' -m ""',
+            'git push origin ' . $tag,
         ];
 
         foreach ($commands as $command) {
