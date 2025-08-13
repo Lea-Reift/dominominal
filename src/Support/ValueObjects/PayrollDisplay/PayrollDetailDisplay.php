@@ -72,18 +72,20 @@ readonly class PayrollDetailDisplay
             $monthlyPayrollDetailDisplay = $monthlyPayrollDetail->display;
             $incomes
                 ->transform(
-                    fn ($value, $key) =>
-                    $detail->salaryAdjustments->keyBy('parser_alias')->get($key)->is_absolute_adjustment &&
-                    $detail->complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($key)
+                    fn (string $value, string $key) =>
+                    $monthlyPayrollDetailDisplay->incomes->has($key) &&
+                        $detail->salaryAdjustments->keyBy('parser_alias')->get($key)->is_absolute_adjustment &&
+                        !$detail->complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($key)
                         ? $monthlyPayrollDetailDisplay->incomes->get($key)
                         : $value
                 );
 
             $deductions
                 ->transform(
-                    fn ($value, $key) =>
-                    $detail->salaryAdjustments->keyBy('parser_alias')->get($key)->is_absolute_adjustment &&
-                    $detail->complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($key)
+                    fn (string $value, string $key) =>
+                    $monthlyPayrollDetailDisplay->deductions->has($key) &&
+                        $detail->salaryAdjustments->keyBy('parser_alias')->get($key)->is_absolute_adjustment &&
+                        !$detail->complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($key)
                         ? $monthlyPayrollDetailDisplay->deductions->get($key)
                         : $value
                 );
@@ -95,7 +97,6 @@ readonly class PayrollDetailDisplay
         $this->incomeTotal = $this->rawSalary +  $this->incomes->sum();
         $this->deductionTotal = $this->deductions->sum();
         $this->netSalary = $this->incomeTotal - $this->deductionTotal;
-
 
         $this->PDF = FacadePdf::loadView('components.payment-voucher-table', ['detail' => $this]);
     }
