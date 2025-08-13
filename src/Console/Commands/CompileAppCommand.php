@@ -104,11 +104,15 @@ class CompileAppCommand extends Command
                 ...$migrateProjectCommands,
                 ...$tauriCompileCommand,
             ];
+
+            if (!$this->option('debug')) {
+                $this->upgradeAppVersion();
+            }
         }
 
         if (empty(array_diff_assoc($commands, $assetsCommands))) {
-            $commands['copy_to_debug_target'] = "rm -rf {$tauriDebugAppPath}/public && ".
-            "cp -r ./public {$tauriDebugAppPath}/public";
+            $commands['copy_to_debug_target'] = "rm -rf {$tauriDebugAppPath}/public && " .
+                "cp -r ./public {$tauriDebugAppPath}/public";
         }
 
         $originalPathCommands = [
@@ -158,6 +162,7 @@ class CompileAppCommand extends Command
 
         $this->newLine();
 
+        $this->updateAppSignature();
         $this->info('Programa compilado con exito!!!!');
         return Command::SUCCESS;
     }
@@ -190,5 +195,49 @@ class CompileAppCommand extends Command
         }
 
         return $env;
+    }
+
+    protected function getCurrentVersion(): string
+    {
+        return json_decode(file_get_contents(base_path('dominominal.version.json')))?->version ?? '0.1.0';
+    }
+
+    protected function upgradeAppVersion(): void
+    {
+        $currentVersion = $this->getCurrentVersion();
+
+        $files = [
+            base_path('dominominal.version.json'),
+            base_path('src-tauri\tauri.conf.json'),
+            base_path('src-tauri\Cargo.toml'),
+        ];
+
+        preg_match('/(.*?)(\d+)$/', '0.1.0', $matches);
+        $newVersion = $matches[1] . ($matches[2] + 1);
+
+        foreach ($files as $file) {
+            $content = file_get_contents($file);
+            $newContent = str_replace($currentVersion, $newVersion, $content);
+            file_put_contents($file, $newContent);
+        }
+    }
+
+    protected function updateAppSignature(): void
+    {
+        $currentVersion = $this->getCurrentVersion();
+        $signatureFilePath = base_path("src-tauri/target/release/bundle/nsis/Dominominal_{$currentVersion}_x64-setup.exe.sig");
+
+        if (!file_exists($signatureFilePath)) {
+            $this->error("Signature file not found: {$signatureFilePath}");
+            return;
+        }
+
+        $signature = file_get_contents($signatureFilePath);
+        $versionFilePath = base_path('dominominal.version.json');
+        $versionData = json_decode(file_get_contents($versionFilePath), true);
+
+        $versionData['platforms']['windows-x86_64']['signature'] = $signature;
+
+        file_put_contents($versionFilePath, json_encode($versionData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 }
