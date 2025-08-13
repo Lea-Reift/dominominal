@@ -22,7 +22,7 @@ class ShowPaymentVoucherAction
     protected Action $action;
 
     public function __construct(
-        protected Payroll $record,
+        protected Payroll $payroll,
     ) {
         $this->action = Action::make('show_payment_voucher')
             ->label('Mostrar volante')
@@ -42,6 +42,12 @@ class ShowPaymentVoucherAction
                     ->required(),
             ])
             ->modalSubmitActionLabel('Enviar comprobante')
+            ->extraModalFooterActions(fn (PayrollDetail $record): array => [
+                Action::make('print_voucher')
+                    ->label('Imprimir volante')
+                    ->url(route('filament.main.payrolls.details.show.export.pdf', ['detail' => $record]))
+                    ->openUrlInNewTab(),
+            ])
             ->action(Closure::fromCallable([$this, 'actionCallback']));
     }
 
@@ -115,7 +121,7 @@ class ShowPaymentVoucherAction
                     Notification::make('email_not_verified')
                         ->title('Correo no verificado')
                         ->body(
-                            'Su dirección de correo electrónico aún no está verificada en Brevo.'.
+                            'Su dirección de correo electrónico aún no está verificada en Brevo.' .
                             'Revise su bandeja de entrada o configure una dirección diferente.'
                         )
                         ->warning()
@@ -136,7 +142,6 @@ class ShowPaymentVoucherAction
                 $verifiedSetting->name = 'is_verified';
                 $verifiedSetting->value = true;
                 $verifiedSetting->save();
-
             } catch (\Throwable) {
                 Notification::make('email_verification_error')
                     ->title('Error al verificar correo')
