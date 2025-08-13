@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Modules\Payroll\Models\PayrollDetail;
 use Closure;
 use Filament\Notifications\Actions\Action as NotificationAction;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 class ShowPaymentVoucherAction
 {
@@ -88,6 +89,7 @@ class ShowPaymentVoucherAction
 
     protected function checkEmailConfiguration(): void
     {
+        /** @var EloquentCollection<int, Setting> */
         $emailSettings = Setting::query()->getSettings('email');
         $emailSetting = $emailSettings->where('name', 'username')->first();
         $verifiedSetting = $emailSettings->where('name', 'is_verified')->first();
@@ -112,7 +114,7 @@ class ShowPaymentVoucherAction
             throw new Halt();
         }
 
-        if ($hasEmail && !$isVerified) {
+        if (!$isVerified) {
             try {
                 $brevoService = new BrevoService();
                 $isValidSender = $brevoService->isValidSender($emailSetting->value);

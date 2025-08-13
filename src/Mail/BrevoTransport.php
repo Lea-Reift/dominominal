@@ -25,6 +25,7 @@ class BrevoTransport extends AbstractTransport
 
     protected function doSend(SentMessage $message): void
     {
+        // @phpstan-ignore-next-line
         $email = MessageConverter::toEmail($message->getOriginalMessage());
 
         $payload = [
