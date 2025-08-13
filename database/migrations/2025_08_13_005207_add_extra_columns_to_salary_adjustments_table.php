@@ -13,7 +13,10 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('salary_adjustments', function (Blueprint $table) {
-            $table->boolean('ignore_in_deductions')->after('requires_custom_value')->default(true);
+            $table->after('requires_custom_value', function (Blueprint $table) {
+                $table->boolean('ignore_in_deductions')->default(true);
+                $table->boolean('is_absolute_adjustment')->default(false);
+            });
         });
     }
 
@@ -24,6 +27,7 @@ return new class () extends Migration {
     {
         Schema::table('salary_adjustments', function (Blueprint $table) {
             $table->dropColumn('ignore_in_deductions');
+            $table->dropColumn('is_absolute_adjustment');
         });
     }
 };
