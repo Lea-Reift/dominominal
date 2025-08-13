@@ -8,6 +8,7 @@ use App\Modules\Company\Models\Company;
 use App\Modules\Company\Models\Employee;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Modules\Company\Models\Salary;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Carbon;
@@ -41,6 +42,7 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class PayrollDetail extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'employee_id',
         'payroll_id',
@@ -110,6 +112,11 @@ class PayrollDetail extends Model
     public function newEloquentBuilder($query): PayrollDetailBuilder
     {
         return new PayrollDetailBuilder($query);
+    }
+
+    protected static function newFactory()
+    {
+        return \Database\Factories\PayrollDetailFactory::new();
     }
 
     public function getParsedPayrollSalary(): float

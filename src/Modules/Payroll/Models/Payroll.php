@@ -7,6 +7,7 @@ namespace App\Modules\Payroll\Models;
 use App\Enums\SalaryTypeEnum;
 use App\Modules\Company\Models\Company;
 use App\Modules\Company\Models\Employee;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -35,6 +36,16 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  */
 class Payroll extends Model
 {
+    use HasFactory;
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \Database\Factories\PayrollFactory::new();
+    }
+
     protected $fillable = [
         'company_id',
         'type',

@@ -7,6 +7,7 @@ namespace App\Modules\Company\Models;
 use App\Concerns\HasDocument;
 use App\Concerns\HasPhones;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Enums\DocumentTypeEnum;
@@ -40,8 +41,17 @@ use App\Modules\Payroll\Models\Payroll;
  */
 class Employee extends Model
 {
+    use HasFactory;
     use HasPhones;
     use HasDocument;
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \Database\Factories\EmployeeFactory::new();
+    }
 
     protected $fillable = [
         'company_id',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Enums\SalaryAdjustmentValueTypeEnum;
@@ -25,6 +26,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  */
 class SalaryAdjustment extends Model
 {
+    use HasFactory;
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \Database\Factories\SalaryAdjustmentFactory::new();
+    }
+
     protected $fillable = [
         'type',
         'name',

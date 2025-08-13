@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
  * @property int $id
@@ -28,6 +29,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Salary extends Model
 {
     use SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
         'employee_id',
@@ -60,5 +62,10 @@ class Salary extends Model
     public function payrollDetails(): HasMany
     {
         return $this->hasMany(PayrollDetail::class);
+    }
+
+    protected static function newFactory()
+    {
+        return \Database\Factories\SalaryFactory::new();
     }
 }
