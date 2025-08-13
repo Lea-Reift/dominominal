@@ -50,7 +50,7 @@ readonly class PayrollDetailDisplay
         $this->documentNumber = $detail->employee->document_number;
 
         $this->rawSalary = (float) $detail->getParsedPayrollSalary();
-        $adjustments = $detail->payroll->salaryAdjustments->keyBy('parser_alias');
+        $adjustments = $detail->salaryAdjustments->keyBy('parser_alias');
 
         $this->adjustmentNames = $adjustments->pluck('name', 'parser_alias');
 
@@ -65,6 +65,29 @@ readonly class PayrollDetailDisplay
                 SalaryAdjustmentTypeEnum::DEDUCTION => $deductions->put($key, $value),
                 default => null
             });
+
+
+        $monthlyPayrollDetail = $detail->monthlyDetail;
+        if (!is_null($monthlyPayrollDetail)) {
+            $monthlyPayrollDetailDisplay = $monthlyPayrollDetail->display;
+            $incomes
+                ->transform(
+                    fn ($value, $key) =>
+                    $detail->salaryAdjustments->keyBy('parser_alias')->get($key)->is_absolute_adjustment &&
+                    !$detail->complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($key)
+                        ? $monthlyPayrollDetailDisplay->incomes->get($key)
+                        : $value
+                );
+
+            $deductions
+                ->transform(
+                    fn ($value, $key) =>
+                    $detail->salaryAdjustments->keyBy('parser_alias')->get($key)->is_absolute_adjustment &&
+                    !$detail->complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($key)
+                        ? $monthlyPayrollDetailDisplay->deductions->get($key)
+                        : $value
+                );
+        }
 
         $this->incomes = $incomes;
         $this->deductions = $deductions;

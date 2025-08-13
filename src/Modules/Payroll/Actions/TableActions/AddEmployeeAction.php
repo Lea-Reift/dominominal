@@ -80,7 +80,7 @@ class AddEmployeeAction
             ->action(fn (array $data, Action $action) => match ($this->getActiveTab()) {
                 '-add-employees-tab' => $this->addEmployeesAction($data, $action),
                 '-create-employee-tab' => $this->createEmployeeAction($data, $action),
-                '-add-raw-employees-tab' => $this->importRawEmployeesAction($data, $action),
+                '-import-raw-employee-tab' => $this->importRawEmployeesAction($data, $action),
                 default => throw new InvalidArgumentException('Accion o pestaña invalida'),
             })
             ->successNotification(

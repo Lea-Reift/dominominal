@@ -33,8 +33,11 @@ class EditAvailableAdjustmentsAction
                     ->columns(2)
                     ->bulkToggleable()
                     ->disableOptionWhen(function (PayrollDetail $record, string $value) {
-                        $allAdjustments = $this->record->salaryAdjustments->pluck('name', 'id');
-                        $missingInComplementary = $allAdjustments->except($record->complementaryDetail->salaryAdjustments->pluck('id'))->keys();
+                        $allAdjustments = $this->record->monthlyPayroll?->salaryAdjustments->pluck('name', 'id');
+                        if (is_null($allAdjustments)) {
+                            return false;
+                        }
+                        $missingInComplementary = $allAdjustments->except($record->complementaryDetail?->salaryAdjustments->pluck('id'))->keys();
                         return $missingInComplementary->contains($value);
                     })
             ])

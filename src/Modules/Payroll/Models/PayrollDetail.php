@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Builder;
  * @property-read Employee $employee
  * @property-read Payroll $payroll
  * @property-read ?PayrollDetail $complementaryDetail
+ * @property-read ?PayrollDetail $monthlyDetail
  * @property-read Salary $salary
  * @property-read Collection<int, SalaryAdjustment> $salaryAdjustments
  * @property-read Collection<int, SalaryAdjustment> $editableSalaryAdjustments
@@ -149,6 +150,22 @@ class PayrollDetail extends Model
                         ->where('id', '!=', $this->payroll->id)
                         ->whereDate('period', $complementaryPayrollDate->toDateString())
                 )
+                ->with(['salaryAdjustments', 'incomes', 'deductions'])
+                ->first();
+        })
+            ->shouldCache();
+    }
+
+    public function monthlyDetail(): Attribute
+    {
+        return Attribute::get(function () {
+            if ($this->payroll->monthly_payroll_id === null) {
+                return null;
+            }
+
+            return PayrollDetail::query()
+                ->where('employee_id', $this->employee_id)
+                ->where('payroll_id', $this->payroll->monthly_payroll_id)
                 ->with(['salaryAdjustments', 'incomes', 'deductions'])
                 ->first();
         })

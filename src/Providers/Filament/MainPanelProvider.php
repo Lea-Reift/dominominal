@@ -26,6 +26,7 @@ use Filament\Support\Enums\MaxWidth;
 use Filament\Tables\Table;
 use Illuminate\Support\Arr;
 use App\Models\Setting;
+use App\Modules\Payroll\Models\SalaryAdjustment;
 use Filament\Support\Assets\Js;
 
 class MainPanelProvider extends PanelProvider
@@ -111,25 +112,44 @@ class MainPanelProvider extends PanelProvider
 
     public function setSalaryParserDefaultVariables(): void
     {
+        $adjustmentForBiweeklyPayroll = function (string $adjustmentParserAlias, PayrollDetail $detail) {
+            $formula = SalaryAdjustment::query()->where('parser_alias', $adjustmentParserAlias)->value('value');
+            if (!is_string($formula)) {
+                return '0';
+            }
+
+            return str($formula)
+                ->replace(
+                    'SALARIO_BASE_DEDUCCIONES',
+                    'SALARIO_BASE_DEDUCCIONES + '.
+                    (
+                        $detail->complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($adjustmentParserAlias)
+                        ? 'SALARIO_QUINCENA'
+                        : 'SALARIO'
+                    )
+                )
+                ->toString();
+        };
+
         SalaryAdjustmentParser::setDefaultVariables([
-            'SALARIO' => 'DETALLE.salary.amount',
-            'SALARIO_QUINCENA' => 'DETALLE.getParsedPayrollSalary()',
-            'RENGLON_ISR' => fn (PayrollDetail $detail) => $detail->payroll->salaryAdjustments->pluck('parser_alias')->contains('ISR')
+            'SALARIO' => fn (PayrollDetail $detail) => $detail->salary->amount,
+            'SALARIO_QUINCENA' => fn (PayrollDetail $detail) => $detail->getParsedPayrollSalary(),
+            'RENGLON_ISR' => fn (PayrollDetail $detail) => $detail->salaryAdjustments->pluck('parser_alias')->contains('ISR')
                 ? 'SALARIO_BASE_ISR < 416_220.01 ? 0 : ( SALARIO_BASE_ISR < 624_329.01 ? 1 : ( SALARIO_BASE_ISR < 867_123.01 ? 2 : 3 ))'
                 : '0',
             'TOTAL_INGRESOS' => fn (PayrollDetail $detail) => $detail->incomes->pluck('parser_alias')->push('SALARIO_QUINCENA')->join(' + '),
-            'TOTAL_DEDUCCIONES' => fn (PayrollDetail $detail) => ($deductions = $detail->deductions)->isNotEmpty()
-                ? $deductions->pluck('parser_alias')->join(' + ')
-                : '0',
-            'HORAS_EXTRA' => fn (PayrollDetail $detail) => $detail->payroll->salaryAdjustments->pluck('parser_alias')->contains('HORAS_EXTRA')
-                ? $detail->payroll->salaryAdjustments->keyBy('name')->get('HORAS_EXTRA')?->value
-                : '0',
-            'SALARIO_BASE_ISR' =>
-            fn (PayrollDetail $detail) => $detail->payroll->salaryAdjustments->pluck('parser_alias')->contains(['ISR', 'AFP', 'SFS'])
-                ? '((TOTAL_INGRESOS - AFP - SFS) * ' . ($detail->payroll->type->isMonthly() ? 12 : 24) . ')'
-                : '0',
+            'TOTAL_DEDUCCIONES' => fn (PayrollDetail $detail) => $detail->deductions->pluck('parser_alias')->push('0')->join(' + '),
+            'SALARIO_BASE_DEDUCCIONES' => fn (PayrollDetail $detail) => $detail->salaryAdjustments
+                ->where('ignore_in_deductions', false)
+                ->pluck('parser_alias')
+                ->map(fn (string $value) => "({$value} ?? 0)")
+                ->join(' + '),
+            'AFP' => fn (PayrollDetail $detail) => $adjustmentForBiweeklyPayroll('AFP', $detail),
+            'SFS' => fn (PayrollDetail $detail) => $adjustmentForBiweeklyPayroll('SFS', $detail),
+            'HORAS_EXTRA' => fn (PayrollDetail $detail) => $detail->salaryAdjustments->keyBy('name')->get('HORAS_EXTRA')?->value ?? '0',
+            'SALARIO_BASE_ISR' => fn (PayrollDetail $detail) => '((TOTAL_INGRESOS - AFP - SFS) * ' . ($detail->payroll->type->isMonthly() ? 12 : 24) . ')',
             'RENGLONES_ISR' => function (PayrollDetail $detail) {
-                if ($detail->payroll->salaryAdjustments->pluck('parser_alias')->doesntContain('ISR')) {
+                if ($detail->salaryAdjustments->pluck('parser_alias')->doesntContain('ISR')) {
                     return array_fill(0, 4, '0');
                 }
 
@@ -153,17 +173,19 @@ class MainPanelProvider extends PanelProvider
                         'amount_to_add' => 31_216.00,
                     ],
                     [
-                        'base' => 0,
-                        'top' => 416_220,
-                        'rate' => 0,
-                        'amount_to_add' => 0,
+                        'base' => 867_123.00,
+                        'top' => 867_123.00,
+                        'rate' => 25,
+                        'amount_to_add' => 79_776.00,
                     ],
                 ];
+
+                $isrDivisor = $detail->payroll->type->isMonthly() ? 12 : 24;
 
                 return Arr::map(
                     $isrSteps,
                     fn (array $step) =>
-                    "(((SALARIO_BASE_ISR - {$step['base']}) * 0.{$step['rate']}) + {$step['amount_to_add']}) /" . ($detail->payroll->type->isMonthly() ? 12 : 24)
+                    "(((SALARIO_BASE_ISR - {$step['base']}) * 0.{$step['rate']}) + {$step['amount_to_add']}) / {$isrDivisor}"
                 );
             }
         ]);
