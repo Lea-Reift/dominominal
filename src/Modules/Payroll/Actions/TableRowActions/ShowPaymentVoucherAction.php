@@ -27,12 +27,13 @@ class ShowPaymentVoucherAction
         $this->action = Action::make('show_payment_voucher')
             ->label('Mostrar volante')
             ->icon('heroicon-s-inbox-arrow-down')
-            ->modalHeading(fn (PayrollDetail $record) => $record->employee->full_name)
             ->color('info')
             ->modalContent(fn (PayrollDetail $record) => view(
                 'components.payment-voucher-table',
                 ['detail' => $record->display, 'mode' => 'modal'],
             ))
+            ->modalHeading('')
+            ->stickyModalHeader(false)
             ->form([
                 TextInput::make('employee_email')
                     ->label('Correo del empleado')
