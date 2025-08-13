@@ -126,7 +126,7 @@ class PayrollDetail extends Model
 
         $secondBiweekSalary = $salary->amount - $firstBiweekSalary;
 
-        return $this->payroll->period->day > 15
+        return $this->payroll->period->day <= 15
             ? $firstBiweekSalary
             : $secondBiweekSalary;
     }
