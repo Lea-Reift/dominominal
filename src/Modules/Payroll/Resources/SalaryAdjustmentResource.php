@@ -52,9 +52,11 @@ class SalaryAdjustmentResource extends Resource
                 TextInput::make('name')
                     ->label('Nombre')
                     ->required()
-                    ->live(debounce: 1000)
-                    ->afterStateUpdated(function ($state, callable $set) {
-                        $set('parser_alias', str($state)->slug('_')->upper());
+                    ->live(debounce: 1000, condition: fn (string $operation) => $operation === 'create')
+                    ->afterStateUpdated(function (string $operation, mixed $state, callable $set) {
+                        if ($operation === 'create') {
+                            $set('parser_alias', str($state)->slug('_')->upper());
+                        }
                     })
                     ->formatStateUsing(fn (?string $state) => Str::headline($state))
                     ->maxLength(255),

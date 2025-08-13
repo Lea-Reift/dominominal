@@ -16,13 +16,14 @@ use Illuminate\Support\Facades\Mail;
 use App\Modules\Payroll\Models\PayrollDetail;
 use Closure;
 use Filament\Notifications\Actions\Action as NotificationAction;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 class ShowPaymentVoucherAction
 {
     protected Action $action;
 
     public function __construct(
-        protected Payroll $record,
+        protected Payroll $payroll,
     ) {
         $this->action = Action::make('show_payment_voucher')
             ->label('Mostrar volante')
@@ -42,6 +43,12 @@ class ShowPaymentVoucherAction
                     ->required(),
             ])
             ->modalSubmitActionLabel('Enviar comprobante')
+            ->extraModalFooterActions(fn (PayrollDetail $record): array => [
+                Action::make('print_voucher')
+                    ->label('Imprimir volante')
+                    ->url(route('filament.main.payrolls.details.show.export.pdf', ['detail' => $record]))
+                    ->openUrlInNewTab(),
+            ])
             ->action(Closure::fromCallable([$this, 'actionCallback']));
     }
 
@@ -82,6 +89,7 @@ class ShowPaymentVoucherAction
 
     protected function checkEmailConfiguration(): void
     {
+        /** @var EloquentCollection<int, Setting> */
         $emailSettings = Setting::query()->getSettings('email');
         $emailSetting = $emailSettings->where('name', 'username')->first();
         $verifiedSetting = $emailSettings->where('name', 'is_verified')->first();
@@ -106,7 +114,7 @@ class ShowPaymentVoucherAction
             throw new Halt();
         }
 
-        if ($hasEmail && !$isVerified) {
+        if (!$isVerified) {
             try {
                 $brevoService = new BrevoService();
                 $isValidSender = $brevoService->isValidSender($emailSetting->value);
@@ -115,7 +123,7 @@ class ShowPaymentVoucherAction
                     Notification::make('email_not_verified')
                         ->title('Correo no verificado')
                         ->body(
-                            'Su dirección de correo electrónico aún no está verificada en Brevo.'.
+                            'Su dirección de correo electrónico aún no está verificada en Brevo.' .
                             'Revise su bandeja de entrada o configure una dirección diferente.'
                         )
                         ->warning()
@@ -136,7 +144,6 @@ class ShowPaymentVoucherAction
                 $verifiedSetting->name = 'is_verified';
                 $verifiedSetting->value = true;
                 $verifiedSetting->save();
-
             } catch (\Throwable) {
                 Notification::make('email_verification_error')
                     ->title('Error al verificar correo')

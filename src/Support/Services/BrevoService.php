@@ -34,14 +34,14 @@ class BrevoService
     {
         try {
             $result = $this->sendersApi->getSenders();
-            $senders = $result->getSenders() ?? [];
+            $senders = $result->getSenders();
 
             return collect($senders)->map(function (GetSendersListSenders $sender) {
                 return [
                     'id' => $sender->getId(),
                     'email' => $sender->getEmail(),
                     'name' => $sender->getName(),
-                    'active' => $sender->getActive() ?? false,
+                    'active' => $sender->getActive(),
                 ];
             });
         } catch (\Exception $e) {

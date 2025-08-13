@@ -7,7 +7,7 @@ namespace App\Modules\Payroll\Models;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
- * @property string $custom_value
+ * @property float $custom_value
  */
 class PayrollDetailSalaryAdjustment extends Pivot
 {
@@ -19,6 +19,10 @@ class PayrollDetailSalaryAdjustment extends Pivot
         'payroll_detail_id',
         'salary_adjustment_id',
         'custom_value',
+    ];
+
+    protected $casts = [
+        'custom_value' => 'float',
     ];
 
     public function __construct(array $attributes = [])

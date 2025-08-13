@@ -18,7 +18,8 @@ class SendTestEmail extends Command
     public function handle(): void
     {
         $email = $this->argument('email');
-        
+
+        /** @var ?PayrollDetail */
         $payrollDetail = PayrollDetail::with(['payroll.company', 'employee'])
             ->inRandomOrder()
             ->first();
