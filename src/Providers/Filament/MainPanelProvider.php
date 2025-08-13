@@ -28,6 +28,7 @@ use Illuminate\Support\Arr;
 use App\Models\Setting;
 use App\Modules\Payroll\Models\SalaryAdjustment;
 use Filament\Support\Assets\Js;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 class MainPanelProvider extends PanelProvider
 {
@@ -94,6 +95,8 @@ class MainPanelProvider extends PanelProvider
     protected function configureVerifiedEmail(): void
     {
         try {
+
+            /** @var EloquentCollection<int, Setting> */
             $emailSettings = Setting::query()->getSettings('email');
             $emailSetting = $emailSettings->where('name', 'username')->first();
             $verifiedSetting = $emailSettings->where('name', 'is_verified')->first();
@@ -146,7 +149,7 @@ class MainPanelProvider extends PanelProvider
                 ->join(' + '),
             'AFP' => fn (PayrollDetail $detail) => $adjustmentForBiweeklyPayroll('AFP', $detail),
             'SFS' => fn (PayrollDetail $detail) => $adjustmentForBiweeklyPayroll('SFS', $detail),
-            'HORAS_EXTRA' => fn (PayrollDetail $detail) => $detail->salaryAdjustments->keyBy('name')->get('HORAS_EXTRA')?->value ?? '0',
+            'HORAS_EXTRA' => fn (PayrollDetail $detail) => $detail->salaryAdjustments->keyBy('name')->get('HORAS_EXTRA')->value ?? '0',
             'SALARIO_BASE_ISR' => fn (PayrollDetail $detail) => '((TOTAL_INGRESOS - AFP - SFS) * ' . ($detail->payroll->type->isMonthly() ? 12 : 24) . ')',
             'RENGLONES_ISR' => function (PayrollDetail $detail) {
                 if ($detail->salaryAdjustments->pluck('parser_alias')->doesntContain('ISR')) {

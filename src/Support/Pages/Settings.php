@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 
 /**
- * @property EloquentCollection<int, Setting> $emailSettings
+ * @property EloquentCollection<string, Setting> $emailSettings
  */
 class Settings extends Page implements HasForms
 {
@@ -39,6 +39,7 @@ class Settings extends Page implements HasForms
 
     public function __construct()
     {
+        // @phpstan-ignore-next-line
         $this->emailSettings = Setting::query()->getSettings('email')->keyBy('name');
         $this->emailFormData = $this->emailSettings->pluck('value', 'name')->toArray();
 

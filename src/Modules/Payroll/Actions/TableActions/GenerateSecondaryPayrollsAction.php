@@ -138,7 +138,7 @@ class GenerateSecondaryPayrollsAction
             $adjustments = $detail->salaryAdjustments
                 ->mapWithKeys(fn (SalaryAdjustment $adjustment) => [
                     $adjustment->id => [
-                        'custom_value' => $adjustment?->detailSalaryAdjustmentValue?->custom_value !== null
+                        'custom_value' => $adjustment->detailSalaryAdjustmentValue?->custom_value !== null
                             ? $adjustment->detailSalaryAdjustmentValue->custom_value / 2
                             : null
                     ]

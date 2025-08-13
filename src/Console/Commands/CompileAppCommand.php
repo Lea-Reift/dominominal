@@ -199,7 +199,7 @@ class CompileAppCommand extends Command
 
     protected function getCurrentVersion(): string
     {
-        return json_decode(file_get_contents(base_path('dominominal.version.json')))?->version ?? '0.1.0';
+        return json_decode(file_get_contents(base_path('dominominal.version.json')))->version ?? '0.1.0';
     }
 
     protected function upgradeAppVersion(): void
