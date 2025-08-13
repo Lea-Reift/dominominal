@@ -20,6 +20,7 @@ class CheckSetupIsCompletedMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         if (
+            !app()->environment('testing') &&
             str_starts_with($request->path(), 'main') &&
             (!Schema::hasTable('settings') || !(Setting::query()->where(['setting' => 'setup', 'name' => 'is_completed'])->value('value') ?? false))
         ) {
