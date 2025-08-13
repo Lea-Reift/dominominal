@@ -146,6 +146,7 @@ class MainPanelProvider extends PanelProvider
                 ->where('ignore_in_deductions', false)
                 ->pluck('parser_alias')
                 ->map(fn (string $value) => "({$value} ?? 0)")
+                ->push('0')
                 ->join(' + '),
             'AFP' => fn (PayrollDetail $detail) => $adjustmentForBiweeklyPayroll('AFP', $detail),
             'SFS' => fn (PayrollDetail $detail) => $adjustmentForBiweeklyPayroll('SFS', $detail),
