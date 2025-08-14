@@ -1,6 +1,6 @@
 [package]
 name = "dominominal-desktop"
-version = "0.1.11"
+version = "0.1.12"
 description = "Dominominal's desktop wrapper"
 authors = ["lea-reift"]
 license = ""
