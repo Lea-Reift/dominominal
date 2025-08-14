@@ -129,8 +129,8 @@ class MainPanelProvider extends PanelProvider
                 ->pluck('parser_alias')
                 ->push('0')
                 ->join(' + '),
-            'AFP' => SalaryAdjustment::query()->where('parser_alias', 'AFP')->value('value'),
-            'SFS' => SalaryAdjustment::query()->where('parser_alias', 'SFS')->value('value'),
+            'AFP' => fn () => SalaryAdjustment::query()->where('parser_alias', 'AFP')->value('value'),
+            'SFS' => fn () => SalaryAdjustment::query()->where('parser_alias', 'SFS')->value('value'),
             'HORAS_EXTRA' => fn (PayrollDetail $detail) => $detail->salaryAdjustments->keyBy('name')->get('HORAS_EXTRA')->value ?? '0',
             'SALARIO_BASE_ISR' => fn (PayrollDetail $detail) => '((TOTAL_INGRESOS - AFP - SFS) * ' . ($detail->payroll->type->isMonthly() ? 12 : 24) . ')',
             'RENGLONES_ISR' => function (PayrollDetail $detail) {
