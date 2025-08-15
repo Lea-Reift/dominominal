@@ -15,6 +15,7 @@ readonly class TotalRowDisplay
     public float $incomesTotal;
     public Collection $incomes;
     public Collection $deductions;
+    public Collection $salaryAdjustments;
     public float $deductionsTotal;
     public float $netSalary;
 
@@ -41,5 +42,6 @@ readonly class TotalRowDisplay
 
         $this->incomes = $adjustments->get(SalaryAdjustmentTypeEnum::INCOME->value, new Collection());
         $this->deductions = $adjustments->get(SalaryAdjustmentTypeEnum::DEDUCTION->value, new Collection());
+        $this->salaryAdjustments = $this->incomes->merge($this->deductions);
     }
 }

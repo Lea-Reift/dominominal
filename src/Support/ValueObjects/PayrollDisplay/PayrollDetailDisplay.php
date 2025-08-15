@@ -24,6 +24,7 @@ readonly class PayrollDetailDisplay
     public float $rawSalary;
     public Collection $incomes;
     public Collection $deductions;
+    public Collection $salaryAdjustments;
     public float $incomeTotal;
     public float $deductionTotal;
     public float $netSalary;
@@ -93,6 +94,7 @@ readonly class PayrollDetailDisplay
 
         $this->incomes = $incomes;
         $this->deductions = $deductions;
+        $this->salaryAdjustments = $this->incomes->merge($this->deductions);
 
         $this->incomeTotal = $this->rawSalary +  $this->incomes->sum();
         $this->deductionTotal = $this->deductions->sum();
