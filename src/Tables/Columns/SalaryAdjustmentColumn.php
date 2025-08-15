@@ -53,11 +53,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
                     ->using(
                         fn () => (new PayrollDetail())->newEloquentBuilder($this->payroll->details()->toBase())
                             ->asDisplay()
-                            ->sum(
-                                fn (PayrollDetailDisplay $display) => $display
-                                    ->{$this->adjustment->type->getKey(plural: true)}
-                                    ->get($this->adjustment->parser_alias, 0)
-                            )
+                            ->sum(fn (PayrollDetailDisplay $display) => $display->salaryAdjustments->get($this->adjustment->parser_alias, 0))
                     )
                     ->money()
                     ->label("Total {$this->adjustment->name}")
