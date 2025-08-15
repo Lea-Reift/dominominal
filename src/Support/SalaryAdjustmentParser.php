@@ -52,6 +52,11 @@ class SalaryAdjustmentParser
 
     protected function parse(string $formula): float
     {
+        // Handle empty or whitespace-only formulas
+        if (empty(trim($formula))) {
+            return 0.0;
+        }
+
         $parser = new ExpressionLanguage();
 
         return floatval($parser->evaluate($formula, $this->variables));
@@ -153,7 +158,8 @@ class SalaryAdjustmentParser
     {
         $fixedDeductions = $this->detail->deductions;
 
-        $totalIncomesWithFullSalaryFormula = '(' . $this->detail->incomes->pluck('parser_alias')->push('SALARIO')->join(' + ') . ')';
+        $incomeAliases = $this->detail->incomes->pluck('parser_alias')->push('SALARIO');
+        $totalIncomesWithFullSalaryFormula = '(' . $incomeAliases->join(' + ') . ')';
 
         $fixedDeductions
             ->map(function (SalaryAdjustment $deduction) use ($totalIncomesWithFullSalaryFormula) {
