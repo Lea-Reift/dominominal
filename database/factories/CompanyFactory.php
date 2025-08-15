@@ -27,15 +27,62 @@ class CompanyFactory extends Factory
      */
     public function definition(): array
     {
+        $documentType = fake()->randomElement(DocumentTypeEnum::cases());
+
         return [
             'name' => fake()->company(),
-            'document_type' => DocumentTypeEnum::RNC,
-            'document_number' => fake()->numerify('###-#####-##'),
+            'document_type' => $documentType,
+            'document_number' => $this->generateDocumentNumber($documentType),
             'address' => fake()->address(),
             'phones' => collect([
                 new Phone('mobile', fake()->phoneNumber())
             ]),
             'user_id' => User::factory(),
         ];
+    }
+
+    /**
+     * Generate a document number based on document type
+     */
+    private function generateDocumentNumber(DocumentTypeEnum $documentType): string
+    {
+        return match($documentType) {
+            DocumentTypeEnum::RNC => fake()->numerify('#########'),
+            DocumentTypeEnum::IDENTIFICATION => fake()->numerify('###-#######-#'),
+            DocumentTypeEnum::PASSPORT => fake()->bothify('**********'),
+        };
+    }
+
+    /**
+     * Configure the factory to create companies with RNC document type
+     */
+    public function rnc(): static
+    {
+        return $this->state(fn () => [
+            'document_type' => DocumentTypeEnum::RNC,
+            'document_number' => fake()->numerify('#########'),
+        ]);
+    }
+
+    /**
+     * Configure the factory to create companies with IDENTIFICATION document type
+     */
+    public function identification(): static
+    {
+        return $this->state(fn () => [
+            'document_type' => DocumentTypeEnum::IDENTIFICATION,
+            'document_number' => fake()->numerify('###-#######-#'),
+        ]);
+    }
+
+    /**
+     * Configure the factory to create companies with PASSPORT document type
+     */
+    public function passport(): static
+    {
+        return $this->state(fn () => [
+            'document_type' => DocumentTypeEnum::PASSPORT,
+            'document_number' => fake()->bothify('**********'),
+        ]);
     }
 }

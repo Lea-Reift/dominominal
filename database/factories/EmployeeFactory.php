@@ -26,17 +26,65 @@ class EmployeeFactory extends Factory
      */
     public function definition(): array
     {
+        $documentType = fake()->randomElement(DocumentTypeEnum::cases());
+
         return [
             'company_id' => Company::factory(),
             'name' => fake()->firstName(),
             'surname' => fake()->lastName(),
-            'document_type' => DocumentTypeEnum::IDENTIFICATION,
-            'document_number' => fake()->numerify('###-#######-#'),
+            'job_title' => fake()->jobTitle(),
+            'document_type' => $documentType,
+            'document_number' => $this->generateDocumentNumber($documentType),
             'address' => fake()->address(),
             'email' => fake()->safeEmail(),
             'phones' => collect([
                 new Phone('mobile', fake()->phoneNumber())
             ]),
         ];
+    }
+
+    /**
+     * Generate a document number based on document type
+     */
+    private function generateDocumentNumber(DocumentTypeEnum $documentType): string
+    {
+        return match($documentType) {
+            DocumentTypeEnum::RNC => fake()->numerify('#########'),
+            DocumentTypeEnum::IDENTIFICATION => fake()->numerify('###-#######-#'),
+            DocumentTypeEnum::PASSPORT => fake()->bothify('**********'),
+        };
+    }
+
+    /**
+     * Configure the factory to create employees with RNC document type
+     */
+    public function rnc(): static
+    {
+        return $this->state(fn () => [
+            'document_type' => DocumentTypeEnum::RNC,
+            'document_number' => fake()->numerify('#########'),
+        ]);
+    }
+
+    /**
+     * Configure the factory to create employees with IDENTIFICATION document type
+     */
+    public function identification(): static
+    {
+        return $this->state(fn () => [
+            'document_type' => DocumentTypeEnum::IDENTIFICATION,
+            'document_number' => fake()->numerify('###-#######-#'),
+        ]);
+    }
+
+    /**
+     * Configure the factory to create employees with PASSPORT document type
+     */
+    public function passport(): static
+    {
+        return $this->state(fn () => [
+            'document_type' => DocumentTypeEnum::PASSPORT,
+            'document_number' => fake()->bothify('**********'),
+        ]);
     }
 }
