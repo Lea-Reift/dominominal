@@ -18,8 +18,8 @@ use Filament\Notifications\Notification;
 use Illuminate\Support\Number;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection as IlluminateCollection;
 
 class SalaryAdjustmentColumn extends TextInputColumn
@@ -52,7 +52,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
             ->summarize(
                 Summarizer::make()
                     ->using(
-                        fn () => (new PayrollDetail())->newEloquentBuilder($this->payroll->details()->toBase())
+                        fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)
                             ->asDisplay()
                             ->sum(fn (PayrollDetailDisplay $display) => $display->salaryAdjustments->get($this->adjustment->parser_alias, 0))
                     )
