@@ -19,6 +19,7 @@ use Illuminate\Support\Number;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Support\Collection as IlluminateCollection;
 
 class SalaryAdjustmentColumn extends TextInputColumn
@@ -135,7 +136,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
                     ->where('employee_id', $record->employee_id)
                     ->whereHas(
                         'payroll.monthlyPayroll',
-                        fn (Builder $query) => $query->where('id', $record->payroll_id)
+                        fn (EloquentBuilder $query) => $query->where('id', $record->payroll_id)
                     )
             )
             ->update([
@@ -155,7 +156,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
             ->where('employee_id', $record->employee_id)
             ->whereHas(
                 'payroll.monthlyPayroll',
-                fn (Builder $query) => $query->where('id', $monthlyPayrollId)
+                fn (EloquentBuilder $query) => $query->where('id', $monthlyPayrollId)
             );
 
         $biweeklyPayrollsTotalValue = PayrollDetailSalaryAdjustment::query()
