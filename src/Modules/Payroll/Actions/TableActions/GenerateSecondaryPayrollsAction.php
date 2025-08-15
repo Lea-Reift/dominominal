@@ -96,7 +96,7 @@ class GenerateSecondaryPayrollsAction
         $period = $this->record->period->clone()->setDay($day)->startOfDay();
 
         throw_if(
-            condition: Payroll::query()->where('period', $period)->exists(),
+            condition: Payroll::query()->where(['period' => $period, 'company_id' => $this->record->company_id])->exists(),
             exception: DuplicatedPayrollException::make($period)
         );
 
