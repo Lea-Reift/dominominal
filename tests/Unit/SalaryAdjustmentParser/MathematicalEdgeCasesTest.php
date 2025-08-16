@@ -32,7 +32,7 @@ beforeEach(function () {
 describe('SalaryAdjustmentParser - Mathematical Edge Cases', function () {
     test('handles zero salary amount', function () {
         $this->salary->update(['amount' => 0]);
-        
+
         $adjustment = SalaryAdjustment::factory()->create([
             'parser_alias' => 'BONUS',
             'value_type' => SalaryAdjustmentValueTypeEnum::PERCENTAGE,

@@ -51,7 +51,7 @@ describe('SalaryAdjustment Model Operations', function () {
             'type' => SalaryAdjustmentTypeEnum::INCOME,
             'name' => 'Bonus Income',
         ]);
-        
+
         $deductionAdjustment = SalaryAdjustment::factory()->create([
             'type' => SalaryAdjustmentTypeEnum::DEDUCTION,
             'name' => 'Tax Deduction',

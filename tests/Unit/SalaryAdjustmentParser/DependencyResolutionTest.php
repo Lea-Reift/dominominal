@@ -162,8 +162,8 @@ describe('SalaryAdjustmentParser - Dependency Resolution', function () {
         ]);
 
         $this->payrollDetail->salaryAdjustments()->attach([
-            $absoluteAdjustment->id, 
-            $percentageAdjustment->id, 
+            $absoluteAdjustment->id,
+            $percentageAdjustment->id,
             $formulaAdjustment->id
         ]);
 

@@ -27,7 +27,7 @@ describe('SalaryAdjustmentResource Page', function () {
 
     test('displays salary adjustments in table', function () {
         $initialCount = SalaryAdjustment::count();
-        
+
         SalaryAdjustment::factory()->create([
             'name' => 'Test Adjustment',
             'type' => SalaryAdjustmentTypeEnum::INCOME,
@@ -52,7 +52,7 @@ describe('SalaryAdjustmentResource Page', function () {
         $testAdjustments = SalaryAdjustment::whereIn('name', ['Income Test', 'Deduction Test'])
             ->orderBy('type')
             ->get();
-        
+
         expect($testAdjustments->first()->type)->toBe(SalaryAdjustmentTypeEnum::INCOME);
         expect($testAdjustments->last()->type)->toBe(SalaryAdjustmentTypeEnum::DEDUCTION);
     });
@@ -70,7 +70,7 @@ describe('SalaryAdjustmentResource Page', function () {
         $testAdjustments = SalaryAdjustment::whereIn('name', ['Absolute Test', 'Percentage Test'])
             ->orderBy('value_type')
             ->get();
-        
+
         expect($testAdjustments->first()->value_type)->toBe(SalaryAdjustmentValueTypeEnum::ABSOLUTE);
         expect($testAdjustments->last()->value_type)->toBe(SalaryAdjustmentValueTypeEnum::PERCENTAGE);
     });

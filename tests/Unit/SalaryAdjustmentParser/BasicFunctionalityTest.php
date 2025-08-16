@@ -32,20 +32,20 @@ beforeEach(function () {
 describe('SalaryAdjustmentParser - Basic Functionality', function () {
     test('can be instantiated with payroll detail', function () {
         $parser = new SalaryAdjustmentParser($this->payrollDetail);
-        
+
         expect($parser)->toBeInstanceOf(SalaryAdjustmentParser::class);
     });
 
     test('can be created using make method', function () {
         $parser = SalaryAdjustmentParser::make($this->payrollDetail);
-        
+
         expect($parser)->toBeInstanceOf(SalaryAdjustmentParser::class);
     });
 
     test('can set default variables', function () {
         $defaultVars = ['TEST_VAR' => 100];
         $result = SalaryAdjustmentParser::setDefaultVariables($defaultVars);
-        
+
         expect($result)->toHaveKey('TEST_VAR');
         expect($result['TEST_VAR'])->toBe(100);
     });

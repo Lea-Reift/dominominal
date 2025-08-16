@@ -125,7 +125,7 @@ describe('SalaryAdjustmentParser - Error Handling', function () {
 
         $this->payrollDetail->salaryAdjustments()->attach($adjustment);
 
-        // Mixed alphanumeric strings cause dependency resolution failures 
+        // Mixed alphanumeric strings cause dependency resolution failures
         expect(fn () => new SalaryAdjustmentParser($this->payrollDetail))
             ->toThrow(\InvalidArgumentException::class);
     });
