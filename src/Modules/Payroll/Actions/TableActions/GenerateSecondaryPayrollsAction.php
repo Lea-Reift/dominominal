@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Actions\TableActions;
 
+use Filament\Actions\Action;
+use Filament\Support\Enums\Width;
 use App\Modules\Payroll\Models\Payroll;
-use Filament\Tables\Actions\Action;
 use Filament\Support\Exceptions\Halt;
 use Illuminate\Support\Arr;
 use Filament\Forms\Components\CheckboxList;
 use Illuminate\Support\Facades\DB;
-use Filament\Support\Enums\MaxWidth;
 use Filament\Support\Enums\Alignment;
 use Filament\Notifications\Notification;
 use App\Modules\Payroll\Exceptions\DuplicatedPayrollException;
@@ -19,9 +19,8 @@ use App\Modules\Company\Models\Employee;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Modules\Payroll\Models\SalaryAdjustment;
-use Filament\Notifications\Actions\Action as NotificationAction;
 use stdClass;
-use App\Modules\Payroll\Resources\PayrollResource\Pages\PayrollDetailsManager;
+use App\Modules\Payroll\Resources\Payrolls\Pages\PayrollDetailsManager;
 
 class GenerateSecondaryPayrollsAction
 {
@@ -44,9 +43,9 @@ class GenerateSecondaryPayrollsAction
             ->visible(fn () => $this->record->type->isMonthly())
             ->modalIcon('heroicon-s-clipboard-document')
             ->databaseTransaction()
-            ->form($this->formSchema($disableSecondaryPayrolls))
+            ->schema($this->formSchema($disableSecondaryPayrolls))
             ->color('success')
-            ->modalWidth(MaxWidth::Small)
+            ->modalWidth(Width::Small)
             ->modalFooterActionsAlignment(Alignment::Center)
             ->modalSubmitAction($disableSecondaryPayrolls ? false : null)
             ->action(function (array $data) {
@@ -66,7 +65,7 @@ class GenerateSecondaryPayrollsAction
                 }
                 $actions = Arr::map(
                     $payrolls,
-                    fn (Payroll $payroll) => NotificationAction::make("got_to_{$payroll->period->day}_payroll")
+                    fn (Payroll $payroll) => Action::make("got_to_{$payroll->period->day}_payroll")
                         ->label("Ir a la nómina del {$payroll->period->day}")
                         ->button()
                         ->url(PayrollDetailsManager::getUrl(['record' => $payroll->id]))

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Actions\HeaderActions;
 
+use Filament\Schemas\Schema;
 use Filament\Actions\EditAction;
-use Filament\Forms\Form;
-use App\Modules\Payroll\Resources\PayrollResource;
+use App\Modules\Payroll\Resources\Payrolls\PayrollResource;
 use App\Modules\Payroll\Models\Payroll;
 use App\Modules\Payroll\Models\PayrollDetail;
 
@@ -18,7 +18,7 @@ class EditPayrollAction
     {
         $this->action =
             EditAction::make()
-                ->form(fn (Form $form) => PayrollResource::form($form))
+                ->schema(fn (Schema $schema) => PayrollResource::form($schema))
                 ->databaseTransaction()
                 ->after(function (Payroll $editedPayroll) {
                     if ($editedPayroll->type->isBiweekly()) {

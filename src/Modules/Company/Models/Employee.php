@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Company\Models;
 
+use Illuminate\Support\Carbon;
 use App\Concerns\HasDocument;
 use App\Concerns\HasPhones;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -32,8 +33,8 @@ use App\Modules\Payroll\Models\Payroll;
  * @property string $email
  * @property-read string $full_name
  * @property Collection<int, Phone> $phones
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Company $company
  * @property-read ?Salary $salary
  * @property-read EloquentCollection<int, Salary> $salaries

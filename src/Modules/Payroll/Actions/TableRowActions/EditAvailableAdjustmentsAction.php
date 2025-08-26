@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Actions\TableRowActions;
 
+use Filament\Actions\Action;
+use Filament\Support\Enums\Width;
 use App\Modules\Payroll\Models\Payroll;
-use Filament\Tables\Actions\Action;
-use Filament\Support\Enums\MaxWidth;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
 use App\Modules\Payroll\Models\PayrollDetail;
@@ -24,8 +24,8 @@ class EditAvailableAdjustmentsAction
             ->label('Editar ajustes salariales')
             ->icon('heroicon-m-pencil-square')
             ->color('success')
-            ->modalWidth(MaxWidth::Large)
-            ->form([
+            ->modalWidth(Width::Large)
+            ->schema([
                 CheckboxList::make('available_salary_adjustments')
                     ->hiddenLabel()
                     ->options($this->record->salaryAdjustments->pluck('name', 'id'))

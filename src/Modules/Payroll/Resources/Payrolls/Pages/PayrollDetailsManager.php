@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Payroll\Resources\PayrollResource\Pages;
+namespace App\Modules\Payroll\Resources\Payrolls\Pages;
 
+use Filament\Tables\Enums\RecordActionsPosition;
+use Filament\Actions\DeleteAction;
 use App\Concerns\HasEmployeeForm;
-use App\Modules\Company\Resources\CompanyResource;
-use App\Modules\Company\Resources\CompanyResource\Pages\ViewCompany;
+use App\Modules\Company\Resources\Companies\CompanyResource;
+use App\Modules\Company\Resources\Companies\Pages\ViewCompany;
 use App\Modules\Payroll\Models\Payroll;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Modules\Payroll\Models\SalaryAdjustment;
-use App\Modules\Payroll\Resources\PayrollResource;
+use App\Modules\Payroll\Resources\Payrolls\PayrollResource;
 use App\Tables\Columns\SalaryAdjustmentColumn;
 use Filament\Actions\Action as BaseAction;
 use Filament\Resources\Pages\ManageRelatedRecords;
-use Filament\Tables\Actions\ActionGroup as TableActionGroup;
-use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Columns\Layout\Grid as TableGrid;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
@@ -24,7 +24,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Number;
-use Filament\Tables\Enums\ActionsPosition;
 use App\Modules\Payroll\Actions\HeaderActions\EditPayrollAction;
 use App\Modules\Payroll\Actions\TableActions\AddEmployeeAction;
 use Filament\Actions\ActionGroup;
@@ -33,7 +32,7 @@ use Illuminate\Support\Str;
 use App\Modules\Payroll\Actions\TableActions\GenerateSecondaryPayrollsAction;
 use App\Modules\Payroll\Actions\TableRowActions\EditAvailableAdjustmentsAction;
 use App\Modules\Payroll\Actions\TableRowActions\ShowPaymentVoucherAction;
-use App\Modules\Payroll\Resources\PayrollResource\Widgets\PayrollDetailAmountWidget;
+use App\Modules\Payroll\Resources\Payrolls\Widgets\PayrollDetailAmountWidget;
 use App\Modules\Payroll\Exports\PayrollExport;
 use Maatwebsite\Excel\Excel;
 
@@ -47,7 +46,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
 
     protected static string $resource = PayrollResource::class;
     protected static string $relationship = 'details';
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public function mount(int|string $record): void
     {
@@ -150,8 +149,8 @@ class PayrollDetailsManager extends ManageRelatedRecords
                 GenerateSecondaryPayrollsAction::make($this->record),
                 AddEmployeeAction::make($this->record),
             ])
-            ->actionsPosition(ActionsPosition::BeforeColumns)
-            ->actions(TableActionGroup::make([])
+            ->recordActionsPosition(RecordActionsPosition::BeforeColumns)
+            ->recordActions(ActionGroup::make([])
                 ->button()
                 ->label('Opciones')
                 ->actions([

@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Actions\TableRowActions;
 
+use Filament\Actions\Action;
+use Throwable;
 use App\Models\Setting;
 use App\Modules\Payroll\Models\Payroll;
 use App\Support\Services\BrevoService;
-use Filament\Tables\Actions\Action;
 use Filament\Notifications\Notification;
 use App\Mail\PaymentVoucherMail;
 use Filament\Forms\Components\TextInput;
@@ -15,7 +16,6 @@ use Filament\Support\Exceptions\Halt;
 use Illuminate\Support\Facades\Mail;
 use App\Modules\Payroll\Models\PayrollDetail;
 use Closure;
-use Filament\Notifications\Actions\Action as NotificationAction;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 class ShowPaymentVoucherAction
@@ -35,7 +35,7 @@ class ShowPaymentVoucherAction
             ))
             ->modalHeading('')
             ->stickyModalHeader(false)
-            ->form([
+            ->schema([
                 TextInput::make('employee_email')
                     ->label('Correo del empleado')
                     ->email()
@@ -104,7 +104,7 @@ class ShowPaymentVoucherAction
                 ->danger()
                 ->persistent()
                 ->actions([
-                    \Filament\Notifications\Actions\Action::make('configure')
+                    Action::make('configure')
                         ->label('Configurar')
                         ->url('/main/settings')
                         ->markAsRead(),
@@ -129,7 +129,7 @@ class ShowPaymentVoucherAction
                         ->warning()
                         ->persistent()
                         ->actions([
-                            NotificationAction::make('verify')
+                            Action::make('verify')
                                 ->label('Verificar correo')
                                 ->url('/main/settings')
                                 ->markAsRead(),
@@ -144,14 +144,14 @@ class ShowPaymentVoucherAction
                 $verifiedSetting->name = 'is_verified';
                 $verifiedSetting->value = true;
                 $verifiedSetting->save();
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 Notification::make('email_verification_error')
                     ->title('Error al verificar correo')
                     ->body('No se pudo verificar el estado del correo electrónico. Verifique su configuración.')
                     ->danger()
                     ->persistent()
                     ->actions([
-                        NotificationAction::make('configure')
+                        Action::make('configure')
                             ->label('Configurar')
                             ->url('/main/settings')
                             ->markAsRead(),

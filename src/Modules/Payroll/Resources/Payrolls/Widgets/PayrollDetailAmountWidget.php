@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Payroll\Resources\PayrollResource\Widgets;
+namespace App\Modules\Payroll\Resources\Payrolls\Widgets;
 
 use App\Modules\Payroll\Models\SalaryAdjustment;
 use Filament\Widgets\StatsOverviewWidget;
@@ -15,10 +15,10 @@ use Illuminate\Support\Collection;
  */
 class PayrollDetailAmountWidget extends StatsOverviewWidget
 {
-    protected static ?string $pollingInterval = null;
+    protected ?string $pollingInterval = null;
     protected static bool $isLazy = false;
 
-    protected static string $view = 'components.widgets.overview';
+    protected string $view = 'components.widgets.overview';
 
     public array $totalRowDisplay;
 

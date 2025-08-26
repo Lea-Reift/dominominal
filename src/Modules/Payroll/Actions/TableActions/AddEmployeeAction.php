@@ -4,23 +4,23 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Actions\TableActions;
 
+use Filament\Actions\Action;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Set;
+use Throwable;
 use App\Concerns\HasEmployeeForm;
-use Filament\Tables\Actions\Action;
 use App\Modules\Payroll\Models\Payroll;
 use App\Modules\Payroll\Models\PayrollDetail;
 use Illuminate\Support\Collection;
 use App\Modules\Company\Models\Employee;
 use Closure;
-use Filament\Forms\Components\Tabs;
-use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\Component;
 use Filament\Notifications\Notification;
 use Filament\Forms\Components\Hidden;
 use App\Modules\Payroll\Models\SalaryAdjustment;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Set;
 use Livewire\Component as Livewire;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
@@ -71,7 +71,7 @@ class AddEmployeeAction
             ->label('Añadir empleados')
             ->slideOver()
             ->beforeFormFilled(fn () => session(['active_add_employee_form_tab' => '-add-employees-tab']))
-            ->form([
+            ->schema([
                 $this->tabs,
                 Hidden::make('active_add_employee_form_tab')
                     ->afterStateUpdated(fn (string $state) => $this->setActiveTab($state)),
@@ -119,8 +119,8 @@ class AddEmployeeAction
             ->schema([
                 CheckboxList::make('employees')
                     ->hiddenLabel()
-                    ->dehydrated(fn (Component $component) => $component->getContainer()->getParentComponent()->isDisabled())
-                    ->disabled(fn (Component $component) => $component->getContainer()->getParentComponent()->isDisabled())
+                    ->dehydrated(fn (\Filament\Schemas\Components\Component $component) => $component->getContainer()->getParentComponent()->isDisabled())
+                    ->disabled(fn (\Filament\Schemas\Components\Component $component) => $component->getContainer()->getParentComponent()->isDisabled())
                     ->options(
                         fn () => $this->record->company->employees()
                             ->whereNotIn('id', $this->record->employees()->select('employees.id'))
@@ -140,7 +140,7 @@ class AddEmployeeAction
             ->label('Crear Empleado')
             ->columns(2)
             ->disabled(fn () => $this->getActiveTab() !== '-create-employee-tab')
-            ->schema(fn (Component $component) => $this->fields(enabled: ! $component->isDisabled(), nested: true));
+            ->schema(fn (\Filament\Schemas\Components\Component $component) => $this->fields(enabled: ! $component->isDisabled(), nested: true));
     }
 
     protected function importRawEmployeeTab(): Tab
@@ -246,7 +246,7 @@ class AddEmployeeAction
                     'document_type' => DocumentTypeEnum::IDENTIFICATION->value,
                 ])
                 ->toArray();
-        } catch (\Throwable) {
+        } catch (Throwable) {
             Notification::make('raw_import_failure')
                 ->title('No se pudieron generar los registros')
                 ->body('El formato del texto enviado es incorrecto.')

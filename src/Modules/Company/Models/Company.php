@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Company\Models;
 
+use Illuminate\Support\Carbon;
 use App\Concerns\HasDocument;
 use App\Concerns\HasPhones;
 use App\Enums\DocumentTypeEnum;
@@ -26,8 +27,8 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
  * @property Collection<int, Phone> $phones
  * @property EloquentCollection<int, Employee> $employees
  * @property int $user_id
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read User|null $user
  */
 class Company extends Model

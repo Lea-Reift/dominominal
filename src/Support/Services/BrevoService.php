@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support\Services;
 
+use Exception;
 use Brevo\Client\Api\SendersApi;
 use Brevo\Client\Configuration;
 use Brevo\Client\Model\CreateSender;
@@ -44,8 +45,8 @@ class BrevoService
                     'active' => $sender->getActive(),
                 ];
             });
-        } catch (\Exception $e) {
-            throw new \Exception('Error al obtener remitentes válidos: ' . $e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception('Error al obtener remitentes válidos: ' . $e->getMessage());
         }
     }
 
@@ -65,8 +66,8 @@ class BrevoService
             return [
                 'id' => $result->getId(),
             ];
-        } catch (\Exception $e) {
-            throw new \Exception('Error al agregar remitente: ' . $e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception('Error al agregar remitente: ' . $e->getMessage());
         }
     }
 
@@ -105,8 +106,8 @@ class BrevoService
                 ]),
             ]);
             return true;
-        } catch (\Exception $e) {
-            throw new \Exception('Error al validar código OTP: ' . $e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception('Error al validar código OTP: ' . $e->getMessage());
         }
     }
 
@@ -118,7 +119,7 @@ class BrevoService
         try {
             $validSenders = $this->getValidSenders();
             return $validSenders->where('email', $email)->where('active', true)->isNotEmpty();
-        } catch (\Exception) {
+        } catch (Exception) {
             return false;
         }
     }

@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Payroll\Resources\PayrollResource\Pages;
+namespace App\Modules\Payroll\Resources\Payrolls\Pages;
 
-use App\Modules\Payroll\Resources\PayrollResource;
+use Filament\Actions\CreateAction;
+use App\Modules\Payroll\Resources\Payrolls\PayrollResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 
@@ -15,7 +16,7 @@ class ManagePayrolls extends ManageRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 }

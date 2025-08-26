@@ -2,42 +2,42 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Payroll\Resources;
+namespace App\Modules\Payroll\Resources\Payrolls;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Fieldset;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
 use App\Modules\Payroll\Models\Payroll;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
-use App\Modules\Payroll\Resources\PayrollResource\Pages\PayrollDetailsManager;
+use App\Modules\Payroll\Resources\Payrolls\Pages\PayrollDetailsManager;
 use Filament\Forms\Components\Select;
 use App\Enums\SalaryTypeEnum;
 use Coolsam\Flatpickr\Forms\Components\Flatpickr;
-use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\CheckboxList;
 use App\Modules\Payroll\Models\SalaryAdjustment;
 use App\Enums\SalaryAdjustmentValueTypeEnum;
 use Illuminate\Support\Number;
 use Illuminate\Support\Str;
-use Filament\Forms\Get;
 use Illuminate\Validation\Rules\Unique;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Actions\CreateAction;
-use Filament\Tables\Actions\DeleteAction;
 use App\Modules\Payroll\Models\PayrollDetail;
 
 class PayrollResource extends Resource
 {
     protected static ?string $model = Payroll::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static bool $shouldRegisterNavigation = false;
     protected static ?string $modelLabel = 'nómina';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Select::make('type')
                     ->label('Tipo')
                     ->required()
@@ -165,7 +165,7 @@ class PayrollResource extends Resource
                 CreateAction::make()
                     ->successRedirectUrl(fn (Payroll $record): string => PayrollDetailsManager::getUrl(['record' => $record])),
             ])
-            ->actions([
+            ->recordActions([
                 DeleteAction::make()
                     ->modalHeading('Borrar Nómina')
                     ->before(function (Payroll $record) {

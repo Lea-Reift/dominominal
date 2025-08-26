@@ -62,9 +62,9 @@ class SalaryAdjustmentColumn extends TextInputColumn
             ->updateStateUsing($this->updateDetailAdjustmet(...));
     }
 
-    public static function make(string $name): static
+    public static function make(?string $name = null): static
     {
-        [, $adjustmentId, $payrollId] = explode('.', $name);
+        [, $adjustmentId, $payrollId] = explode('.', $name ?? '');
 
         $static = app(static::class, ['name' => $name]);
 

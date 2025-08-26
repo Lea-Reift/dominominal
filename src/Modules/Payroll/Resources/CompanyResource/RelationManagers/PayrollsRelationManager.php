@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Resources\CompanyResource\RelationManagers;
 
+use Filament\Schemas\Schema;
 use App\Modules\Company\Models\Company;
-use App\Modules\Payroll\Resources\PayrollResource;
-use Filament\Forms\Form;
+use App\Modules\Payroll\Resources\Payrolls\PayrollResource;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Table;
 
@@ -26,9 +26,9 @@ class PayrollsRelationManager extends RelationManager
         return false;
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return PayrollResource::form($form);
+        return PayrollResource::form($schema);
     }
 
     public function table(Table $table): Table

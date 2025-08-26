@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Company\Resources\CompanyResource\Pages;
+namespace App\Modules\Company\Resources\Companies\Pages;
 
-use App\Modules\Company\Resources\CompanyResource;
+use App\Modules\Company\Resources\Companies\CompanyResource;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 use App\Modules\Company\Models\Company;

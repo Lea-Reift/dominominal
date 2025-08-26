@@ -2,34 +2,39 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Company\Resources;
+namespace App\Modules\Company\Resources\Companies;
 
+use Filament\Pages\Enums\SubNavigationPosition;
+use Filament\Schemas\Schema;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Actions\EditAction;
+use App\Modules\Company\Resources\Companies\Pages\ListCompanies;
+use App\Modules\Company\Resources\Companies\Pages\ViewCompany;
 use App\Modules\Company\Resources\CompanyResource\Pages;
 use App\Modules\Company\Models\Company;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Pages\SubNavigationPosition;
 use App\Enums\DocumentTypeEnum;
 use App\Forms\Components\PhoneRepeater;
-use App\Modules\Company\Resources\CompanyResource\RelationManagers\EmployeesRelationManager;
+use App\Modules\Company\Resources\Companies\RelationManagers\EmployeesRelationManager;
 use App\Modules\Payroll\Resources\CompanyResource\RelationManagers\PayrollsRelationManager;
-use Filament\Forms\Get;
-use Filament\Tables\Actions\EditAction;
 use Filament\Navigation\NavigationItem;
-use App\Modules\Payroll\Resources\PayrollResource;
+use App\Modules\Payroll\Resources\Payrolls\PayrollResource;
 
 class CompanyResource extends Resource
 {
     protected static ?string $model = Company::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-building-office-2';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-building-office-2';
 
     protected static ?string $modelLabel = 'compañía';
 
-    protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Start;
+    protected static ?\Filament\Pages\Enums\SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Start;
 
     public static function getNavigationItems(): array
     {
@@ -47,25 +52,25 @@ class CompanyResource extends Resource
         ];
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                Forms\Components\Select::make('document_type')
+        return $schema
+            ->components([
+                Select::make('document_type')
                     ->label('Tipo de documento')
                     ->options(DocumentTypeEnum::class)
                     ->live()
                     ->required(),
-                Forms\Components\TextInput::make('document_number')
+                TextInput::make('document_number')
                     ->label('Número de documento')
                     ->required()
                     ->mask(fn (Get $get) => DocumentTypeEnum::tryFrom(intval($get('document_type')))?->getMask())
                     ->maxLength(255),
-                Forms\Components\TextInput::make('name')
+                TextInput::make('name')
                     ->label('Nombre')
                     ->required()
                     ->maxLength(255),
-                Forms\Components\TextInput::make('address')
+                TextInput::make('address')
                     ->label('Dirección')
                     ->required()
                     ->maxLength(255),
@@ -83,21 +88,21 @@ class CompanyResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->label('Nombre')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('document_type')
+                TextColumn::make('document_type')
                     ->label('Documento')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('address')
+                TextColumn::make('address')
                     ->label('Dirección')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->label('Fecha de creación')
                     ->dateTime()
                     ->sortable(),
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make(),
             ]);
     }
@@ -113,8 +118,8 @@ class CompanyResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCompanies::route('/'),
-            'view' => Pages\ViewCompany::route('/{record}'),
+            'index' => ListCompanies::route('/'),
+            'view' => ViewCompany::route('/{record}'),
         ];
     }
 }

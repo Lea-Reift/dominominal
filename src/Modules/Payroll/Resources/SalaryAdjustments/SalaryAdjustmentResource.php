@@ -2,21 +2,23 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Payroll\Resources;
+namespace App\Modules\Payroll\Resources\SalaryAdjustments;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Actions\EditAction;
+use App\Modules\Payroll\Resources\SalaryAdjustments\Pages\ManageSalaryAdjustments;
 use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Enums\SalaryAdjustmentValueTypeEnum;
 use App\Modules\Payroll\Resources\SalaryAdjustmentResource\Pages;
 use App\Modules\Payroll\Models\SalaryAdjustment;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Forms\Components\ToggleButtons;
-use Filament\Forms\Get;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Number;
 use Filament\Forms\Components\TextInput;
@@ -30,14 +32,14 @@ class SalaryAdjustmentResource extends Resource
 
     protected static ?string $pluralModelLabel = 'ajustes salariales';
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationGroup = 'Configuración';
+    protected static string | \UnitEnum | null $navigationGroup = 'Configuración';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Select::make('type')
                     ->label('Tipo')
                     ->options(SalaryAdjustmentTypeEnum::class)
@@ -135,15 +137,15 @@ class SalaryAdjustmentResource extends Resource
             ->filters([
                 //
             ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
+            ->recordActions([
+                EditAction::make(),
             ]);
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ManageSalaryAdjustments::route('/'),
+            'index' => ManageSalaryAdjustments::route('/'),
         ];
     }
 }

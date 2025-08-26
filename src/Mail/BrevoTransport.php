@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mail;
 
+use Exception;
 use Illuminate\Support\Arr;
 use Symfony\Component\Mime\MessageConverter;
 use Illuminate\Support\Facades\Http;
@@ -59,7 +60,7 @@ class BrevoTransport extends AbstractTransport
         ])->post($this->endpoint, $payload);
 
         if ($response->failed()) {
-            throw new \Exception('Failed to send email via Brevo: ' . $response->body());
+            throw new Exception('Failed to send email via Brevo: ' . $response->body());
         }
     }
 
