@@ -11,14 +11,11 @@ use App\Support\Pages\Filament\Actions\SetupAction;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\TextInput;
-use Illuminate\Support\HtmlString;
 use Filament\Pages\SimplePage;
 use Illuminate\Support\Facades\Auth;
 
 class Setup extends SimplePage
 {
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
-
     protected string $view = 'support.pages.setup';
 
     protected User $user;
@@ -34,7 +31,7 @@ class Setup extends SimplePage
     {
         if ($this->setupIsCompletedSetting->value) {
             Auth::loginUsingId(User::value('id'), true);
-            redirect(Filament::getPanel()->getUrl());
+            redirect(Filament::getDefaultPanel()->getUrl());
         }
     }
 
@@ -47,7 +44,7 @@ class Setup extends SimplePage
             ->modalDescription('Antes de empezar, hay que configurar algunas cosas')
             ->modalSubmitActionLabel('Empecemos')
             ->extraAttributes([
-                'wire:init' => new HtmlString('mountAction(\'confirmation\')'),
+                'wire:init' => 'mountAction(\'confirmation\')',
             ])
             ->action(fn () => $this->replaceMountedAction('setupWizard'));
     }
