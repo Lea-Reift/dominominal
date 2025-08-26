@@ -25,6 +25,7 @@ readonly class PayrollDisplay
     public TotalRowDisplay $totals;
 
     protected PDF $PDF;
+    protected const DEFAULT_COLUMNS_NUMBER = 6;
 
     public function __construct(
         Payroll $payroll
@@ -74,7 +75,7 @@ readonly class PayrollDisplay
             'totals' => $this->totals,
             'is_pdf_export' => true,
         ])
-            ->setPaper('LETTER', 'landscape');
+            ->setPaper([0.0, 0.0, 612.00, (($this->deductions->count() + $this->incomes->count() + self::DEFAULT_COLUMNS_NUMBER) * 99)], 'landscape');
     }
 
     public function render(): View
