@@ -121,7 +121,6 @@ class MainPanelProvider extends PanelProvider
             'RENGLON_ISR' => fn (PayrollDetail $detail) => $detail->salaryAdjustments->pluck('parser_alias')->contains('ISR')
                 ? 'SALARIO_BASE_ISR < 416_220.01 ? 0 : ( SALARIO_BASE_ISR < 624_329.01 ? 1 : ( SALARIO_BASE_ISR < 867_123.01 ? 2 : 3 ))'
                 : '0',
-            'EXTRA' => 'TOTAL_INGRESOS - (HORAS_EXTRA ?? 0)',
             'TOTAL_INGRESOS' => fn (PayrollDetail $detail) => $detail->incomes->pluck('parser_alias')->push('SALARIO_QUINCENA')->join(' + '),
             'TOTAL_DEDUCCIONES' => fn (PayrollDetail $detail) => $detail->deductions->pluck('parser_alias')->push('0')->join(' + '),
             'SALARIO_BASE_DEDUCCIONES' => fn (PayrollDetail $detail) => $detail->salaryAdjustments
