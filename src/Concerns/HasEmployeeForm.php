@@ -9,12 +9,12 @@ use App\Enums\SalaryDistributionFormatEnum;
 use Filament\Forms\Components\TextInput;
 use App\Enums\DocumentTypeEnum;
 use App\Enums\SalaryTypeEnum;
-use Filament\Forms\Components\Fieldset;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Support\RawJs;
 use App\Forms\Components\PhoneRepeater;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Get;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Forms\Components\ToggleButtons;
 
 trait HasEmployeeForm
