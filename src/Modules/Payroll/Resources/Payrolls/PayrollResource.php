@@ -52,7 +52,6 @@ class PayrollResource extends Resource
                     ->format('Y-m-d')
                     ->monthPicker()
                     ->unique(
-                        ignoreRecord: true,
                         modifyRuleUsing: fn (Unique $rule, ?Payroll $record) => $rule
                             ->unless(
                                 is_null($record),
@@ -62,8 +61,8 @@ class PayrollResource extends Resource
                             )
                     )
                     ->default(now())
-                    ->visible(fn (Get $get) => SalaryTypeEnum::tryFrom(intval($get('type')))?->isMonthly())
-                    ->disabled(fn (Get $get) => SalaryTypeEnum::tryFrom(intval($get('type')))?->isNotMonthly())
+                    ->visible(fn (Get $get) => $get('type')?->isMonthly())
+                    ->disabled(fn (Get $get) => $get('type')?->isNotMonthly())
                     ->displayFormat('F-Y')
                     ->closeOnDateSelection()
                     ->required(),
@@ -83,8 +82,8 @@ class PayrollResource extends Resource
                                     ->where('type', SalaryTypeEnum::BIWEEKLY)
                             )
                     )
-                    ->visible(fn (Get $get) => SalaryTypeEnum::tryFrom(intval($get('type'))) === SalaryTypeEnum::BIWEEKLY)
-                    ->disabled(fn (Get $get) => SalaryTypeEnum::tryFrom(intval($get('type'))) !== SalaryTypeEnum::BIWEEKLY)
+                    ->visible(fn (Get $get) => $get('type')?->isBiweekly())
+                    ->disabled(fn (Get $get) => $get('type')?->isNotBiweekly())
                     ->displayFormat('d-m-Y')
                     ->closeOnDateSelection()
                     ->required(),

@@ -13,11 +13,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Actions\EditAction;
 use App\Modules\Company\Resources\Companies\Pages\ListCompanies;
 use App\Modules\Company\Resources\Companies\Pages\ViewCompany;
-use App\Modules\Company\Resources\CompanyResource\Pages;
 use App\Modules\Company\Models\Company;
-use Filament\Forms;
 use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Table;
 use App\Enums\DocumentTypeEnum;
 use App\Forms\Components\PhoneRepeater;
@@ -64,7 +61,7 @@ class CompanyResource extends Resource
                 TextInput::make('document_number')
                     ->label('Número de documento')
                     ->required()
-                    ->mask(fn (Get $get) => DocumentTypeEnum::tryFrom(intval($get('document_type')))?->getMask())
+                    ->mask(fn (Get $get) => $get('document_type')?->getMask())
                     ->maxLength(255),
                 TextInput::make('name')
                     ->label('Nombre')
