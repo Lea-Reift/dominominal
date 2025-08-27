@@ -19,9 +19,7 @@ use Filament\Tables\Table;
 use App\Enums\DocumentTypeEnum;
 use App\Forms\Components\PhoneRepeater;
 use App\Modules\Company\Resources\Companies\RelationManagers\EmployeesRelationManager;
-use App\Modules\Payroll\Resources\CompanyResource\RelationManagers\PayrollsRelationManager;
-use Filament\Navigation\NavigationItem;
-use App\Modules\Payroll\Resources\Payrolls\PayrollResource;
+use App\Modules\Company\Resources\Companies\RelationManagers\PayrollsRelationManager;
 
 class CompanyResource extends Resource
 {
@@ -32,22 +30,6 @@ class CompanyResource extends Resource
     protected static ?string $modelLabel = 'compañía';
 
     protected static ?\Filament\Pages\Enums\SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Start;
-
-    public static function getNavigationItems(): array
-    {
-        return [
-            NavigationItem::make(static::getNavigationLabel())
-                ->group(static::getNavigationGroup())
-                ->parentItem(static::getNavigationParentItem())
-                ->icon(static::getNavigationIcon())
-                ->activeIcon(static::getActiveNavigationIcon())
-                ->isActiveWhen(fn () => request()->routeIs(static::getRouteBaseName() . '.*', PayrollResource::getRouteBaseName() . '.*'))
-                ->badge(static::getNavigationBadge(), color: static::getNavigationBadgeColor())
-                ->badgeTooltip(static::getNavigationBadgeTooltip())
-                ->sort(static::getNavigationSort())
-                ->url(static::getNavigationUrl()),
-        ];
-    }
 
     public static function form(Schema $schema): Schema
     {
