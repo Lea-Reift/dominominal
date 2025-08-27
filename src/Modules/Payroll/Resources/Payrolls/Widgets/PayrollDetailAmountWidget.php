@@ -29,21 +29,22 @@ class PayrollDetailAmountWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $adjustmentvalues = $this->totalRowDisplay['incomes']->union($this->totalRowDisplay['deductions']);
-        $adjustments = SalaryAdjustment::query()
-            ->whereIn('parser_alias', $adjustmentvalues->keys())
-            ->pluck('name', 'parser_alias')
-            ->sortBy(fn (string $name, string $adjustment) => $adjustmentvalues->keys()->search($adjustment))
-            ->map(
-                fn (string $name, string $adjustment) => Stat::make("Total {$name}", Number::currency($adjustmentvalues->get($adjustment)))
-            );
+        // $adjustmentvalues = $this->totalRowDisplay['incomes']->union($this->totalRowDisplay['deductions']);
+        // $adjustments = SalaryAdjustment::query()
+        //     ->whereIn('parser_alias', $adjustmentvalues->keys())
+        //     ->pluck('name', 'parser_alias')
+        //     ->sortBy(fn (string $name, string $adjustment) => $adjustmentvalues->keys()->search($adjustment))
+        //     ->map(
+        //         fn (string $name, string $adjustment) => Stat::make("Total {$name}", Number::currency($adjustmentvalues->get($adjustment)))
+        //     );
 
         return [
-            Stat::make('Total Salario Bruto', Number::currency($this->totalRowDisplay['rawSalary'])),
-            Stat::make('Total Ingresos', Number::currency($this->totalRowDisplay['incomesTotal'])),
-            Stat::make('Total Descuentos', Number::currency($this->totalRowDisplay['deductionsTotal'])),
-            Stat::make('Total Salario Neto', Number::currency($this->totalRowDisplay['netSalary'])),
-            ...$adjustments->toArray(),
+            Stat::make('Total Salario Bruto', 5),
+            // Stat::make('Total Salario Bruto', Number::currency($this->totalRowDisplay['rawSalary'])),
+            // Stat::make('Total Ingresos', Number::currency($this->totalRowDisplay['incomesTotal'])),
+            // Stat::make('Total Descuentos', Number::currency($this->totalRowDisplay['deductionsTotal'])),
+            // Stat::make('Total Salario Neto', Number::currency($this->totalRowDisplay['netSalary'])),
+            // ...$adjustments->toArray(),
         ];
     }
 

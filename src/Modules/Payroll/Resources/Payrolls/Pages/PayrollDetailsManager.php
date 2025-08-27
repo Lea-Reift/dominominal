@@ -32,7 +32,6 @@ use Illuminate\Support\Str;
 use App\Modules\Payroll\Actions\TableActions\GenerateSecondaryPayrollsAction;
 use App\Modules\Payroll\Actions\TableRowActions\EditAvailableAdjustmentsAction;
 use App\Modules\Payroll\Actions\TableRowActions\ShowPaymentVoucherAction;
-use App\Modules\Payroll\Resources\Payrolls\Widgets\PayrollDetailAmountWidget;
 use App\Modules\Payroll\Exports\PayrollExport;
 use Maatwebsite\Excel\Excel;
 
@@ -46,7 +45,6 @@ class PayrollDetailsManager extends ManageRelatedRecords
 
     protected static string $resource = PayrollResource::class;
     protected static string $relationship = 'details';
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public function mount(int|string $record): void
     {
@@ -98,15 +96,6 @@ class PayrollDetailsManager extends ManageRelatedRecords
         return Str::headline($this->record->period->translatedFormat($format));
     }
 
-    protected function getHeaderWidgets(): array
-    {
-        return [
-            PayrollDetailAmountWidget::make([
-                'totalRowDisplay' => (array)$this->record->display->totals,
-            ]),
-        ];
-    }
-
     protected function getHeaderActions(): array
     {
         return [
@@ -143,8 +132,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
 
     public function table(Table $table): Table
     {
-        $table
-            ->paginated(false)
+        return $table
             ->headerActions([
                 GenerateSecondaryPayrollsAction::make($this->record),
                 AddEmployeeAction::make($this->record),
@@ -158,28 +146,21 @@ class PayrollDetailsManager extends ManageRelatedRecords
                     ShowPaymentVoucherAction::make($this->record),
                     DeleteAction::make()
                         ->modalHeading(fn (PayrollDetail $record) => "Eliminar a {$record->employee->full_name} de la nómina"),
-                ]));
-
-        $regularColumns = $this->defaultColumnsSchema();
-
-        $columns = collect([
-            TableGrid::make(10)
-                ->schema([
-                    Split::make([])
-                        ->schema($regularColumns)
-                        ->extraAttributes([
-                            'x-tooltip' => '{content: "El salario, los ingresos y las deducciones se calculan en base a los datos del empleado y la información de la nomina.",theme: $store.theme,}',
-                        ])
-                        ->columnSpan(2),
-                    Split::make([])
-                        ->schema($this->adjustmentsColumnsSchema(...))
-                        ->columnSpan(8),
-                ]),
-
-        ]);
-
-        return $table
-            ->columns($this->record->salaryAdjustments->isEmpty() ? $regularColumns : $columns->toArray());
+                ]))
+            ->columns($this->record->salaryAdjustments->isEmpty() ? $this->defaultColumnsSchema() : collect([
+                TableGrid::make(10)
+                    ->schema([
+                        Split::make([])
+                            ->schema($this->defaultColumnsSchema())
+                            ->extraAttributes([
+                                'x-tooltip' => "{content: 'El salario, los ingresos y las deducciones se calculan en base a los datos del empleado y la información de la nomina.',theme: \$store.theme,}",
+                            ])
+                            ->columnSpan(2),
+                        Split::make([])
+                            ->schema($this->adjustmentsColumnsSchema(...))
+                            ->columnSpan(8),
+                    ]),
+            ])->toArray());
     }
 
     protected function defaultColumnsSchema(): array
