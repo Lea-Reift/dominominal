@@ -13,7 +13,6 @@ use Filament\Tables\Columns\TextInputColumn;
 use Filament\Support\RawJs;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Modules\Payroll\Models\PayrollDetailSalaryAdjustment;
-use App\Support\ValueObjects\PayrollDisplay\PayrollDetailDisplay;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Number;
 use Filament\Tables\Columns\Summarizers\Summarizer;
@@ -33,6 +32,8 @@ class SalaryAdjustmentColumn extends TextInputColumn
 
     protected function setUp(): void
     {
+        $this->parseEntities();
+
         parent::setUp();
 
         $disabled = $this->disableInput(...);
@@ -52,9 +53,10 @@ class SalaryAdjustmentColumn extends TextInputColumn
             ->summarize(
                 Summarizer::make()
                     ->using(
-                        fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)
-                            ->asDisplay()
-                            ->sum(fn (PayrollDetailDisplay $display) => $display->salaryAdjustments->get($this->adjustment->parser_alias, 0))
+                        fn (Builder $query) => PayrollDetail::query()
+                            ->where('payroll_id', $this->payroll->id)
+                            ->get()
+                            ->sum(fn (PayrollDetail $detail) => $detail->display->salaryAdjustments->get($this->adjustment->parser_alias, 0))
                     )
                     ->money()
                     ->label("Total {$this->adjustment->name}")
@@ -62,16 +64,15 @@ class SalaryAdjustmentColumn extends TextInputColumn
             ->updateStateUsing($this->updateDetailAdjustmet(...));
     }
 
-    public static function make(?string $name = null): static
+    protected function parseEntities(): void
     {
-        [, $adjustmentId, $payrollId] = explode('.', $name ?? '');
+        [, $adjustmentId, $payrollId] = explode('.', $this->name);
 
-        $static = app(static::class, ['name' => $name]);
-
-        return $static
-            ->setAdjustment(SalaryAdjustment::query()->findOrFail($adjustmentId))
-            ->setPayroll(Payroll::query()->with(['biweeklyPayrolls' => ['details' => ['salaryAdjustments']]])->findOrFail($payrollId))
-            ->configure();
+        $adjustment = SalaryAdjustment::query()->findOrFail($adjustmentId);
+        $payroll = Payroll::query()->with(['biweeklyPayrolls' => ['details' => ['salaryAdjustments']]])->findOrFail($payrollId);
+        $this
+            ->setAdjustment($adjustment)
+            ->setPayroll($payroll);
     }
 
     public function setAdjustment(SalaryAdjustment $salaryAdjustment): self
