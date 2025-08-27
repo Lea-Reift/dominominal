@@ -29,6 +29,9 @@ use Filament\Tables\Table;
 use Illuminate\Support\Arr;
 use App\Models\Setting;
 use App\Modules\Payroll\Models\SalaryAdjustment;
+use Filament\Schemas\Components\Fieldset;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Support\Assets\Js;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
@@ -87,8 +90,16 @@ class MainPanelProvider extends PanelProvider
 
     public function boot(): void
     {
-        Table::configureUsing(fn (Table $table) => $table->defaultCurrency('USD'));
-        Table::configureUsing(fn (Table $table) => $table->defaultNumberLocale('en'));
+        Fieldset::configureUsing(fn (Fieldset $fieldset) => $fieldset->columnSpanFull());
+        Grid::configureUsing(fn (Grid $grid) => $grid->columnSpanFull());
+        Section::configureUsing(fn (Section $section) => $section->columnSpanFull());
+
+        Table::configureUsing(
+            fn (Table $table) => $table
+                ->defaultCurrency('USD')
+                ->defaultNumberLocale('en')
+                ->paginated(false)
+        );
 
         $this->setSalaryParserDefaultVariables();
         $this->configureVerifiedEmail();
