@@ -137,15 +137,21 @@ class PayrollDetailsManager extends ManageRelatedRecords
                 AddEmployeeAction::make($this->record),
             ])
             ->recordActionsPosition(RecordActionsPosition::BeforeColumns)
-            ->recordActions(ActionGroup::make([])
-                ->button()
-                ->label('Opciones')
-                ->actions([
-                    EditAvailableAdjustmentsAction::make($this->record),
-                    ShowPaymentVoucherAction::make($this->record),
-                    DeleteAction::make()
-                        ->modalHeading(fn (PayrollDetail $record) => "Eliminar a {$record->employee->full_name} de la nómina"),
-                ]))
+            ->recordActions(
+                ActionGroup::make([])
+                    ->button()
+                    ->label('Opciones')
+                    ->dropdownPlacement('top-start')
+                    ->actions([
+                        EditAvailableAdjustmentsAction::make($this->record),
+                        ShowPaymentVoucherAction::make($this->record),
+                        DeleteAction::make()
+                            ->hiddenLabel()
+                            ->tooltip(fn (PayrollDetail $record) => "Eliminar a {$record->employee->name} de la nómina")
+                            ->modalHeading(fn (PayrollDetail $record) => "Eliminar a {$record->employee->full_name} de la nómina"),
+                    ])
+                    ->buttonGroup()
+            )
             ->when(
                 $this->record->salaryAdjustments->isEmpty(),
                 fn (Table $table) => $table->columns($this->defaultColumnsSchema()),
