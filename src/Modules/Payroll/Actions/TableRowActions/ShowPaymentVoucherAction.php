@@ -26,13 +26,14 @@ class ShowPaymentVoucherAction
         protected Payroll $payroll,
     ) {
         $this->action = Action::make('show_payment_voucher')
-            ->label('Mostrar volante')
+            ->tooltip('Mostrar volante de pago')
             ->icon('heroicon-s-inbox-arrow-down')
             ->color('info')
             ->modalContent(fn (PayrollDetail $record) => view(
                 'components.payment-voucher-table',
                 ['detail' => $record->display, 'mode' => 'modal'],
             ))
+            ->hiddenLabel()
             ->modalHeading('')
             ->stickyModalHeader(false)
             ->schema([
