@@ -80,7 +80,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
         $breadcrumbs = [
             CompanyResource::getUrl() => CompanyResource::getBreadcrumb(),
             ViewCompany::getUrl(['record' => $this->record->company_id]) => $this->record->company->name,
-            ViewCompany::getUrl(['record' => $this->record->company_id, 'activeRelationManager' => 'payrolls']) => $resource::getBreadcrumb(),
+            ViewCompany::getUrl(['record' => $this->record->company_id, 'relation' => 'payrolls']) => $resource::getBreadcrumb(),
         ];
 
         return $breadcrumbs;
@@ -146,20 +146,24 @@ class PayrollDetailsManager extends ManageRelatedRecords
                     DeleteAction::make()
                         ->modalHeading(fn (PayrollDetail $record) => "Eliminar a {$record->employee->full_name} de la nómina"),
                 ]))
-            ->columns($this->record->salaryAdjustments->isEmpty() ? $this->defaultColumnsSchema() : collect([
-                TableGrid::make(10)
-                    ->schema([
-                        Split::make([])
-                            ->schema($this->defaultColumnsSchema())
-                            ->extraAttributes([
-                                'x-tooltip' => "{content: 'El salario, los ingresos y las deducciones se calculan en base a los datos del empleado y la información de la nomina.',theme: \$store.theme,}",
-                            ])
-                            ->columnSpan(2),
-                        Split::make([])
-                            ->schema($this->adjustmentsColumnsSchema(...))
-                            ->columnSpan(8),
-                    ]),
-            ])->toArray());
+            ->when(
+                $this->record->salaryAdjustments->isEmpty(),
+                fn (Table $table) => $table->columns($this->defaultColumnsSchema()),
+                fn (Table $table) => $table->columns([
+                    TableGrid::make(10)
+                        ->schema([
+                            Split::make([])
+                                ->schema($this->defaultColumnsSchema())
+                                ->extraAttributes([
+                                    'x-tooltip' => "{content: 'El salario, los ingresos y las deducciones se calculan en base a los datos del empleado y la información de la nomina.',theme: \$store.theme,}",
+                                ])
+                                ->columnSpan(2),
+                            Split::make([])
+                                ->schema($this->adjustmentsColumnsSchema(...))
+                                ->columnSpan(8),
+                        ]),
+                ])
+            );
     }
 
     protected function defaultColumnsSchema(): array
