@@ -22,7 +22,6 @@ use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Number;
 use App\Modules\Payroll\Actions\HeaderActions\EditPayrollAction;
 use App\Modules\Payroll\Actions\TableActions\AddEmployeeAction;
@@ -175,7 +174,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
                 ->state(fn (PayrollDetail $record) => 'Salario: ' . Number::currency($record->getParsedPayrollSalary()))
                 ->summarize(
                     Summarizer::make()
-                        ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('rawSalary'))
+                        ->using(fn () => PayrollDetail::query()->where('payroll_id', $this->record->id)->asDisplay()->sum('rawSalary'))
                         ->money()
                         ->label('Total Salarios')
                 ),
@@ -184,7 +183,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
                 ->state(fn (PayrollDetail $record) => ($hasAdjustments ? 'Ingresos: ' : '') . Number::currency($record->display->incomeTotal))
                 ->summarize(
                     Summarizer::make()
-                        ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('incomeTotal'))
+                        ->using(fn () => PayrollDetail::query()->where('payroll_id', $this->record->id)->asDisplay()->sum('incomeTotal'))
                         ->money()
                         ->label('Total Ingresos')
                 ),
@@ -193,7 +192,7 @@ class PayrollDetailsManager extends ManageRelatedRecords
                 ->state(fn (PayrollDetail $record) => ($hasAdjustments ? 'Deducciones: ' : '') . Number::currency($record->display->deductionTotal))
                 ->summarize(
                     Summarizer::make()
-                        ->using(fn (Builder $query) => (new PayrollDetail())->newEloquentBuilder($query)->asDisplay()->sum('deductionTotal'))
+                        ->using(fn () => PayrollDetail::query()->where('payroll_id', $this->record->id)->asDisplay()->sum('deductionTotal'))
                         ->money()
                         ->label('Total Deducciones')
                 ),
