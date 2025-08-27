@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tables\Columns;
 
+use App\Enums\SalaryAdjustmentColumnInputDisablingReasonEnum;
 use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Enums\SalaryAdjustmentValueTypeEnum;
 use App\Modules\Payroll\Models\Payroll;
@@ -18,7 +19,6 @@ use Illuminate\Support\Number;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection as IlluminateCollection;
 
 class SalaryAdjustmentColumn extends TextInputColumn
@@ -29,6 +29,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
 
     protected SalaryAdjustment $adjustment;
     protected Payroll $payroll;
+    protected SalaryAdjustmentColumnInputDisablingReasonEnum $disablingReason = SalaryAdjustmentColumnInputDisablingReasonEnum::NONE;
 
     protected function setUp(): void
     {
@@ -44,7 +45,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
             ->mask(RawJs::make('$money($input)'))
             ->grow(false)
             ->disabled($disabled)
-            ->tooltip(fn (PayrollDetail $record) => $disabled($record) ? 'Este ajuste no se puede modificar porque ya se ha modificado desde una nómina quincenal' : null)
+            ->tooltip(fn () => $this->disablingReason->getTooltip())
             ->state(function (PayrollDetail $record) {
                 $value = $record->salaryAdjustments->keyBy('id')->get($this->adjustment->id)?->detailSalaryAdjustmentValue?->custom_value;
 
@@ -53,7 +54,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
             ->summarize(
                 Summarizer::make()
                     ->using(
-                        fn (Builder $query) => PayrollDetail::query()
+                        fn () => PayrollDetail::query()
                             ->where('payroll_id', $this->payroll->id)
                             ->get()
                             ->sum(fn (PayrollDetail $detail) => $detail->display->salaryAdjustments->get($this->adjustment->parser_alias, 0))
@@ -185,6 +186,11 @@ class SalaryAdjustmentColumn extends TextInputColumn
 
     protected function disableInput(PayrollDetail $record): bool
     {
+        if (!$this->adjustment->requires_custom_value) {
+            $this->disablingReason = SalaryAdjustmentColumnInputDisablingReasonEnum::NOT_AN_EDITABLE_ADJUSTMENT;
+            return true;
+        }
+
         if ($this->payroll->type->isBiweekly()) {
             return false;
         }
@@ -233,8 +239,13 @@ class SalaryAdjustmentColumn extends TextInputColumn
             return false;
         }
 
-        return $biweeklyPayrollDetailAdjustmentsCustomValues
+        $isModifiedInBiweeklyPayroll = $biweeklyPayrollDetailAdjustmentsCustomValues
             ->some(fn (mixed $value) => !is_null($value) && (float)$value !== ((float)$recordAdjustmentCustomValue / 2));
+
+        if ($isModifiedInBiweeklyPayroll) {
+            $this->disablingReason = SalaryAdjustmentColumnInputDisablingReasonEnum::MODIFIED_BY_BIWEEKLY_PAYROLL;
+        }
+        return $isModifiedInBiweeklyPayroll;
     }
 
     public static function fromIterable(iterable $adjustments, Payroll $payroll): array
