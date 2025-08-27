@@ -213,9 +213,22 @@ class PayrollDetailsManager extends ManageRelatedRecords
     protected function adjustmentsColumnsSchema(?PayrollDetail $record): array
     {
         // Cant use value from records. It fails the update
-        $adjustments = $record?->editableSalaryAdjustments->isNotEmpty()
-            ? $record->editableSalaryAdjustments
-            : $this->record->editableSalaryAdjustments;
+        $adjustments = collect()->merge($record?->salaryAdjustments ?? collect());
+        $hasAdjustments = $adjustments->isNotEmpty();
+
+        if (!$hasAdjustments) {
+            return [
+                TextColumn::make('adjustments_placeholder')
+                    ->label('Ajustes Salariales')
+                    ->state('Este empleado no tiene ajustes configurados. Activelos en las opciones.')
+                    ->alignCenter()
+                    ->verticallyAlignCenter()
+                    ->extraAttributes([
+                        'class' => 'italic bg-gray-50 dark:bg-gray-900 p-4 rounded-lg',
+                        'style' => 'font-size: 18px;'
+                    ])
+            ];
+        }
 
         return [
             TableGrid::make()
