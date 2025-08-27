@@ -62,7 +62,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
                     ->money()
                     ->label("Total {$this->adjustment->name}")
             )
-            ->updateStateUsing($this->updateDetailAdjustmet(...));
+            ->updateStateUsing($this->updateDetailAdjustment(...));
     }
 
     protected function parseEntities(): void
@@ -88,7 +88,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
         return $this;
     }
 
-    public function updateDetailAdjustmet(?string $state, PayrollDetail $record): void
+    public function updateDetailAdjustment(?string $state, PayrollDetail $record): void
     {
         if (!is_null($state)) {
             $state = floatval(str_replace(',', '', $state));
