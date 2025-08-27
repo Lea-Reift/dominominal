@@ -11,12 +11,10 @@ use Filament\Actions\EditAction;
 use App\Modules\Payroll\Resources\SalaryAdjustments\Pages\ManageSalaryAdjustments;
 use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Enums\SalaryAdjustmentValueTypeEnum;
-use App\Modules\Payroll\Resources\SalaryAdjustmentResource\Pages;
 use App\Modules\Payroll\Models\SalaryAdjustment;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Tables\Columns\TextColumn;
@@ -82,8 +80,8 @@ class SalaryAdjustmentResource extends Resource
                         ToggleButtons::make('ignore_in_deductions')
                             ->label('Ignorar en deducciones')
                             ->helperText('El valor se incluira en el calculo de deducciones del seguro social')
-                            ->visible(fn (SalaryAdjustment $record) => $record->type->isIncome())
-                            ->disabled(fn (SalaryAdjustment $record) => $record->type->isDeduction())
+                            ->visible(fn (?SalaryAdjustment $record) => $record?->type->isIncome())
+                            ->disabled(fn (?SalaryAdjustment $record) => $record?->type->isDeduction())
                             ->required()
                             ->boolean()
                             ->grouped(),
