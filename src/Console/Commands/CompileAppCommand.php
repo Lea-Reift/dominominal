@@ -30,6 +30,7 @@ class CompileAppCommand extends Command
      */
     public function handle()
     {
+        $upgradeVersion = false;
         $this->info('Compilando app para distribución...');
 
         $tauriResourcesAppPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, base_path('src-tauri/resources/app'));
@@ -98,11 +99,13 @@ class CompileAppCommand extends Command
             $commands = [...$commands, ...$tauriCompileCommand];
 
             if (!$this->option('debug')) {
-                $this->upgradeAppVersion();
+                $upgradeVersion = true;
             }
         }
 
         if (empty($commands)) {
+            $upgradeVersion = true;
+
             $commands = [
                 ...$assetsCommands,
                 ...$migrateProjectCommands,
@@ -110,8 +113,12 @@ class CompileAppCommand extends Command
             ];
 
             if (!$this->option('debug')) {
-                $this->upgradeAppVersion();
+                $upgradeVersion = true;
             }
+        }
+
+        if ($upgradeVersion) {
+            $this->upgradeAppVersion();
         }
 
         if (empty(array_diff_assoc($commands, $assetsCommands))) {
@@ -166,8 +173,11 @@ class CompileAppCommand extends Command
 
         $this->newLine();
 
-        $this->updateAppSignature();
-        $this->addGitTag();
+        if ($upgradeVersion) {
+            $this->updateAppSignature();
+            $this->addGitTag();
+        }
+
         $this->info('Programa compilado con exito!!!!');
         return Command::SUCCESS;
     }
