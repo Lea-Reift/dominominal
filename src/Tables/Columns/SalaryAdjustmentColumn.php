@@ -47,8 +47,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
             ->disabled($disabled)
             ->tooltip(fn () => $this->disablingReason->getTooltip())
             ->state(function (PayrollDetail $record) {
-                $value = $record->salaryAdjustments->keyBy('id')->get($this->adjustment->id)?->detailSalaryAdjustmentValue?->custom_value;
-
+                $value = $record->display->salaryAdjustments->get($this->adjustment->parser_alias, 0);
                 return is_numeric($value) ? Number::format(floatval($value), 2) : $value;
             })
             ->summarize(
@@ -56,8 +55,8 @@ class SalaryAdjustmentColumn extends TextInputColumn
                     ->using(
                         fn () => PayrollDetail::query()
                             ->where('payroll_id', $this->payroll->id)
-                            ->get()
-                            ->sum(fn (PayrollDetail $detail) => $detail->display->salaryAdjustments->get($this->adjustment->parser_alias, 0))
+                            ->asDisplay()
+                            ->sum($this->adjustment->parser_alias)
                     )
                     ->money()
                     ->label("Total {$this->adjustment->name}")
