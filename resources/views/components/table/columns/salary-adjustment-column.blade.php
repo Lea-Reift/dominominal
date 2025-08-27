@@ -31,6 +31,8 @@
         recordKey: @js($recordKey),
 
         state: @js($state),
+
+        tooltip: @js($getTooltip()),
     }"
     x-init="
         () => {
@@ -88,14 +90,7 @@
     <x-filament::input.wrapper
         :alpine-disabled="'isLoading || ' . \Illuminate\Support\Js::from($isDisabled)"
         alpine-valid="error === undefined"
-        x-tooltip="
-            error === undefined
-                ? false
-                : {
-                    content: error,
-                    theme: $store.theme,
-                }
-        "
+        x-tooltip="error !== undefined ? { content: error, theme: $store.theme, delay: [100, 50] } : tooltip ? { content: tooltip, theme: $store.theme, delay: [100, 50] } : false"
         x-on:click.stop.prevent=""
     >
         {{-- format-ignore-start --}}
