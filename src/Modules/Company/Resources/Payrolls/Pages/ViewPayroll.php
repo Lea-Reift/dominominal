@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Company\Resources\Payrolls\Pages;
 
 use App\Modules\Company\Resources\Payrolls\PayrollResource;
-use Filament\Actions\EditAction;
+use App\Modules\Payroll\Actions\HeaderActions\EditPayrollAction;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Support\Str;
 
@@ -18,7 +18,7 @@ class ViewPayroll extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            EditAction::make(),
+            EditPayrollAction::make(),
         ];
     }
 
