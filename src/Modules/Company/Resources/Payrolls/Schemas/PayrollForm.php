@@ -207,7 +207,12 @@ class PayrollForm
                                                 ->formatStateUsing(fn (float $state) => Number::dominicanCurrency($state)),
                                         ]),
                                     Repeater::make('salaryAdjustmentValues')
-                                        ->relationship(modifyQueryUsing: fn (EloquentBuilder $query) => $query->with(['salaryAdjustment', 'payrollDetail']))
+                                        ->relationship(
+                                            modifyQueryUsing: fn (EloquentBuilder $query) => $query
+                                                ->with(['salaryAdjustment', 'payrollDetail'])
+                                                ->orderByLeftPowerJoins('salaryAdjustment.type')
+                                                ->orderByLeftPowerJoins('salaryAdjustment.requires_custom_value', 'desc')
+                                        )
                                         ->grid(3)
                                         ->hiddenLabel()
                                         ->columnSpan(4)
