@@ -15,6 +15,7 @@ use Filament\Forms\Components\CheckboxList;
 use App\Modules\Payroll\Models\SalaryAdjustment;
 use App\Enums\SalaryAdjustmentValueTypeEnum;
 use App\Modules\Payroll\Models\PayrollDetail;
+use App\Modules\Payroll\Models\PayrollDetailSalaryAdjustment;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\KeyValueEntry;
@@ -26,6 +27,9 @@ use Illuminate\Validation\Rules\Unique;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use App\Enums\SalaryAdjustmentTypeEnum;
+use Filament\Support\RawJs;
+use Illuminate\Support\Facades\DB;
 
 class PayrollForm
 {
@@ -162,12 +166,24 @@ class PayrollForm
                     $this->payrollSection(),
                     Section::make()
                         ->visibleOn(Operation::View)
+                        ->disabledOn([Operation::Create, Operation::Edit])
                         ->schema([
                             Repeater::make('details')
-                                ->hiddenLabel()
+                                ->label('Empleados')
+                                ->afterLabel(
+                                    fn (Repeater $component) => $component
+                                        ->getAddAction()
+                                        ->visible(true)
+                                )
+                                ->collapsed()
+                                ->collapseAllAction(fn (Action $action) => $action->visible(false))
+                                ->expandAllAction(fn (Action $action) => $action->visible(false))
                                 ->disabledOn([Operation::Create, Operation::Edit])
                                 ->relationship()
-                                ->columns(5)
+                                ->addable(false)
+                                ->reorderable()
+                                ->reorderableWithDragAndDrop()
+                                ->columns(6)
                                 ->deleteAction(
                                     fn (Action $action) => $action
                                         ->button()
@@ -177,21 +193,21 @@ class PayrollForm
                                 ->schema([
                                     KeyValueEntry::make('information')
                                         ->hiddenLabel()
-                                        ->columnSpan(1)
+                                        ->columnSpan(2)
                                         ->state(fn (PayrollDetail $record) => [
                                             'Salario' => Number::currency($record->salary->amount),
                                             'Ingresos' => Number::currency($record->display->incomeTotal),
                                             'Deducciones' => Number::currency($record->display->deductionTotal),
                                             'Total a pagar' => Number::currency($record->display->netSalary),
                                         ]),
-                                    Repeater::make('salaryAdjustments')
+                                    Repeater::make('salaryAdjustmentValues')
                                         ->relationship()
-                                        ->grid(3)
+                                        ->grid(4)
                                         ->hiddenLabel()
                                         ->columnSpan(4)
-                                        ->itemLabel(fn (array $state) => $state['name'])
+                                        ->itemLabel(fn (array $state, PayrollDetail $record) => $record->salaryAdjustments->find($state['salary_adjustment_id'])->name)
                                         ->addAction(
-                                            fn (Action $action, Get $get) => $action
+                                            fn (Action $action) => $action
                                                 ->label('Agregar Ajuste Salarial')
                                                 ->modalHeading('Agregar Ajuste Salarial')
                                                 ->modalDescription('Seleccione un ajuste salarial de la nómina para agregar.')
@@ -229,29 +245,82 @@ class PayrollForm
                                                     $payrollDetail = PayrollDetail::query()->findOrFail($payrollDetailId);
 
                                                     $payrollDetail->salaryAdjustments()->sync($data['available_salary_adjustments']);
+
+                                                    // Reload the form data to reflect changes
+                                                    $livewire->refreshFormData(['details']);
+
                                                     return $action->sendSuccessNotification();
                                                 })
                                         )
                                         ->schema([
                                             TextInput::make('custom_value')
                                                 ->hiddenLabel()
-                                                ->afterLabel(function (?SalaryAdjustment $record, ?array $state) {
-                                                    if ($record) {
-                                                        return $record->type->getLabel();
-                                                    }
-
-                                                    // For new items, try to get the salary adjustment from the state
-                                                    if (isset($state['salary_adjustment_id'])) {
-                                                        $adjustment = SalaryAdjustment::find($state['salary_adjustment_id']);
-                                                        return $adjustment?->type->getLabel() ?? 'Ajuste';
-                                                    }
-
-                                                    return 'Ajuste';
-                                                })
-                                                ->numeric()
+                                                ->afterLabel(fn (PayrollDetailSalaryAdjustment $record) => $record->salaryAdjustment->type->getLabel())
+                                                ->mask(RawJs::make('$money($input)'))
                                                 ->step(0.01)
+                                                ->formatStateUsing(fn (?float $state) => Number::format($state ?? 0, 2))
                                                 ->placeholder('Ingrese el valor')
-                                                ->statePath('detailSalaryAdjustmentValue.custom_value'),
+                                                ->afterStateUpdated(function (?string $state, PayrollDetailSalaryAdjustment $record) {
+                                                    if (!is_null($state)) {
+                                                        $state = parse_float($state);
+                                                        $validationFails = match ($record->salaryAdjustment->value_type) {
+                                                            SalaryAdjustmentValueTypeEnum::ABSOLUTE => match ($record->salaryAdjustment->type) {
+                                                                SalaryAdjustmentTypeEnum::INCOME => $state < 0,
+                                                                SalaryAdjustmentTypeEnum::DEDUCTION => $state > $record->payrollDetail->getParsedPayrollSalary() || $state < 0,
+                                                            },
+                                                            SalaryAdjustmentValueTypeEnum::PERCENTAGE => $state < 0 || $state > 100,
+                                                            SalaryAdjustmentValueTypeEnum::FORMULA => empty($state)
+                                                        };
+
+                                                        if ($validationFails) {
+                                                            Notification::make('failed_adjustment_modification')
+                                                                ->title('Valor invalido')
+                                                                ->body('El valor introducido no es correcto. Intente nuevamente')
+                                                                ->danger()
+                                                                ->color('danger')
+                                                                ->seconds(5)
+                                                                ->send();
+                                                            return;
+                                                        }
+                                                    }
+
+                                                    DB::transaction(function () use ($record, $state) {
+                                                        $record->update(['custom_value' => $state]);
+
+                                                        if ($record->payrollDetail->payroll->biweeklyPayrolls()->exists()) {
+                                                            PayrollDetailSalaryAdjustment::query()
+                                                                ->where('salary_adjustment_id', $record->salary_adjustment_id)
+                                                                ->whereHas('payrollDetail.payroll.monthlyPayroll', fn (EloquentBuilder $query) => $query->where('id', $record->payrollDetail->payroll_id))
+                                                                ->update([
+                                                                    'custom_value' => $state / 2
+                                                                ]);
+                                                            return;
+                                                        }
+
+                                                        $monthlyPayrollId = $record->payrollDetail->payroll->monthly_payroll_id;
+                                                        if (!$monthlyPayrollId) {
+                                                            return;
+                                                        };
+
+                                                        $biweeklyPayrollsTotalValue = PayrollDetailSalaryAdjustment::query()
+                                                            ->where('salary_adjustment_id', $record->salary_adjustment_id)
+                                                            ->whereHas('payrollDetail.payroll.monthlyPayroll', fn (EloquentBuilder $query) => $query->where('id', $monthlyPayrollId))
+                                                            ->numericAggregate('sum', ['custom_value']);
+
+                                                        PayrollDetailSalaryAdjustment::query()
+                                                            ->where('salary_adjustment_id', $record->salary_adjustment_id)
+                                                            ->where(
+                                                                'payroll_detail_id',
+                                                                fn (EloquentBuilder $query) => $query
+                                                                    ->where('employee_id', $record->payrollDetail->employee_id)
+                                                                    ->where('payroll_id', $monthlyPayrollId)
+                                                            )
+                                                            ->update([
+                                                                'custom_value' => $biweeklyPayrollsTotalValue,
+                                                            ]);
+                                                    });
+                                                })
+                                                ->live(true),
                                         ])
                                 ])
                         ])
