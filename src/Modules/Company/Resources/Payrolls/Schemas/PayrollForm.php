@@ -18,7 +18,6 @@ use App\Modules\Payroll\Models\PayrollDetail;
 use App\Modules\Payroll\Models\PayrollDetailSalaryAdjustment;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
-use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Support\Enums\Operation;
 use Illuminate\Support\Number;
@@ -28,6 +27,7 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use App\Enums\SalaryAdjustmentTypeEnum;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Support\RawJs;
 use Illuminate\Support\Facades\DB;
 
@@ -191,14 +191,21 @@ class PayrollForm
                                 )
                                 ->itemLabel(fn (array $state, Payroll $record) => $record->employees->findOrFail($state['employee_id'])->full_name)
                                 ->schema([
-                                    KeyValueEntry::make('information')
-                                        ->hiddenLabel()
+                                    Section::make('Información')
                                         ->columnSpan(2)
-                                        ->state(fn (PayrollDetail $record) => [
-                                            'Salario' => Number::currency($record->salary->amount),
-                                            'Ingresos' => Number::currency($record->display->incomeTotal),
-                                            'Deducciones' => Number::currency($record->display->deductionTotal),
-                                            'Total a pagar' => Number::currency($record->display->netSalary),
+                                        ->schema([
+                                            TextEntry::make('salary.amount')
+                                                ->label('Salario')
+                                                ->formatStateUsing(fn (float $state) => Number::dominicanCurrency($state)),
+                                            TextEntry::make('display.incomeTotal')
+                                                ->label('Ingresos')
+                                                ->formatStateUsing(fn (float $state) => Number::dominicanCurrency($state)),
+                                            TextEntry::make('display.deductionTotal')
+                                                ->label('Deducciones')
+                                                ->formatStateUsing(fn (float $state) => Number::dominicanCurrency($state)),
+                                            TextEntry::make('display.netSalary')
+                                                ->label('Total a pagar')
+                                                ->formatStateUsing(fn (float $state) => Number::dominicanCurrency($state)),
                                         ]),
                                     Repeater::make('salaryAdjustmentValues')
                                         ->relationship()
