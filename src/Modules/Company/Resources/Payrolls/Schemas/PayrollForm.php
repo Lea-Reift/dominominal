@@ -27,6 +27,7 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use App\Enums\SalaryAdjustmentTypeEnum;
+use App\Modules\Payroll\Actions\TableRowActions\ShowPaymentVoucherAction;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Support\RawJs;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -188,6 +189,9 @@ class PayrollForm
                                         ->button()
                                         ->label('Remover empleado')
                                 )
+                                ->extraItemActions([
+                                    ShowPaymentVoucherAction::make($this->payroll)
+                                ])
                                 ->itemLabel(fn (array $state, Payroll $record) => $record->employees->findOrFail($state['employee_id'])->full_name)
                                 ->schema([
                                     Section::make('Información')

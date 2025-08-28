@@ -25,32 +25,39 @@ class ShowPaymentVoucherAction
     public function __construct(
         protected Payroll $payroll,
     ) {
+        $this->payroll->loadMissing(['details']);
+
         $this->action = Action::make('show_payment_voucher')
-            ->tooltip('Mostrar volante de pago')
+            ->label('Mostrar volante de pago')
             ->icon('heroicon-s-inbox-arrow-down')
             ->color('info')
-            ->modalContent(fn (PayrollDetail $record) => view(
+            ->button()
+            ->modalContent(fn (array $arguments) => view(
                 'components.payment-voucher-table',
-                ['detail' => $record->display, 'mode' => 'modal'],
+                ['detail' => $this->getDetailFromArguments($arguments)->display, 'mode' => 'modal'],
             ))
-            ->hiddenLabel()
             ->modalHeading('')
             ->stickyModalHeader(false)
-            ->schema([
+            ->schema(fn (array $arguments) => [
                 TextInput::make('employee_email')
                     ->label('Correo del empleado')
                     ->email()
-                    ->default(fn (PayrollDetail $record) => $record->employee->email)
+                    ->default($this->getDetailFromArguments($arguments)->employee->email)
                     ->required(),
             ])
             ->modalSubmitActionLabel('Enviar comprobante')
-            ->extraModalFooterActions(fn (PayrollDetail $record): array => [
+            ->extraModalFooterActions(fn (array $arguments): array => [
                 Action::make('print_voucher')
                     ->label('Imprimir volante')
-                    ->url(route('filament.main.payrolls.details.show.export.pdf', ['detail' => $record]))
+                    ->url(route('filament.main.payrolls.details.show.export.pdf', ['detail' => $this->getDetailFromArguments($arguments)]))
                     ->openUrlInNewTab(),
             ])
             ->action(Closure::fromCallable([$this, 'actionCallback']));
+    }
+
+    protected function getDetailFromArguments(array $arguments): PayrollDetail
+    {
+        return $this->payroll->details->findOrFail(abs(parse_float($arguments['item'])));
     }
 
     public static function make(Payroll $payroll): Action
@@ -63,8 +70,9 @@ class ShowPaymentVoucherAction
         return $this->action;
     }
 
-    protected function actionCallback(PayrollDetail $record, array $data): void
+    protected function actionCallback(mixed $arguments, array $data): void
     {
+        $record = $this->getDetailFromArguments($arguments);
         $this->checkEmailConfiguration();
 
         $employeeEmail = $record->employee->email ?? $data['employee_email'];
