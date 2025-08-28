@@ -16,8 +16,6 @@ class ViewCompany extends ViewRecord
 {
     protected static string $resource = CompanyResource::class;
 
-    protected static ?string $breadcrumb = 'Información';
-
     public function getTitle(): string
     {
         return $this->record->name;
@@ -37,6 +35,12 @@ class ViewCompany extends ViewRecord
 
     public function getContentTabLabel(): string
     {
-        return static::$breadcrumb;
+        return 'Información';
+    }
+
+
+    public function getBreadcrumb(): string
+    {
+        return $this->record->name;
     }
 }
