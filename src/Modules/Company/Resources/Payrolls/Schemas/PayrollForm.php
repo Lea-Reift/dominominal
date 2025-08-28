@@ -177,9 +177,6 @@ class PayrollForm
                                         ->getAddAction()
                                         ->visible(true)
                                 )
-                                ->collapsed()
-                                ->collapseAllAction(fn (Action $action) => $action->visible(false))
-                                ->expandAllAction(fn (Action $action) => $action->visible(false))
                                 ->disabledOn([Operation::Create, Operation::Edit])
                                 ->relationship(modifyQueryUsing: fn (EloquentBuilder $query) => $query->with('salaryAdjustmentValues'))
                                 ->addable(false)
@@ -210,9 +207,8 @@ class PayrollForm
                                                 ->formatStateUsing(fn (float $state) => Number::dominicanCurrency($state)),
                                         ]),
                                     Repeater::make('salaryAdjustmentValues')
-                                        ->relationship()
-                                        ->grid(4)
                                         ->relationship(modifyQueryUsing: fn (EloquentBuilder $query) => $query->with(['salaryAdjustment', 'payrollDetail']))
+                                        ->grid(3)
                                         ->hiddenLabel()
                                         ->columnSpan(4)
                                         ->itemLabel(fn (array $state, PayrollDetail $record) => $record->salaryAdjustments->find($state['salary_adjustment_id'])->name)
@@ -282,7 +278,17 @@ class PayrollForm
                                                 ->afterLabel(fn (PayrollDetailSalaryAdjustment $record) => $record->salaryAdjustment->type->getLabel())
                                                 ->mask(RawJs::make('$money($input)'))
                                                 ->step(0.01)
-                                                ->formatStateUsing(fn (?float $state) => Number::format($state ?? 0, 2))
+                                                ->extraAlpineAttributes([
+                                                    'x-on:keydown.enter.prevent' => '$el.blur()',
+                                                ])
+                                                ->disabled(fn (PayrollDetailSalaryAdjustment $record) => !$record->salaryAdjustment->requires_custom_value)
+                                                ->formatStateUsing(function (?float $state, PayrollDetailSalaryAdjustment $record) {
+                                                    $value = $record->salaryAdjustment->requires_custom_value ?? true
+                                                        ? $state
+                                                        : $record->payrollDetail->display->salaryAdjustments->get($record->salaryAdjustment->parser_alias, 0);
+
+                                                    return Number::format($value ?? 0, 2);
+                                                })
                                                 ->placeholder('Ingrese el valor')
                                                 ->afterStateUpdated(function (?string $state, PayrollDetailSalaryAdjustment $record) {
                                                     if (!is_null($state)) {
@@ -297,7 +303,7 @@ class PayrollForm
                                                         };
 
                                                         if ($validationFails) {
-                                                            Notification::make('failed_adjustment_modification')
+                                                            Notification::make('adjustment_modification_failed')
                                                                 ->title('Valor invalido')
                                                                 ->body('El valor introducido no es correcto. Intente nuevamente')
                                                                 ->danger()
@@ -343,6 +349,13 @@ class PayrollForm
                                                                 'custom_value' => $biweeklyPayrollsTotalValue,
                                                             ]);
                                                     });
+
+                                                    Notification::make('adjustment_modification_success')
+                                                        ->title('Datos guardados')
+                                                        ->success()
+                                                        ->color('success')
+                                                        ->seconds(5)
+                                                        ->send();
                                                 })
                                                 ->live(true),
                                         ])
