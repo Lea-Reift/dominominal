@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Company\Resources\Payrolls;
 
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use App\Modules\Company\Resources\Payrolls\Schemas\PayrollForm;
 use App\Modules\Company\Resources\Payrolls\Tables\PayrollsTable;
@@ -20,35 +18,25 @@ class PayrollResource extends Resource
 {
     protected static ?string $model = Payroll::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
     protected static ?string $parentResource = CompanyResource::class;
 
     protected static ?string $recordTitleAttribute = 'period';
+    protected static ?string $modelLabel = 'nómina';
 
     public static function form(Schema $schema): Schema
     {
-        return PayrollForm::configure($schema);
+        return PayrollForm::configure($schema)
+            ->disabled(false);
     }
 
     public static function table(Table $table): Table
     {
-        return PayrollsTable::configure($table)
-            ->recordUrl(fn (Payroll $record) => ViewPayroll::getUrl(['record' => $record, 'company' => $record->company_id]));
+        return PayrollsTable::configure($table);
     }
 
     public static function getParentResourceRegistration(): ?ParentResourceRegistration
     {
-        return CompanyResource::asParent()
-            ->relationship('payrolls')
-            ->inverseRelationship('company');
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
+        return CompanyResource::asParent();
     }
 
     public static function getPages(): array
