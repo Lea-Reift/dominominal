@@ -29,7 +29,9 @@ use Filament\Support\Icons\Heroicon;
 use App\Enums\SalaryAdjustmentTypeEnum;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Support\RawJs;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Support\Facades\DB;
+use Livewire\Component;
 
 class PayrollForm
 {
@@ -213,6 +215,20 @@ class PayrollForm
                                         ->hiddenLabel()
                                         ->columnSpan(4)
                                         ->itemLabel(fn (array $state, PayrollDetail $record) => $record->salaryAdjustments->find($state['salary_adjustment_id'])->name)
+                                        ->deleteAction(
+                                            fn (Action $action, PayrollDetail $record) => $action
+                                                ->action(function (array $arguments, Repeater $component, Component $livewire) use ($record): void {
+                                                    $items = $component->getRawState();
+                                                    $record->salaryAdjustmentValues->find($items[$arguments['item']]['id'])->delete();
+                                                    unset($items[$arguments['item']]);
+                                                    $component->rawState($items);
+
+                                                    $component->callAfterStateUpdated();
+
+                                                    $component->partiallyRender();
+                                                    $livewire->refreshFormData(['details']);
+                                                })
+                                        )
                                         ->addAction(
                                             fn (Action $action) => $action
                                                 ->label('Agregar Ajuste Salarial')
@@ -316,8 +332,8 @@ class PayrollForm
 
                                                         PayrollDetailSalaryAdjustment::query()
                                                             ->where('salary_adjustment_id', $record->salary_adjustment_id)
-                                                            ->where(
-                                                                'payroll_detail_id',
+                                                            ->whereHas(
+                                                                'payrollDetail',
                                                                 fn (EloquentBuilder $query) => $query
                                                                     ->where('employee_id', $record->payrollDetail->employee_id)
                                                                     ->where('payroll_id', $monthlyPayrollId)
