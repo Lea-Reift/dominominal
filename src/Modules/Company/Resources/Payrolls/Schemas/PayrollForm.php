@@ -33,6 +33,9 @@ use Filament\Support\RawJs;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
+use Filament\Support\Facades\FilamentIcon;
+use Filament\Forms\View\FormsIconAlias;
+use Filament\Support\Enums\Size;
 
 class PayrollForm
 {
@@ -221,20 +224,7 @@ class PayrollForm
                                         ->hiddenLabel()
                                         ->columnSpan(4)
                                         ->itemLabel(fn (array $state, PayrollDetail $record) => $record->salaryAdjustments->find($state['salary_adjustment_id'])->name)
-                                        ->deleteAction(
-                                            fn (Action $action, PayrollDetail $record) => $action
-                                                ->action(function (array $arguments, Repeater $component, Component $livewire) use ($record): void {
-                                                    $items = $component->getRawState();
-                                                    $record->salaryAdjustmentValues->find($items[$arguments['item']]['id'])->delete();
-                                                    unset($items[$arguments['item']]);
-                                                    $component->rawState($items);
-
-                                                    $component->callAfterStateUpdated();
-
-                                                    $component->partiallyRender();
-                                                    $livewire->refreshFormData(['details']);
-                                                })
-                                        )
+                                        ->deletable(false)
                                         ->addAction(
                                             fn (Action $action) => $action
                                                 ->label('Agregar Ajuste Salarial')
@@ -281,10 +271,31 @@ class PayrollForm
                                                     return $action->sendSuccessNotification();
                                                 })
                                         )
-                                        ->schema([
+                                        ->simple(
                                             TextInput::make('custom_value')
-                                                ->hiddenLabel()
+                                                ->beforeLabel(fn (PayrollDetailSalaryAdjustment $record) => $record->salaryAdjustment->name)
                                                 ->afterLabel(fn (PayrollDetailSalaryAdjustment $record) => $record->salaryAdjustment->type->getLabel())
+                                                ->belowContent(Action::make('delete_adjustment_action')
+                                                    ->label(__('filament-forms::components.repeater.actions.delete.label'))
+                                                    ->icon(FilamentIcon::resolve(FormsIconAlias::COMPONENTS_REPEATER_ACTIONS_DELETE) ?? Heroicon::Trash)
+                                                    ->color('danger')
+                                                    ->iconButton()
+                                                    ->size(Size::Small)
+                                                    ->badge()
+                                                    ->label('Borrar ajuste')
+                                                    ->action(function (array $arguments, TextInput $component, Component $livewire) use ($record): void {
+                                                        $repeaterComponent = $component->getContainer()->getParentComponent();
+                                                        $detailAdjustment = $component->getContainer()->getModelInstance();
+                                                        $items = $repeaterComponent->getRawState();
+                                                        $detailAdjustment->delete();
+                                                        unset($items["record-{$detailAdjustment->id}"]);
+                                                        $repeaterComponent->rawState($items);
+
+                                                        $repeaterComponent->callAfterStateUpdated();
+
+                                                        $repeaterComponent->partiallyRender();
+                                                        $livewire->refreshFormData(['details']);
+                                                    }))
                                                 ->mask(RawJs::make('$money($input)'))
                                                 ->step(0.01)
                                                 ->extraAlpineAttributes([
@@ -367,7 +378,7 @@ class PayrollForm
                                                         ->send();
                                                 })
                                                 ->live(true),
-                                        ])
+                                        )
                                 ])
                         ])
                 ];
