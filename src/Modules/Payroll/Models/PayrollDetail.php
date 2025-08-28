@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use App\Enums\SalaryDistributionFormatEnum;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -33,6 +34,7 @@ use Illuminate\Database\Eloquent\Builder;
  * @property-read Salary $salary
  * @property-read Collection<int, SalaryAdjustment> $salaryAdjustments
  * @property-read Collection<int, SalaryAdjustment> $editableSalaryAdjustments
+ * @property-read Collection<int, PayrollDetailSalaryAdjustment> $salaryAdjustmentValues
  * @property Collection<int, SalaryAdjustment> $incomes
  * @property Collection<int, SalaryAdjustment> $deductions
  * @property Carbon|null $created_at
@@ -85,6 +87,11 @@ class PayrollDetail extends Model
             ->as(PayrollDetailSalaryAdjustment::$pivotPropertyName)
             ->withPivot(PayrollDetailSalaryAdjustment::$columns)
             ->using(PayrollDetailSalaryAdjustment::class);
+    }
+
+    public function salaryAdjustmentValues(): HasMany
+    {
+        return $this->hasMany(PayrollDetailSalaryAdjustment::class);
     }
 
     public function editableSalaryAdjustments(): BelongsToMany
