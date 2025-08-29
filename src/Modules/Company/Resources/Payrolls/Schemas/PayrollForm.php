@@ -229,6 +229,7 @@ class PayrollForm
                                     fn (Action $action) => $action
                                         ->button()
                                         ->label('Remover empleado')
+
                                 )
                                 ->extraItemActions([
                                     ShowPaymentVoucherAction::make($this->payroll)
@@ -291,8 +292,7 @@ class PayrollForm
                                                         ->title('Datos guardados')
                                                         ->success()
                                                 )
-                                                ->action(function (array $data, Repeater $component, Action $action) {
-                                                    $livewire = $component->getContainer()->getLivewire();
+                                                ->action(function (array $data, Repeater $component, Action $action, ViewPayroll $livewire) {
                                                     $statePath = $component->getStatePath();
 
                                                     $pathParts = explode('.', $statePath);
@@ -304,7 +304,7 @@ class PayrollForm
                                                     $payrollDetail->salaryAdjustments()->sync($data['available_salary_adjustments']);
 
                                                     // Reload the form data to reflect changes
-                                                    $livewire->refreshFormData(['details']);
+                                                    $livewire->refreshFormData(['details', 'details_display_section']);
 
                                                     return $action->sendSuccessNotification();
                                                 })
@@ -321,18 +321,16 @@ class PayrollForm
                                                     ->size(Size::Small)
                                                     ->badge()
                                                     ->label('Borrar ajuste')
-                                                    ->action(function (array $arguments, TextInput $component, Component $livewire) use ($record): void {
-                                                        $repeaterComponent = $component->getContainer()->getParentComponent();
+                                                    ->action(function (TextInput $component, ViewPayroll $livewire) {
                                                         $detailAdjustment = $component->getContainer()->getModelInstance();
-                                                        $items = $repeaterComponent->getRawState();
                                                         $detailAdjustment->delete();
-                                                        unset($items["record-{$detailAdjustment->id}"]);
-                                                        $repeaterComponent->rawState($items);
 
-                                                        $repeaterComponent->callAfterStateUpdated();
 
-                                                        $repeaterComponent->partiallyRender();
-                                                        $livewire->refreshFormData(['details']);
+                                                        $livewire->refreshFormData(['details', 'details_display_section']);
+                                                        return Notification::make('edit_available_adjustments')
+                                                            ->title('Datos guardados')
+                                                            ->success()
+                                                            ->send();
                                                     }))
                                                 ->mask(RawJs::make('$money($input)'))
                                                 ->step(0.01)
@@ -348,7 +346,7 @@ class PayrollForm
                                                     return Number::format($value ?? 0, 2);
                                                 })
                                                 ->placeholder('Ingrese el valor')
-                                                ->afterStateUpdated(function (?string $state, PayrollDetailSalaryAdjustment $record) {
+                                                ->afterStateUpdated(function (?string $state, PayrollDetailSalaryAdjustment $record, ViewPayroll $livewire) {
                                                     if (!is_null($state)) {
                                                         $state = parse_float($state);
                                                         $validationFails = match ($record->salaryAdjustment->value_type) {
@@ -372,7 +370,7 @@ class PayrollForm
                                                         }
                                                     }
 
-                                                    DB::transaction(function () use ($record, $state) {
+                                                    DB::transaction(function () use ($record, $state, $livewire) {
                                                         $record->update(['custom_value' => $state]);
 
                                                         if ($record->payrollDetail->payroll->biweeklyPayrolls()->exists()) {
@@ -406,6 +404,7 @@ class PayrollForm
                                                             ->update([
                                                                 'custom_value' => $biweeklyPayrollsTotalValue,
                                                             ]);
+                                                        $livewire->refreshFormData(['details', 'details_display_section']);
                                                     });
 
                                                     Notification::make('adjustment_modification_success')
