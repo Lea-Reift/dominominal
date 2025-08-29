@@ -29,11 +29,13 @@ use Filament\Tables\Table;
 use Illuminate\Support\Arr;
 use App\Models\Setting;
 use App\Modules\Payroll\Models\SalaryAdjustment;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Support\Assets\Js;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Number;
 
 class MainPanelProvider extends PanelProvider
 {
@@ -93,6 +95,11 @@ class MainPanelProvider extends PanelProvider
         Fieldset::configureUsing(fn (Fieldset $fieldset) => $fieldset->columnSpanFull());
         Grid::configureUsing(fn (Grid $grid) => $grid->columnSpanFull());
         Section::configureUsing(fn (Section $section) => $section->columnSpanFull());
+
+        TextEntry::configureUsing(
+            fn (TextEntry $textEntry) =>
+            $textEntry->formatStateUsing(fn (mixed $state) => is_numeric($state) ? Number::dominicanCurrency($state) : $state)
+        );
 
         Table::configureUsing(
             fn (Table $table) => $table
