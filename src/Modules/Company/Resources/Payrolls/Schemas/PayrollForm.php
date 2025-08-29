@@ -176,11 +176,10 @@ class PayrollForm
                         ->schema([
                             Repeater::make('details')
                                 ->label('Empleados')
-                                ->afterLabel(
-                                    fn (Repeater $component) => $component
-                                        ->getAddAction()
-                                        ->visible(true)
-                                )
+                                ->afterLabel([
+                                    GenerateSecondaryPayrollsAction::make($this->payroll)->button(),
+                                    AddEmployeeAction::make($this->payroll)->button(),
+                                ])
                                 ->disabledOn([Operation::Create, Operation::Edit])
                                 ->relationship(modifyQueryUsing: fn (EloquentBuilder $query) => $query->with('salaryAdjustmentValues'))
                                 ->addable(false)
