@@ -27,12 +27,14 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use App\Enums\SalaryAdjustmentTypeEnum;
+use App\Modules\Company\Resources\Payrolls\Pages\ViewPayroll;
+use App\Modules\Payroll\Actions\TableActions\AddEmployeeAction;
+use App\Modules\Payroll\Actions\TableActions\GenerateSecondaryPayrollsAction;
 use App\Modules\Payroll\Actions\TableRowActions\ShowPaymentVoucherAction;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Support\RawJs;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Support\Facades\DB;
-use Livewire\Component;
 use Filament\Support\Facades\FilamentIcon;
 use Filament\Forms\View\FormsIconAlias;
 use Filament\Support\Enums\Size;
@@ -325,7 +327,6 @@ class PayrollForm
                                                         $detailAdjustment = $component->getContainer()->getModelInstance();
                                                         $detailAdjustment->delete();
 
-
                                                         $livewire->refreshFormData(['details', 'details_display_section']);
                                                         return Notification::make('edit_available_adjustments')
                                                             ->title('Datos guardados')
@@ -343,7 +344,7 @@ class PayrollForm
                                                         ? $state
                                                         : $record->payrollDetail->display->salaryAdjustments->get($record->salaryAdjustment->parser_alias, 0);
 
-                                                    return Number::format($value ?? 0, 2);
+                                                    return Number::format(parse_float((string)$value) ?? 0, 2);
                                                 })
                                                 ->placeholder('Ingrese el valor')
                                                 ->afterStateUpdated(function (?string $state, PayrollDetailSalaryAdjustment $record, ViewPayroll $livewire) {
