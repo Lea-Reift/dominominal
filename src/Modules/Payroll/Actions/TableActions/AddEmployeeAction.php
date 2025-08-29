@@ -18,7 +18,6 @@ use App\Modules\Company\Models\Employee;
 use Closure;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
-use Filament\Forms\Components\Hidden;
 use App\Modules\Payroll\Models\SalaryAdjustment;
 use Filament\Forms\Components\Textarea;
 use Livewire\Component as Livewire;
@@ -57,30 +56,29 @@ class AddEmployeeAction
         $this->importRawEmployeeTab = $this->importRawEmployeeTab();
 
         $this->tabs = Tabs::make()
+            ->contained(false)
             ->tabs([
                 $this->addEmployeesTab,
                 $this->addEmployeeTab,
                 $this->importRawEmployeeTab
             ])
             ->extraAttributes([
-                'x-on:click' => '$wire.set("mountedTableActionsData.0.active_add_employee_form_tab", tab)'
+                'x-init' => "\$set('../activeTab', tab)",
+                'wire:click' => "\$set('mountedActions.0.activeTab', tab)"
             ]);
 
         $this->action = Action::make('add_employees')
             ->modalHeading('')
             ->label('Añadir empleados')
             ->slideOver()
-            ->beforeFormFilled(fn () => session(['active_add_employee_form_tab' => '-add-employees-tab']))
             ->schema([
-                $this->tabs,
-                Hidden::make('active_add_employee_form_tab')
-                    ->afterStateUpdated(fn (string $state) => $this->setActiveTab($state)),
+                $this->tabs
             ])
             ->databaseTransaction()
-            ->action(fn (array $data, Action $action) => match ($this->getActiveTab()) {
-                '-add-employees-tab' => $this->addEmployeesAction($data, $action),
-                '-create-employee-tab' => $this->createEmployeeAction($data, $action),
-                '-import-raw-employee-tab' => $this->importRawEmployeesAction($data, $action),
+            ->action(fn (array $data, Action $action) => match ($this->activeTab()) {
+                $this->addEmployeeTab->getKey(false) => $this->addEmployeesAction($data, $action),
+                $this->addEmployeesTab->getKey(false) => $this->createEmployeeAction($data, $action),
+                $this->importRawEmployeeTab->getKey(false) => $this->importRawEmployeesAction($data, $action),
                 default => throw new InvalidArgumentException('Accion o pestaña invalida'),
             })
             ->successNotification(
@@ -100,22 +98,24 @@ class AddEmployeeAction
         return (new self($payroll))->getAction();
     }
 
-    protected function getActiveTab(): string
+    protected function activeTab(): string
     {
-        return session('active_add_employee_form_tab', '-add-employees-tab');
-    }
-
-    protected function setActiveTab(string $tab): void
-    {
-        session(['active_add_employee_form_tab' => $tab]);
+        $page = $this->tabs->getLivewire();
+        return match (true) {
+            isset($page->mountedActions[0]['activeTab']) => $page->mountedActions[0]['activeTab'],
+            $this->addEmployeesTab->isVisible() => $this->addEmployeesTab->getKey(false),
+            default => $this->addEmployeeTab->getKey(false)
+        };
     }
 
     protected function addEmployeesTab(): Tab
     {
+        $key = 'add_employees_tab';
         return Tab::make('add_employees')
             ->label('Agregar Empleados Existentes')
+            ->key($key)
             ->visible($this->record->company->employees->reject(fn (Employee $employee) => $this->record->employees->contains($employee))->isNotEmpty())
-            ->disabled(fn () => $this->getActiveTab() !== '-add-employees-tab')
+            ->disabled(fn () => $this->activeTab() !== $key)
             ->schema([
                 CheckboxList::make('employees')
                     ->hiddenLabel()
@@ -136,18 +136,22 @@ class AddEmployeeAction
 
     protected function createEmployeeTab(): Tab
     {
+        $key = 'create_employee_tab';
         return Tab::make('create_employee')
             ->label('Crear Empleado')
+            ->key($key)
             ->columns(2)
-            ->disabled(fn () => $this->getActiveTab() !== '-create-employee-tab')
-            ->schema(fn (\Filament\Schemas\Components\Component $component) => $this->fields(enabled: ! $component->isDisabled(), nested: true));
+            ->disabled(fn () => $this->activeTab() !== $key)
+            ->schema(fn (Tab $component) => $this->fields(enabled: ! $component->isDisabled(), nested: true));
     }
 
     protected function importRawEmployeeTab(): Tab
     {
+        $key = 'import_raw_employee_tab';
         return Tab::make('import_raw_employee')
             ->label('Importar Empleados')
-            ->disabled(fn () => $this->getActiveTab() !== '-import-raw-employee-tab')
+            ->key('import_raw_employee_tab')
+            ->disabled(fn () => $this->activeTab() !== $key)
             ->schema([
                 Section::make([])
                     ->heading('Importar por texto')
@@ -168,7 +172,7 @@ class AddEmployeeAction
                     ->collapsible(),
                 Section::make([])
                     ->heading('Generar empleados')
-                    ->dehydrated(fn () => $this->getActiveTab() === '-import-raw-employee-tab')
+                    ->dehydrated(fn () => $this->activeTab() !== $key)
                     ->schema([
                         $this->employeeRepeater(),
                     ]),
