@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Company\Resources\Payrolls\Pages;
 
+use App\Modules\Company\Resources\Companies\Widgets\PayrollTotalWidget;
 use App\Modules\Company\Resources\Payrolls\PayrollResource;
 use App\Modules\Payroll\Actions\HeaderActions\EditPayrollAction;
 use App\Modules\Payroll\Exports\PayrollExport;
@@ -68,5 +69,12 @@ class ViewPayroll extends ViewRecord
             : 'd \d\e F \d\e\l Y';
 
         return Str::headline($this->record->period->translatedFormat($format));
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            PayrollTotalWidget::class,
+        ];
     }
 }
