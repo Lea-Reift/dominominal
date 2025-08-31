@@ -203,17 +203,13 @@ class PayrollForm
                                         ->columnSpan(2)
                                         ->schema([
                                             TextEntry::make('salary.amount')
-                                                ->label('Salario')
-                                                ->formatStateUsing(fn (float $state) => Number::dominicanCurrency($state)),
+                                                ->label('Salario'),
                                             TextEntry::make('display.incomeTotal')
-                                                ->label('Ingresos')
-                                                ->formatStateUsing(fn (float $state) => Number::dominicanCurrency($state)),
+                                                ->label('Ingresos'),
                                             TextEntry::make('display.deductionTotal')
-                                                ->label('Deducciones')
-                                                ->formatStateUsing(fn (float $state) => Number::dominicanCurrency($state)),
+                                                ->label('Deducciones'),
                                             TextEntry::make('display.netSalary')
-                                                ->label('Total a pagar')
-                                                ->formatStateUsing(fn (float $state) => Number::dominicanCurrency($state)),
+                                                ->label('Total a pagar'),
                                         ]),
                                     Repeater::make('salaryAdjustmentValues')
                                         ->relationship(
