@@ -35,9 +35,6 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Support\RawJs;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Support\Facades\DB;
-use Filament\Support\Facades\FilamentIcon;
-use Filament\Forms\View\FormsIconAlias;
-use Filament\Support\Enums\Size;
 
 class PayrollForm
 {
@@ -192,7 +189,6 @@ class PayrollForm
                                     fn (Action $action) => $action
                                         ->button()
                                         ->label('Remover empleado')
-
                                 )
                                 ->extraItemActions([
                                     ShowPaymentVoucherAction::make($this->payroll)
@@ -222,7 +218,29 @@ class PayrollForm
                                         ->hiddenLabel()
                                         ->columnSpan(4)
                                         ->itemLabel(fn (array $state, PayrollDetail $record) => $record->salaryAdjustments->find($state['salary_adjustment_id'])->name)
-                                        ->deletable(false)
+                                        ->deleteAction(
+                                            fn (Action $action) => $action
+                                                ->action(function (mixed $arguments, Repeater $component, ViewPayroll $livewire) {
+                                                    $adjustmentValueId = Str::after($arguments['item'], '-');
+                                                    $items = $component->getRawState();
+                                                    $detailAdjustment = $component->getModelInstance()->salaryAdjustmentValues->findOrFail($adjustmentValueId);
+                                                    unset($items[$arguments['item']]);
+
+                                                    $component->rawState($items);
+
+                                                    $component->callAfterStateUpdated();
+                                                    $component->partiallyRender();
+                                                    $detailAdjustment->delete();
+
+                                                    $livewire->dispatch('updatePayrollData');
+                                                    $livewire->refreshFormData([$component->getStatePath(false)]);
+
+                                                    return Notification::make('edit_available_adjustments')
+                                                        ->title('Datos guardados')
+                                                        ->success()
+                                                        ->send();
+                                                })
+                                        )
                                         ->addAction(
                                             fn (Action $action) => $action
                                                 ->label('Agregar Ajuste Salarial')
@@ -272,26 +290,6 @@ class PayrollForm
                                             TextInput::make('custom_value')
                                                 ->beforeLabel(fn (PayrollDetailSalaryAdjustment $record) => $record->salaryAdjustment->name)
                                                 ->afterLabel(fn (PayrollDetailSalaryAdjustment $record) => $record->salaryAdjustment->type->getLabel())
-                                                ->belowContent(Action::make('delete_adjustment_action')
-                                                    ->label(__('filament-forms::components.repeater.actions.delete.label'))
-                                                    ->icon(FilamentIcon::resolve(FormsIconAlias::COMPONENTS_REPEATER_ACTIONS_DELETE) ?? Heroicon::Trash)
-                                                    ->color('danger')
-                                                    ->iconButton()
-                                                    ->size(Size::Small)
-                                                    ->badge()
-                                                    ->label('Borrar ajuste')
-                                                    ->action(function (TextInput $component, ViewPayroll $livewire) {
-                                                        $detailAdjustment = $component->getContainer()->getModelInstance();
-                                                        $detailAdjustment->delete();
-
-                                                        $livewire->refreshFormData([$component->getStatePath(false)]);
-                                                        $livewire->dispatch('updatePayrollData');
-
-                                                        return Notification::make('edit_available_adjustments')
-                                                            ->title('Datos guardados')
-                                                            ->success()
-                                                            ->send();
-                                                    }))
                                                 ->mask(RawJs::make('$money($input)'))
                                                 ->step(0.01)
                                                 ->extraAlpineAttributes([
