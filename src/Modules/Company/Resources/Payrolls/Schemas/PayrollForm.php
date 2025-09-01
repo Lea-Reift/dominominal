@@ -220,7 +220,7 @@ class PayrollForm
                                         ->itemLabel(fn (array $state, PayrollDetail $record) => $record->salaryAdjustments->find($state['salary_adjustment_id'])->name)
                                         ->deleteAction(
                                             fn (Action $action) => $action
-                                                ->action(function (mixed $arguments, Repeater $component, ViewPayroll $livewire) {
+                                                ->action(function (mixed $arguments, Repeater $component, ViewPayroll $livewire) use ($action) {
                                                     $adjustmentValueId = Str::after($arguments['item'], '-');
                                                     $items = $component->getRawState();
                                                     $detailAdjustment = $component->getModelInstance()->salaryAdjustmentValues->findOrFail($adjustmentValueId);
@@ -280,6 +280,7 @@ class PayrollForm
 
                                                     $payrollDetail->salaryAdjustments()->sync($data['available_salary_adjustments']);
 
+                                                    $livewire->dispatch('updatePayrollData');
                                                     // Reload the form data to reflect changes
                                                     $livewire->refreshFormData(['details', 'details_display_section']);
 
