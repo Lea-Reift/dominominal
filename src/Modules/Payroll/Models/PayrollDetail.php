@@ -34,7 +34,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read Salary $salary
  * @property-read Collection<int, SalaryAdjustment> $salaryAdjustments
  * @property-read Collection<int, SalaryAdjustment> $editableSalaryAdjustments
- * @property-read Collection<int, PayrollDetailSalaryAdjustment> $salaryAdjustmentValues
+ * @property-read Collection<int, PayrollDetailSalaryAdjustment> $editableSalaryAdjustmentValues
  * @property Collection<int, SalaryAdjustment> $incomes
  * @property Collection<int, SalaryAdjustment> $deductions
  * @property Carbon|null $created_at
@@ -89,9 +89,10 @@ class PayrollDetail extends Model
             ->using(PayrollDetailSalaryAdjustment::class);
     }
 
-    public function salaryAdjustmentValues(): HasMany
+    public function editableSalaryAdjustmentValues(): HasMany
     {
-        return $this->hasMany(PayrollDetailSalaryAdjustment::class);
+        return $this->hasMany(PayrollDetailSalaryAdjustment::class)
+            ->whereRelation('salaryAdjustment', 'requires_custom_value', true);
     }
 
     public function editableSalaryAdjustments(): BelongsToMany

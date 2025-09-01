@@ -166,7 +166,7 @@ class PayrollForm
         $this->form
             ->components(function (Payroll $record) {
                 $this->setPayroll($record);
-                return[
+                return [
                     $this->payrollSection(),
                     Section::make()
                         ->visibleOn(Operation::View)
@@ -179,7 +179,7 @@ class PayrollForm
                                     AddEmployeeAction::make($this->payroll)->button(),
                                 ])
                                 ->disabledOn([Operation::Create, Operation::Edit])
-                                ->relationship(modifyQueryUsing: fn (EloquentBuilder $query) => $query->with('salaryAdjustmentValues'))
+                                ->relationship(modifyQueryUsing: fn (EloquentBuilder $query) => $query->with('editableSalaryAdjustmentValues'))
                                 ->addable(false)
                                 ->reorderable()
                                 ->reorderableWithDragAndDrop()
@@ -272,8 +272,8 @@ class PayrollForm
                                         ]),
                                     Section::make('Ajustes Salariales')
                                         ->columnSpan(7)
-                                        ->schema([
-                                            Repeater::make('salaryAdjustmentValues')
+                                        ->schema(fn (PayrollDetail $record) => [
+                                            Repeater::make('editableSalaryAdjustmentValues')
                                                 ->relationship(
                                                     modifyQueryUsing: fn (EloquentBuilder $query) => $query
                                                         ->with(['salaryAdjustment', 'payrollDetail'])
@@ -374,6 +374,16 @@ class PayrollForm
                                                                 ->send();
                                                         })
                                                         ->live(true),
+                                                ),
+                                            Section::make()
+                                                ->contained(false)
+                                                ->columns(3)
+                                                ->schema(
+                                                    $record->salaryAdjustments->where('requires_custom_value', false)
+                                                        ->map(fn (SalaryAdjustment $adjustment) => TextEntry::make('display.netSalary')
+                                                            ->state($record->display->salaryAdjustments->get($adjustment->parser_alias, 0))
+                                                            ->label($adjustment->name))
+                                                        ->toArray()
                                                 )
                                         ])
                                 ])
