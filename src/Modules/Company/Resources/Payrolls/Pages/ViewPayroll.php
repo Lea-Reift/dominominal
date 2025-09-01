@@ -19,6 +19,8 @@ class ViewPayroll extends ViewRecord
     protected static string $resource = PayrollResource::class;
     protected static ?string $navigationLabel = PayrollResource::class;
 
+    protected $listeners = ['updatePayrollData' => '$refresh'];
+
     protected function getHeaderActions(): array
     {
         return [
@@ -71,7 +73,7 @@ class ViewPayroll extends ViewRecord
         return Str::headline($this->record->period->translatedFormat($format));
     }
 
-    protected function getHeaderWidgets(): array
+    protected function getFooterWidgets(): array
     {
         return [
             PayrollTotalWidget::class,
