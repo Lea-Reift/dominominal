@@ -172,7 +172,5 @@ class GenerateSecondaryPayrollsAction
                 ->options(Arr::mapWithKeys([14, 28], fn (int $day) => [$day => $this->record->period->translatedFormat("{$day} \\d\\e F")]))
                 ->disableOptionWhen(fn (int $value) => $existingSecondaryPayrollsDates->contains($value)),
         ];
-
-        $existingSecondaryPayrollsDates->dd();
     }
 }
