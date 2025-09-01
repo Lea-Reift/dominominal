@@ -7,7 +7,6 @@ namespace App\Modules\Company\Resources\Companies\Pages;
 use Filament\Actions\CreateAction;
 use App\Modules\Company\Models\Company;
 use App\Modules\Company\Resources\Companies\CompanyResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListCompanies extends ListRecords
