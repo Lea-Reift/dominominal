@@ -202,9 +202,8 @@ class PayrollForm
                                             $payrollDetail->delete();
 
                                             $livewire->dispatch('updatePayrollData');
-                                            $livewire->refreshFormData([$component->getStatePath(false)]);
 
-                                            return Notification::make('edit_available_adjustments')
+                                            return Notification::make('edit_payroll_details')
                                                 ->title('Datos guardados')
                                                 ->success()
                                                 ->send();
@@ -240,7 +239,7 @@ class PayrollForm
                                         ->itemLabel(fn (array $state, PayrollDetail $record) => $record->salaryAdjustments->find($state['salary_adjustment_id'])->name)
                                         ->deleteAction(
                                             fn (Action $action) => $action
-                                                ->action(function (mixed $arguments, Repeater $component, ViewPayroll $livewire) use ($action) {
+                                                ->action(function (mixed $arguments, Repeater $component, ViewPayroll $livewire) {
                                                     $adjustmentValueId = Str::after($arguments['item'], '-');
                                                     $items = $component->getRawState();
                                                     $detailAdjustment = $component->getModelInstance()->salaryAdjustmentValues->findOrFail($adjustmentValueId);
@@ -253,7 +252,6 @@ class PayrollForm
                                                     $detailAdjustment->delete();
 
                                                     $livewire->dispatch('updatePayrollData');
-                                                    $livewire->refreshFormData([$component->getStatePath(false)]);
 
                                                     return Notification::make('edit_available_adjustments')
                                                         ->title('Datos guardados')
@@ -301,24 +299,22 @@ class PayrollForm
                                                     $payrollDetail->salaryAdjustments()->sync($data['available_salary_adjustments']);
 
                                                     $livewire->dispatch('updatePayrollData');
-                                                    // Reload the form data to reflect changes
-                                                    $livewire->refreshFormData(['details', 'details_display_section']);
 
                                                     return $action->sendSuccessNotification();
                                                 })
                                         )
                                         ->simple(
                                             TextInput::make('custom_value')
-                                                ->beforeLabel(fn (PayrollDetailSalaryAdjustment $record) => $record->salaryAdjustment->name)
-                                                ->afterLabel(fn (PayrollDetailSalaryAdjustment $record) => $record->salaryAdjustment->type->getLabel())
+                                                ->beforeLabel(fn (?PayrollDetailSalaryAdjustment $record) => $record?->salaryAdjustment->name)
+                                                ->afterLabel(fn (?PayrollDetailSalaryAdjustment $record) => $record?->salaryAdjustment->type->getLabel())
                                                 ->mask(RawJs::make('$money($input)'))
                                                 ->step(0.01)
                                                 ->extraAlpineAttributes([
                                                     'x-on:keydown.enter.prevent' => '$el.blur()',
                                                 ])
-                                                ->disabled(fn (PayrollDetailSalaryAdjustment $record) => !$record->salaryAdjustment->requires_custom_value)
-                                                ->formatStateUsing(function (?float $state, PayrollDetailSalaryAdjustment $record) {
-                                                    $value = $record->salaryAdjustment->requires_custom_value ?? true
+                                                ->disabled(fn (?PayrollDetailSalaryAdjustment $record) => !$record?->salaryAdjustment->requires_custom_value)
+                                                ->formatStateUsing(function (?float $state, ?PayrollDetailSalaryAdjustment $record) {
+                                                    $value = $record?->salaryAdjustment->requires_custom_value ?? true
                                                         ? $state
                                                         : $record->payrollDetail->display->salaryAdjustments->get($record->salaryAdjustment->parser_alias, 0);
 
