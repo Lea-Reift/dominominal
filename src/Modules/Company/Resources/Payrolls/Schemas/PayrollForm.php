@@ -241,14 +241,6 @@ class PayrollForm
                                                 )
                                                 ->bulkToggleable()
                                                 ->live()
-                                                ->disableOptionWhen(function (PayrollDetail $record, string $value) {
-                                                    $allAdjustments = $this->payroll->monthlyPayroll?->salaryAdjustments->pluck('name', 'id');
-                                                    if (is_null($allAdjustments)) {
-                                                        return false;
-                                                    }
-                                                    $missingInComplementary = $allAdjustments->except($record->complementaryDetail?->salaryAdjustments->pluck('id'))->keys();
-                                                    return $missingInComplementary->contains($value);
-                                                })
                                                 ->afterStateUpdated(function (array $state, CheckboxList $component, Action $action, ViewPayroll $livewire) {
                                                     $statePath = $component->getStatePath();
 
@@ -273,6 +265,20 @@ class PayrollForm
                                     Section::make('Ajustes Salariales')
                                         ->columnSpan(7)
                                         ->schema(fn (PayrollDetail $record) => [
+                                            Section::make()
+                                                ->contained(false)
+                                                ->columns(3)
+                                                ->schema(
+                                                    $record->salaryAdjustments->where('requires_custom_value', false)
+                                                        ->map(
+                                                            fn (SalaryAdjustment $adjustment) =>
+                                                            TextEntry::make('display.netSalary')
+                                                                ->state($record->display->salaryAdjustments->get($adjustment->parser_alias, 0))
+                                                                ->label($adjustment->name)
+                                                                ->afterLabel($adjustment->type->getLabel())
+                                                        )
+                                                        ->toArray()
+                                                ),
                                             Repeater::make('editableSalaryAdjustmentValues')
                                                 ->relationship(
                                                     modifyQueryUsing: fn (EloquentBuilder $query) => $query
@@ -375,16 +381,6 @@ class PayrollForm
                                                         })
                                                         ->live(true),
                                                 ),
-                                            Section::make()
-                                                ->contained(false)
-                                                ->columns(3)
-                                                ->schema(
-                                                    $record->salaryAdjustments->where('requires_custom_value', false)
-                                                        ->map(fn (SalaryAdjustment $adjustment) => TextEntry::make('display.netSalary')
-                                                            ->state($record->display->salaryAdjustments->get($adjustment->parser_alias, 0))
-                                                            ->label($adjustment->name))
-                                                        ->toArray()
-                                                )
                                         ])
                                 ])
                         ])
