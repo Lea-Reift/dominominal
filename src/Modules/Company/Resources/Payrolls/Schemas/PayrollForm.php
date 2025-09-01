@@ -284,7 +284,9 @@ class PayrollForm
                                                         $detailAdjustment = $component->getContainer()->getModelInstance();
                                                         $detailAdjustment->delete();
 
-                                                        $livewire->refreshFormData(['details', 'details_display_section']);
+                                                        $livewire->refreshFormData([$component->getStatePath(false)]);
+                                                        $livewire->dispatch('updatePayrollData');
+
                                                         return Notification::make('edit_available_adjustments')
                                                             ->title('Datos guardados')
                                                             ->success()
@@ -364,6 +366,8 @@ class PayrollForm
                                                             ]);
                                                         $livewire->refreshFormData(['details', 'details_display_section']);
                                                     });
+
+                                                    $livewire->dispatch('updatePayrollData');
 
                                                     Notification::make('adjustment_modification_success')
                                                         ->title('Datos guardados')
