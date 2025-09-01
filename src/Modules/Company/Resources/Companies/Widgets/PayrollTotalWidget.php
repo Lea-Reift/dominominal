@@ -19,6 +19,8 @@ class PayrollTotalWidget extends StatsOverviewWidget
 
     protected ?string $pollingInterval = null;
 
+    protected $listeners = ['updatePayrollData' => '$refresh'];
+
     protected int|array|null $columns = [
 
         'sm' => 2,
@@ -30,10 +32,8 @@ class PayrollTotalWidget extends StatsOverviewWidget
     {
         return Section::make()
             ->contained(false)
-            ->collapsed()
             ->columns(2)
             ->compact()
-            ->afterHeader(fn (Section $component) => $component->isCollapsed() ? 'Mostrar ajustes salariales' : 'Ocultar ajustes salariales')
             ->schema(
                 SalaryAdjustmentTypeEnum::collect()
                     ->map(
@@ -53,8 +53,6 @@ class PayrollTotalWidget extends StatsOverviewWidget
                     ->toArray()
             );
     }
-
-    protected $listeners = ['updatePayrollTotal' => '$refresh'];
 
     protected function getStats(): array
     {

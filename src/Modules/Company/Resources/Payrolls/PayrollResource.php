@@ -23,6 +23,8 @@ class PayrollResource extends Resource
     protected static ?string $recordTitleAttribute = 'period';
     protected static ?string $modelLabel = 'nómina';
 
+    protected $listeners = ['updatePayrollData' => '$refresh'];
+
     public static function form(Schema $schema): Schema
     {
         return PayrollForm::configure($schema)
