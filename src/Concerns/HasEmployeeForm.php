@@ -9,33 +9,20 @@ use App\Enums\SalaryDistributionFormatEnum;
 use Filament\Forms\Components\TextInput;
 use App\Enums\DocumentTypeEnum;
 use App\Enums\SalaryTypeEnum;
-use Filament\Schemas\Components\Fieldset;
 use Filament\Support\RawJs;
 use App\Forms\Components\PhoneRepeater;
-use Filament\Schemas\Components\Grid;
+use Filament\Forms\Components\Repeater;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Forms\Components\ToggleButtons;
+use Illuminate\Support\Number;
 
 trait HasEmployeeForm
 {
     public function fields(bool $enabled = false, bool $nested = false): array
     {
-        $salaryFieldNames = [
-            'amount',
-            'distribution_format',
-            'distribution_value',
-            'type',
-        ];
-
-        $salaryFieldNames = array_combine($salaryFieldNames, $salaryFieldNames);
-
-        if ($nested) {
-            $salaryFieldNames = array_map(array: $salaryFieldNames, callback: fn (string $fieldName) => "salary.{$fieldName}");
-        }
-
         $salaryDistribution = [
-            ToggleButtons::make($salaryFieldNames['distribution_format'])
+            ToggleButtons::make('distribution_format')
                 ->options(SalaryDistributionFormatEnum::class)
                 ->label('Formato')
                 ->inline()
@@ -46,7 +33,7 @@ trait HasEmployeeForm
                     SalaryDistributionFormatEnum::ABSOLUTE => 'El valor ingresado será restado del total del salario',
                     SalaryDistributionFormatEnum::PERCENTAGE => 'El valor ingresado se calculará al total del salario',
                 }),
-            TextInput::make($salaryFieldNames['distribution_value'])
+            TextInput::make('distribution_value')
                 ->label('Valor a restar de la primera quincena')
                 ->numeric()
                 ->mask(RawJs::make('$money($input)'))
@@ -54,14 +41,14 @@ trait HasEmployeeForm
                 ->inputMode('decimal')
                 ->default('50.00')
                 ->required($enabled)
-                ->prefix(fn (Get $get) => match ($get($salaryFieldNames['distribution_format'])) {
+                ->prefix(fn (Get $get) => match ($get('distribution_format')) {
                     SalaryDistributionFormatEnum::PERCENTAGE => '%',
                     default => '0.0',
                 })
-                ->maxValue(fn (Get $get) => match ($get($salaryFieldNames['distribution_format'])) {
+                ->maxValue(fn (Get $get) => match ($get('distribution_format')) {
                     SalaryDistributionFormatEnum::ABSOLUTE => match (true) {
-                        is_float($get($salaryFieldNames['amount'])), is_int($get($salaryFieldNames['amount'])) => $get($salaryFieldNames['amount']),
-                        is_string($get($salaryFieldNames['amount'])) => (float)str_replace(',', '', $get($salaryFieldNames['amount'])),
+                        is_float($get('amount')), is_int($get('amount')) => $get('amount'),
+                        is_string($get('amount')) => (float)str_replace(',', '', $get('amount')),
                         default => 0
                     },
                     SalaryDistributionFormatEnum::PERCENTAGE => 100,
@@ -71,7 +58,9 @@ trait HasEmployeeForm
         ];
 
         return [
-            Grid::make(3)
+            Section::make()
+                ->columns(3)
+                ->contained(false)
                 ->schema([
                     TextInput::make('name')
                         ->label('Nombres')
@@ -102,13 +91,19 @@ trait HasEmployeeForm
             TextInput::make('email')
                 ->email()
                 ->maxLength(255),
-            Grid::make(3)
+            Section::make()
+                ->columns(3)
+                ->contained(false)
                 ->schema([
-                    Fieldset::make('Salario')
+                    Repeater::make('salaries')
+                        ->relationship('salaries')
                         ->columnSpan(2)
-                        ->unless($nested, fn (Fieldset $fieldset) => $fieldset->relationship('salary'))
+                        ->collapsed()
+                        ->itemLabel(fn (array $state) => Number::dominicanCurrency(parse_float((string)$state['amount'])))
+                        ->label('Salarios')
+                        ->addActionLabel('Agregar Salario')
                         ->schema([
-                            TextInput::make($salaryFieldNames['amount'])
+                            TextInput::make('amount')
                                 ->mask(RawJs::make('$money($input)'))
                                 ->stripCharacters(',')
                                 ->numeric()
@@ -117,7 +112,7 @@ trait HasEmployeeForm
                                 ->minValue(0)
                                 ->live()
                                 ->label('Valor'),
-                            ToggleButtons::make($salaryFieldNames['type'])
+                            ToggleButtons::make('type')
                                 ->options(SalaryTypeEnum::class)
                                 ->label('Tipo de salario')
                                 ->helperText('Esto define la cantidad de pagos al mes que recibe el empleado')
@@ -129,7 +124,7 @@ trait HasEmployeeForm
                                 ->description('Esta configuración se utiliza en las nominas quincenales para distribuir el salario del empleado')
                                 ->compact()
                                 ->columns(2)
-                                ->hidden(fn (Get $get) => $get($salaryFieldNames['type']) === SalaryTypeEnum::MONTHLY)
+                                ->hidden(fn (Get $get) => $get('type') === SalaryTypeEnum::MONTHLY)
                                 ->schema($salaryDistribution),
                         ]),
                     PhoneRepeater::make('phones')
