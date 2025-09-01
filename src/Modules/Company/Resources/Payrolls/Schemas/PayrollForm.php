@@ -189,6 +189,26 @@ class PayrollForm
                                     fn (Action $action) => $action
                                         ->button()
                                         ->label('Remover empleado')
+                                        ->action(function (mixed $arguments, Repeater $component, ViewPayroll $livewire) {
+                                            $detailId = Str::after($arguments['item'], '-');
+                                            $items = $component->getRawState();
+                                            $payrollDetail = $component->getModelInstance()->details->findOrFail($detailId);
+                                            unset($items[$arguments['item']]);
+
+                                            $component->rawState($items);
+
+                                            $component->callAfterStateUpdated();
+                                            $component->partiallyRender();
+                                            $payrollDetail->delete();
+
+                                            $livewire->dispatch('updatePayrollData');
+                                            $livewire->refreshFormData([$component->getStatePath(false)]);
+
+                                            return Notification::make('edit_available_adjustments')
+                                                ->title('Datos guardados')
+                                                ->success()
+                                                ->send();
+                                        })
                                 )
                                 ->extraItemActions([
                                     ShowPaymentVoucherAction::make($this->payroll)
