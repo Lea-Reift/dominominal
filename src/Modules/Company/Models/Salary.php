@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Company\Models;
 
+use Illuminate\Support\Carbon;
 use App\Enums\SalaryDistributionFormatEnum;
 use App\Enums\SalaryTypeEnum;
 use App\Modules\Payroll\Models\PayrollDetail;
@@ -21,9 +22,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property SalaryDistribution $distribution
  * @property SalaryTypeEnum $type
  * @property-read Employee $employee
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  */
 class Salary extends Model
 {

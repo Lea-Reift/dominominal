@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use Filament\Pages\Dashboard;
+use Filament\Widgets\AccountWidget;
+use Filament\Widgets\FilamentInfoWidget;
+use Filament\Support\Enums\Width;
+use Exception;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Support\SalaryAdjustmentParser;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -22,13 +25,17 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use DirectoryIterator;
-use Filament\Support\Enums\MaxWidth;
 use Filament\Tables\Table;
 use Illuminate\Support\Arr;
 use App\Models\Setting;
 use App\Modules\Payroll\Models\SalaryAdjustment;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Fieldset;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Support\Assets\Js;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Number;
 
 class MainPanelProvider extends PanelProvider
 {
@@ -51,15 +58,15 @@ class MainPanelProvider extends PanelProvider
             ])
             ->discoverPages(in: app_path('Support/Pages'), for: 'App\\Support\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                Dashboard::class,
             ])
             ->spa()
             ->assets([
                 Js::make('prefetch', resource_path('js/prefetch.js')),
             ])
             ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                AccountWidget::class,
+                FilamentInfoWidget::class,
             ])
             ->topNavigation()
             ->middleware([
@@ -76,7 +83,7 @@ class MainPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            ->maxContentWidth(MaxWidth::Full);
+            ->maxContentWidth(Width::Full);
 
 
         $this->addModulesToPanel($panel);
@@ -85,8 +92,21 @@ class MainPanelProvider extends PanelProvider
 
     public function boot(): void
     {
-        Table::$defaultCurrency = 'USD';
-        Table::$defaultNumberLocale = 'en';
+        Fieldset::configureUsing(fn (Fieldset $fieldset) => $fieldset->columnSpanFull());
+        Grid::configureUsing(fn (Grid $grid) => $grid->columnSpanFull());
+        Section::configureUsing(fn (Section $section) => $section->columnSpanFull());
+
+        TextEntry::configureUsing(
+            fn (TextEntry $textEntry) =>
+            $textEntry->formatStateUsing(fn (mixed $state) => is_numeric($state) ? Number::dominicanCurrency($state) : $state)
+        );
+
+        Table::configureUsing(
+            fn (Table $table) => $table
+                ->defaultCurrency('USD')
+                ->defaultNumberLocale('en')
+                ->paginated(false)
+        );
 
         $this->setSalaryParserDefaultVariables();
         $this->configureVerifiedEmail();
@@ -109,7 +129,7 @@ class MainPanelProvider extends PanelProvider
                     'mail.from.address' => $emailSetting->value,
                 ]);
             }
-        } catch (\Exception) {
+        } catch (Exception) {
         }
     }
 

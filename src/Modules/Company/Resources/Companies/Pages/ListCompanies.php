@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Company\Resources\CompanyResource\Pages;
+namespace App\Modules\Company\Resources\Companies\Pages;
 
+use Filament\Actions\CreateAction;
 use App\Modules\Company\Models\Company;
-use App\Modules\Company\Resources\CompanyResource;
+use App\Modules\Company\Resources\Companies\CompanyResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
@@ -16,7 +17,7 @@ class ListCompanies extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make()
+            CreateAction::make()
                 ->successRedirectUrl(fn (Company $record): string => CompanyResource::getUrl('view', ['record' => $record])),
         ];
     }

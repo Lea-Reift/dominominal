@@ -31,6 +31,8 @@
         recordKey: @js($recordKey),
 
         state: @js($state),
+
+        tooltip: @js($getTooltip()),
     }"
     x-init="
         () => {
@@ -77,22 +79,18 @@
     />
 
     <span class="text-sm font-medium leading-6 text-gray-950 dark:text-white">
-        <x-filament-forms::field-wrapper.hint>{{ $getHint() }}</x-filament-forms::field-wrapper.hint>
-
         {{ $getLabel() }}
+        @if ($getHint())
+            <div class="fi-sc-component">
+                <span class="fi-sc-text">{{ $getHint() }}</span>
+            </div>
+        @endif
     </span>
 
     <x-filament::input.wrapper
         :alpine-disabled="'isLoading || ' . \Illuminate\Support\Js::from($isDisabled)"
         alpine-valid="error === undefined"
-        x-tooltip="
-            error === undefined
-                ? false
-                : {
-                    content: error,
-                    theme: $store.theme,
-                }
-        "
+        x-tooltip="error !== undefined ? { content: error, theme: $store.theme, delay: [100, 50] } : tooltip ? { content: tooltip, theme: $store.theme, delay: [100, 50] } : false"
         x-on:click.stop.prevent=""
     >
         {{-- format-ignore-start --}}

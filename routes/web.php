@@ -2,17 +2,19 @@
 
 declare(strict_types=1);
 
+use App\Modules\Company\Resources\Payrolls\Pages\ViewPayroll;
 use App\Modules\Payroll\Models\Payroll;
 use App\Support\Pages\Setup;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Excel;
 use App\Modules\Payroll\Exports\PayrollExport;
 use App\Modules\Payroll\Models\PayrollDetail;
+use Filament\Facades\Filament;
 
 Route::get('/', Setup::class);
 
-Route::prefix('main/payrolls/{payroll}/details/export')
-    ->name('filament.main.payrolls.details.export.')
+Route::prefix('main/companies/3/payrolls/{payroll}/details/export')
+    ->name(ViewPayroll::getRouteName(Filament::getDefaultPanel()) . '.export.')
     ->group(function () {
         Route::name('pdf')
             ->get('pdf', function (Payroll $payroll) {

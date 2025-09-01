@@ -4,22 +4,19 @@ declare(strict_types=1);
 
 namespace App\Support\Pages;
 
+use Filament\Support\Enums\Width;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\Pages\Filament\Actions\SetupAction;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\TextInput;
-use Illuminate\Support\HtmlString;
 use Filament\Pages\SimplePage;
-use Filament\Support\Enums\MaxWidth;
 use Illuminate\Support\Facades\Auth;
 
 class Setup extends SimplePage
 {
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
-
-    protected static string $view = 'support.pages.setup';
+    protected string $view = 'support.pages.setup';
 
     protected User $user;
 
@@ -34,7 +31,7 @@ class Setup extends SimplePage
     {
         if ($this->setupIsCompletedSetting->value) {
             Auth::loginUsingId(User::value('id'), true);
-            redirect(Filament::getPanel()->getUrl());
+            redirect(Filament::getDefaultPanel()->getUrl());
         }
     }
 
@@ -47,7 +44,7 @@ class Setup extends SimplePage
             ->modalDescription('Antes de empezar, hay que configurar algunas cosas')
             ->modalSubmitActionLabel('Empecemos')
             ->extraAttributes([
-                'wire:init' => new HtmlString('mountAction(\'confirmation\')'),
+                'wire:init' => 'mountAction(\'confirmation\')',
             ])
             ->action(fn () => $this->replaceMountedAction('setupWizard'));
     }
@@ -56,8 +53,8 @@ class Setup extends SimplePage
     {
         return SetupAction::make('setupWizard')
             ->label('Configuración Inicial')
-            ->modalWidth(MaxWidth::Medium)
-            ->form([
+            ->modalWidth(Width::Medium)
+            ->schema([
                 TextInput::make('name')
                     ->label('Nombre')
                     ->required(),

@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Models;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
  * @property float $custom_value
+ * @property-read SalaryAdjustment $salaryAdjustment
+ * @property-read PayrollDetail $payrollDetail
  */
 class PayrollDetailSalaryAdjustment extends Pivot
 {
@@ -30,5 +33,15 @@ class PayrollDetailSalaryAdjustment extends Pivot
         parent::__construct($attributes);
 
         $this->mergeFillable(self::$columns);
+    }
+
+    public function payrollDetail(): BelongsTo
+    {
+        return $this->belongsTo(PayrollDetail::class);
+    }
+
+    public function salaryAdjustment(): BelongsTo
+    {
+        return $this->belongsTo(SalaryAdjustment::class);
     }
 }

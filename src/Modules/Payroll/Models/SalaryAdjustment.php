@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Models;
 
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Enums\SalaryAdjustmentValueTypeEnum;
@@ -19,8 +20,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property string $value
  * @property bool $requires_custom_value
  * @property ?PayrollDetailSalaryAdjustment $detailSalaryAdjustmentValue
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @method static SalaryAdjustmentBuilder query()
  */
 class SalaryAdjustment extends Model

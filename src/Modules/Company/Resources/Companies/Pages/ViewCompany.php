@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Company\Resources\CompanyResource\Pages;
+namespace App\Modules\Company\Resources\Companies\Pages;
 
-use App\Modules\Company\Resources\CompanyResource;
+use App\Modules\Company\Resources\Companies\CompanyResource;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 use App\Modules\Company\Models\Company;
@@ -15,8 +15,6 @@ use App\Modules\Company\Models\Company;
 class ViewCompany extends ViewRecord
 {
     protected static string $resource = CompanyResource::class;
-
-    protected static ?string $breadcrumb = 'Información';
 
     public function getTitle(): string
     {
@@ -37,6 +35,12 @@ class ViewCompany extends ViewRecord
 
     public function getContentTabLabel(): string
     {
-        return static::$breadcrumb;
+        return 'Información';
+    }
+
+
+    public function getBreadcrumb(): string
+    {
+        return $this->record->name;
     }
 }

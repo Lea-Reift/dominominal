@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Payroll\Resources\SalaryAdjustmentResource\Pages;
+namespace App\Modules\Payroll\Resources\SalaryAdjustments\Pages;
 
-use App\Modules\Payroll\Resources\SalaryAdjustmentResource;
+use Filament\Actions\Action;
+use App\Modules\Payroll\Resources\SalaryAdjustments\SalaryAdjustmentResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ManageRecords;
-use Filament\Actions\StaticAction;
 
 class ManageSalaryAdjustments extends ManageRecords
 {
@@ -17,7 +17,7 @@ class ManageSalaryAdjustments extends ManageRecords
     {
         return [
             CreateAction::make()
-                ->modalSubmitAction(function (StaticAction $action) {
+                ->modalSubmitAction(function (Action $action) {
                     $action->extraAttributes(merge: true, attributes: [
                         'wire:loading.attr' => 'disabled'
                     ]);

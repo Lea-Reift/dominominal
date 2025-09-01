@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Actions\TableRowActions;
 
+use Filament\Actions\Action;
+use Throwable;
 use App\Models\Setting;
 use App\Modules\Payroll\Models\Payroll;
 use App\Support\Services\BrevoService;
-use Filament\Tables\Actions\Action;
 use Filament\Notifications\Notification;
 use App\Mail\PaymentVoucherMail;
 use Filament\Forms\Components\TextInput;
@@ -15,7 +16,6 @@ use Filament\Support\Exceptions\Halt;
 use Illuminate\Support\Facades\Mail;
 use App\Modules\Payroll\Models\PayrollDetail;
 use Closure;
-use Filament\Notifications\Actions\Action as NotificationAction;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 class ShowPaymentVoucherAction
@@ -25,31 +25,39 @@ class ShowPaymentVoucherAction
     public function __construct(
         protected Payroll $payroll,
     ) {
+        $this->payroll->loadMissing(['details']);
+
         $this->action = Action::make('show_payment_voucher')
-            ->label('Mostrar volante')
+            ->label('Mostrar volante de pago')
             ->icon('heroicon-s-inbox-arrow-down')
             ->color('info')
-            ->modalContent(fn (PayrollDetail $record) => view(
+            ->button()
+            ->modalContent(fn (array $arguments) => view(
                 'components.payment-voucher-table',
-                ['detail' => $record->display, 'mode' => 'modal'],
+                ['detail' => $this->getDetailFromArguments($arguments)->display, 'mode' => 'modal'],
             ))
             ->modalHeading('')
             ->stickyModalHeader(false)
-            ->form([
+            ->schema(fn (array $arguments) => [
                 TextInput::make('employee_email')
                     ->label('Correo del empleado')
                     ->email()
-                    ->default(fn (PayrollDetail $record) => $record->employee->email)
+                    ->default($this->getDetailFromArguments($arguments)->employee->email)
                     ->required(),
             ])
             ->modalSubmitActionLabel('Enviar comprobante')
-            ->extraModalFooterActions(fn (PayrollDetail $record): array => [
+            ->extraModalFooterActions(fn (array $arguments): array => [
                 Action::make('print_voucher')
                     ->label('Imprimir volante')
-                    ->url(route('filament.main.payrolls.details.show.export.pdf', ['detail' => $record]))
+                    ->url(route('filament.main.payrolls.details.show.export.pdf', ['detail' => $this->getDetailFromArguments($arguments)]))
                     ->openUrlInNewTab(),
             ])
             ->action(Closure::fromCallable([$this, 'actionCallback']));
+    }
+
+    protected function getDetailFromArguments(array $arguments): PayrollDetail
+    {
+        return $this->payroll->details->findOrFail(abs(parse_float($arguments['item'])));
     }
 
     public static function make(Payroll $payroll): Action
@@ -62,8 +70,9 @@ class ShowPaymentVoucherAction
         return $this->action;
     }
 
-    protected function actionCallback(PayrollDetail $record, array $data): void
+    protected function actionCallback(mixed $arguments, array $data): void
     {
+        $record = $this->getDetailFromArguments($arguments);
         $this->checkEmailConfiguration();
 
         $employeeEmail = $record->employee->email ?? $data['employee_email'];
@@ -104,7 +113,7 @@ class ShowPaymentVoucherAction
                 ->danger()
                 ->persistent()
                 ->actions([
-                    \Filament\Notifications\Actions\Action::make('configure')
+                    Action::make('configure')
                         ->label('Configurar')
                         ->url('/main/settings')
                         ->markAsRead(),
@@ -129,7 +138,7 @@ class ShowPaymentVoucherAction
                         ->warning()
                         ->persistent()
                         ->actions([
-                            NotificationAction::make('verify')
+                            Action::make('verify')
                                 ->label('Verificar correo')
                                 ->url('/main/settings')
                                 ->markAsRead(),
@@ -144,14 +153,14 @@ class ShowPaymentVoucherAction
                 $verifiedSetting->name = 'is_verified';
                 $verifiedSetting->value = true;
                 $verifiedSetting->save();
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 Notification::make('email_verification_error')
                     ->title('Error al verificar correo')
                     ->body('No se pudo verificar el estado del correo electrónico. Verifique su configuración.')
                     ->danger()
                     ->persistent()
                     ->actions([
-                        NotificationAction::make('configure')
+                        Action::make('configure')
                             ->label('Configurar')
                             ->url('/main/settings')
                             ->markAsRead(),

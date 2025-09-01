@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Support\Pages;
 
+use Exception;
+use Filament\Schemas\Schema;
 use App\Models\Setting;
 use App\Support\Services\BrevoService;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Pages\Page;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -24,11 +25,11 @@ class Settings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-text';
 
-    protected static string $view = 'support.pages.settings';
+    protected string $view = 'support.pages.settings';
 
-    protected static ?string $navigationGroup = 'Configuración';
+    protected static string | \UnitEnum | null $navigationGroup = 'Configuración';
 
     protected static ?string $title = 'Configuración General';
 
@@ -46,7 +47,7 @@ class Settings extends Page implements HasForms
         try {
             $brevoService = new BrevoService();
             $this->validSenders = $brevoService->getValidSenders();
-        } catch (\Exception) {
+        } catch (Exception) {
             $this->validSenders = collect();
         }
     }
@@ -67,13 +68,13 @@ class Settings extends Page implements HasForms
         $this->showOtpInput = $hasEmail && $hasSenderId && !$isVerified;
     }
 
-    public function getEmailSettingsForm(): Form
+    public function getEmailSettingsForm(): Schema
     {
         $user = Auth::user();
         $isVerified = $this->checkEmailVerificationStatus();
 
-        return Form::make($this)
-            ->schema([
+        return Schema::make($this)
+            ->components([
                 TextInput::make('username')
                     ->label('Correo Electrónico')
                     ->required()
@@ -130,7 +131,7 @@ class Settings extends Page implements HasForms
 
                 return true;
             }
-        } catch (\Exception) {
+        } catch (Exception) {
         }
 
         return false;
@@ -225,7 +226,7 @@ class Settings extends Page implements HasForms
                 ->persistent()
                 ->send();
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title('Error al configurar el correo')
                 ->body($e->getMessage())
@@ -278,7 +279,7 @@ class Settings extends Page implements HasForms
                     ->success()
                     ->send();
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title('Error al validar el código')
                 ->body($e->getMessage())
@@ -325,7 +326,7 @@ class Settings extends Page implements HasForms
                     ->warning()
                     ->send();
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title('Error al verificar el correo')
                 ->body($e->getMessage())

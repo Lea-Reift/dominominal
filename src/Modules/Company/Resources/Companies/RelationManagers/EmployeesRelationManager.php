@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Company\Resources\CompanyResource\RelationManagers;
+namespace App\Modules\Company\Resources\Companies\RelationManagers;
 
+use Filament\Schemas\Schema;
+use Filament\Actions\CreateAction;
+use Filament\Actions\EditAction;
 use App\Concerns\HasEmployeeForm;
 use App\Tables\Columns\DocumentColumn;
-use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables\Actions\CreateAction;
-use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -27,10 +27,10 @@ class EmployeesRelationManager extends RelationManager
         return false;
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema($this->fields(enabled: true));
+        return $schema
+            ->components($this->fields(enabled: true));
     }
 
     public function table(Table $table): Table
@@ -49,7 +49,7 @@ class EmployeesRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make(),
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make(),
             ]);
     }
