@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $id
  * @property int $employee_id
  * @property float $amount
+ * @property bool $is_employee_current_salary
  * @property SalaryDistribution $distribution
  * @property SalaryTypeEnum $type
  * @property-read Employee $employee
@@ -36,6 +37,7 @@ class Salary extends Model
         'type',
         'distribution_format',
         'distribution_value',
+        'is_current_salary',
     ];
 
     protected $casts = [
@@ -43,7 +45,21 @@ class Salary extends Model
         'type' => SalaryTypeEnum::class,
         'distribution_format' => SalaryDistributionFormatEnum::class,
         'distribution_value' => 'float',
+        'is_employee_current_salary' => 'boolean',
     ];
+
+    public static function boot(): void
+    {
+        parent::boot();
+        static::saving(function (Salary $salary) {
+            $salary->is_employee_current_salary ??= true;
+            if ($salary->is_employee_current_salary) {
+                Salary::query()
+                    ->where('employee_id', $salary->employee_id)
+                    ->update(['is_employee_current_salary' => false]);
+            }
+        });
+    }
 
     public function employee(): BelongsTo
     {

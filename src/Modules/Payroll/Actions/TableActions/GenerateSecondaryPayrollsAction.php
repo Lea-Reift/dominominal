@@ -57,7 +57,7 @@ class GenerateSecondaryPayrollsAction
                     fn (Payroll $payroll) => Action::make("got_to_{$payroll->period->day}_payroll")
                         ->label("Ir a la nómina del {$payroll->period->day}")
                         ->button()
-                        ->url(ViewPayroll::getUrl(['record' => $payroll->id]))
+                        ->url(ViewPayroll::getUrl(['record' => $payroll->id, 'company' => $payroll->company_id]))
                 );
 
                 Notification::make()

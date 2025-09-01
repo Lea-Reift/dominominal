@@ -80,7 +80,6 @@ class SalaryAdjustmentParser
             // Add custom and default variables
             ->merge($defaultVariables)
             ->merge($customVariables)
-
             // Sort variable in parsing order
             ->pipe(fn (Collection $adjustments) => $this->sortVariables($adjustments))
 

@@ -68,12 +68,12 @@ class Employee extends Model
 
     public function salary(): HasOne
     {
-        return $this->hasOne(Salary::class)->latestOfMany();
+        return $this->hasOne(Salary::class)->where('is_employee_current_salary', true);
     }
 
     public function salaries(): HasMany
     {
-        return $this->hasMany(Salary::class);
+        return $this->hasMany(Salary::class)->latest();
     }
 
     public function fullName(): Attribute

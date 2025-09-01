@@ -59,7 +59,7 @@ class AddEmployeeAction
             ->contained(false)
             ->tabs([
                 $this->addEmployeesTab,
-                $this->createEmployeeTab,
+                // $this->createEmployeeTab,
                 $this->importRawEmployeeTab
             ])
             ->extraAttributes([
@@ -78,7 +78,7 @@ class AddEmployeeAction
             ->action(function (array $data, Action $action, ViewPayroll $livewire) {
                 $method = match ($this->activeTab()) {
                     $this->addEmployeesTab->getKey(false) => $this->addEmployeesAction(...),
-                    $this->createEmployeeTab->getKey(false) => $this->createEmployeeAction(...),
+                    // $this->createEmployeeTab->getKey(false) => $this->createEmployeeAction(...),
                     $this->importRawEmployeeTab->getKey(false) => $this->importRawEmployeesAction(...),
                     default => throw new InvalidArgumentException('Accion o pestaña invalida'),
                 };
