@@ -15,8 +15,6 @@ use App\Modules\Payroll\Models\Payroll;
 use App\Modules\Payroll\Models\PayrollDetail;
 use Illuminate\Support\Collection;
 use App\Modules\Company\Models\Employee;
-use Closure;
-use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
 use App\Modules\Payroll\Models\SalaryAdjustment;
 use Filament\Forms\Components\Textarea;
@@ -31,6 +29,8 @@ use App\Support\ValueObjects\FullName;
 use Illuminate\Support\Number;
 use InvalidArgumentException;
 use App\Modules\Company\Models\Salary;
+use App\Modules\Company\Resources\Payrolls\Pages\ViewPayroll;
+use Filament\Forms\Components\CheckboxList;
 
 class AddEmployeeAction
 {
@@ -42,7 +42,7 @@ class AddEmployeeAction
 
     protected string $formTabsId = 'add-employees-form-tabs';
 
-    protected Tab $addEmployeeTab;
+    protected Tab $createEmployeeTab;
     protected Tab $addEmployeesTab;
     protected Tab $importRawEmployeeTab;
 
@@ -51,7 +51,7 @@ class AddEmployeeAction
     public function __construct(
         protected Payroll $record,
     ) {
-        $this->addEmployeeTab = $this->createEmployeeTab();
+        $this->createEmployeeTab = $this->createEmployeeTab();
         $this->addEmployeesTab = $this->addEmployeesTab();
         $this->importRawEmployeeTab = $this->importRawEmployeeTab();
 
@@ -59,7 +59,7 @@ class AddEmployeeAction
             ->contained(false)
             ->tabs([
                 $this->addEmployeesTab,
-                $this->addEmployeeTab,
+                $this->createEmployeeTab,
                 $this->importRawEmployeeTab
             ])
             ->extraAttributes([
@@ -75,11 +75,19 @@ class AddEmployeeAction
                 $this->tabs
             ])
             ->databaseTransaction()
-            ->action(fn (array $data, Action $action) => match ($this->activeTab()) {
-                $this->addEmployeeTab->getKey(false) => $this->addEmployeesAction($data, $action),
-                $this->addEmployeesTab->getKey(false) => $this->createEmployeeAction($data, $action),
-                $this->importRawEmployeeTab->getKey(false) => $this->importRawEmployeesAction($data, $action),
-                default => throw new InvalidArgumentException('Accion o pestaña invalida'),
+            ->action(function (array $data, Action $action, ViewPayroll $livewire) {
+                $method = match ($this->activeTab()) {
+                    $this->addEmployeesTab->getKey(false) => $this->addEmployeesAction(...),
+                    $this->createEmployeeTab->getKey(false) => $this->createEmployeeAction(...),
+                    $this->importRawEmployeeTab->getKey(false) => $this->importRawEmployeesAction(...),
+                    default => throw new InvalidArgumentException('Accion o pestaña invalida'),
+                };
+
+                $method($data, $action);
+
+                $this->record->refresh();
+                $livewire->dispatch('updatePayrollData');
+                $livewire->refreshFormData(['details']);
             })
             ->successNotification(
                 Notification::make()
@@ -104,7 +112,7 @@ class AddEmployeeAction
         return match (true) {
             isset($page->mountedActions[0]['activeTab']) => $page->mountedActions[0]['activeTab'],
             $this->addEmployeesTab->isVisible() => $this->addEmployeesTab->getKey(false),
-            default => $this->addEmployeeTab->getKey(false)
+            default => $this->createEmployeeTab->getKey(false)
         };
     }
 
@@ -127,7 +135,6 @@ class AddEmployeeAction
                             ->get()
                             ->pluck('full_name', 'id')
                     )
-                    ->bulkToggleable()
                     ->searchable()
                     ->columns(2)
                     ->columnSpanFull(),
@@ -142,6 +149,7 @@ class AddEmployeeAction
             ->key($key)
             ->columns(2)
             ->disabled(fn () => $this->activeTab() !== $key)
+            ->dehydrated(fn (Tab $component) => !$component->isDisabled())
             ->schema(fn (Tab $component) => $this->fields(enabled: ! $component->isDisabled(), nested: true));
     }
 
@@ -163,7 +171,7 @@ class AddEmployeeAction
                             ->dehydrated(false)
                             ->hiddenLabel(true)
                             ->live()
-                            ->afterStateUpdated(Closure::fromCallable([$this, 'parseEmployeeRows']))
+                            ->afterStateUpdated($this->parseEmployeeRows(...))
                             ->rows(10)
                     ])
                     ->extraAttributes([
@@ -289,7 +297,7 @@ class AddEmployeeAction
 
     protected function addEmployeesAction(array $data, Action $action): void
     {
-        $payrollDetails = Employee::query()->whereIn('id', $data['employees'])->with('salary')->get(['id'])
+        $payrollDetails = Employee::query()->whereIn('id', $data['employees'])->with('salary')->get()
             ->map(fn (Employee $employee) => new PayrollDetail([
                 'employee_id' => $employee->id,
                 'salary_id' => $employee->salary->id,
