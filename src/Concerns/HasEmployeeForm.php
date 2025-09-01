@@ -41,11 +41,10 @@ trait HasEmployeeForm
                 ->inline()
                 ->live()
                 ->required($enabled)
-                ->default(SalaryDistributionFormatEnum::PERCENTAGE->value)
+                ->default(SalaryDistributionFormatEnum::PERCENTAGE)
                 ->helperText(fn (SalaryDistributionFormatEnum $state) => match ($state) {
                     SalaryDistributionFormatEnum::ABSOLUTE => 'El valor ingresado será restado del total del salario',
                     SalaryDistributionFormatEnum::PERCENTAGE => 'El valor ingresado se calculará al total del salario',
-                    default => '',
                 }),
             TextInput::make($salaryFieldNames['distribution_value'])
                 ->label('Valor a restar de la primera quincena')
@@ -56,9 +55,8 @@ trait HasEmployeeForm
                 ->default('50.00')
                 ->required($enabled)
                 ->prefix(fn (Get $get) => match ($get($salaryFieldNames['distribution_format'])) {
-                    SalaryDistributionFormatEnum::ABSOLUTE => '0.0',
                     SalaryDistributionFormatEnum::PERCENTAGE => '%',
-                    default => '',
+                    default => '0.0',
                 })
                 ->maxValue(fn (Get $get) => match ($get($salaryFieldNames['distribution_format'])) {
                     SalaryDistributionFormatEnum::ABSOLUTE => match (true) {

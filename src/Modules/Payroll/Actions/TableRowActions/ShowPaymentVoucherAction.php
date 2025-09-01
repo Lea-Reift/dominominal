@@ -57,7 +57,9 @@ class ShowPaymentVoucherAction
 
     protected function getDetailFromArguments(array $arguments): PayrollDetail
     {
-        return $this->payroll->details->findOrFail(abs(parse_float($arguments['item'])));
+        /** @var PayrollDetail $detail */
+        $detail = $this->payroll->details->findOrFail(abs(parse_float($arguments['item'])));
+        return $detail;
     }
 
     public static function make(Payroll $payroll): Action

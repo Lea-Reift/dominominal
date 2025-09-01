@@ -8,6 +8,7 @@ use App\Modules\Company\Resources\Companies\Widgets\PayrollTotalWidget;
 use App\Modules\Company\Resources\Payrolls\PayrollResource;
 use App\Modules\Payroll\Actions\HeaderActions\EditPayrollAction;
 use App\Modules\Payroll\Exports\PayrollExport;
+use App\Modules\Payroll\Models\Payroll;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Resources\Pages\ViewRecord;
@@ -35,6 +36,7 @@ class ViewPayroll extends ViewRecord
                     Action::make('excel_export')
                         ->label('Exportar a Excel')
                         ->action(function () {
+                            /** @var Payroll $payroll */
                             $payroll = $this->record;
                             $filenameDate = $payroll->period;
 
@@ -48,7 +50,11 @@ class ViewPayroll extends ViewRecord
                         }),
                     Action::make('pdf_export')
                         ->label('Exportar a PDF')
-                        ->url(fn () => $this->getUrl(['record' => $this->record->id, 'company' => $this->record->company_id]) . '/export/pdf')
+                        ->url(function () {
+                            /** @var Payroll $record */
+                            $record = $this->record;
+                            return $this->getUrl(['record' => $record->id, 'company' => $record->company_id]) . '/export/pdf';
+                        })
                         ->openUrlInNewTab(),
                 ]),
         ];
@@ -56,7 +62,9 @@ class ViewPayroll extends ViewRecord
 
     public function getTitle(): string
     {
-        return "Nómina {$this->getHeading()} de {$this->record->company->name}";
+        /** @var Payroll $record */
+        $record = $this->record;
+        return "Nómina {$this->getHeading()} de {$record->company->name}";
     }
 
     public function getRecordTitle(): string
@@ -66,11 +74,13 @@ class ViewPayroll extends ViewRecord
 
     public function getHeading(): string
     {
-        $format = $this->record->type->isMonthly()
+        /** @var Payroll $record */
+        $record = $this->record;
+        $format = $record->type->isMonthly()
             ? 'F \d\e\l Y'
             : 'd \d\e F \d\e\l Y';
 
-        return Str::headline($this->record->period->translatedFormat($format));
+        return Str::headline($record->period->translatedFormat($format));
     }
 
     protected function getFooterWidgets(): array

@@ -54,6 +54,9 @@ class PayrollTotalWidget extends StatsOverviewWidget
             );
     }
 
+    /**
+     * @return array<Stat|Section>
+     */
     protected function getStats(): array
     {
         $totalRowDisplay = $this->record->display->totals;

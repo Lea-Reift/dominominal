@@ -18,7 +18,7 @@ use App\Modules\Company\Models\Employee;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Modules\Payroll\Models\SalaryAdjustment;
-use App\Modules\Payroll\Resources\Payrolls\Pages\PayrollDetailsManager;
+use App\Modules\Company\Resources\Payrolls\Pages\ViewPayroll;
 
 class GenerateSecondaryPayrollsAction
 {
@@ -57,7 +57,7 @@ class GenerateSecondaryPayrollsAction
                     fn (Payroll $payroll) => Action::make("got_to_{$payroll->period->day}_payroll")
                         ->label("Ir a la nómina del {$payroll->period->day}")
                         ->button()
-                        ->url(PayrollDetailsManager::getUrl(['record' => $payroll->id]))
+                        ->url(ViewPayroll::getUrl(['record' => $payroll->id]))
                 );
 
                 Notification::make()

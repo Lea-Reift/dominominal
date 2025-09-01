@@ -7,6 +7,7 @@ namespace App\Modules\Company\Resources\Payrolls\Schemas;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Fieldset;
+use App\Modules\Company\Models\Employee;
 use App\Modules\Payroll\Models\Payroll;
 use Filament\Forms\Components\Select;
 use App\Enums\SalaryTypeEnum;
@@ -170,7 +171,7 @@ class PayrollForm
                     $this->payrollSection(),
                     Section::make()
                         ->visibleOn(Operation::View)
-                        ->disabledOn([Operation::Create, Operation::Edit])
+                        ->disabledOn([Operation::Create->value, Operation::Edit->value])
                         ->schema([
                             Repeater::make('details')
                                 ->label('Empleados')
@@ -178,7 +179,7 @@ class PayrollForm
                                     GenerateSecondaryPayrollsAction::make($this->payroll)->button(),
                                     AddEmployeeAction::make($this->payroll)->button(),
                                 ])
-                                ->disabledOn([Operation::Create, Operation::Edit])
+                                ->disabledOn([Operation::Create->value, Operation::Edit->value])
                                 ->relationship(modifyQueryUsing: fn (EloquentBuilder $query) => $query->with('editableSalaryAdjustmentValues'))
                                 ->addable(false)
                                 ->reorderable()
@@ -191,7 +192,9 @@ class PayrollForm
                                         ->action(function (mixed $arguments, Repeater $component, ViewPayroll $livewire) {
                                             $detailId = Str::after($arguments['item'], '-');
                                             $items = $component->getRawState();
-                                            $payrollDetail = $component->getModelInstance()->details->findOrFail($detailId);
+                                            /** @var Payroll $payroll */
+                                            $payroll = $component->getModelInstance();
+                                            $payrollDetail = $payroll->details->findOrFail($detailId);
                                             unset($items[$arguments['item']]);
 
                                             $component->rawState($items);
@@ -211,7 +214,11 @@ class PayrollForm
                                 ->extraItemActions([
                                     ShowPaymentVoucherAction::make($this->payroll)
                                 ])
-                                ->itemLabel(fn (array $state, Payroll $record) => $record->employees->findOrFail($state['employee_id'])->full_name)
+                                ->itemLabel(function (array $state, Payroll $record) {
+                                    /** @var Employee $employee */
+                                    $employee = $record->employees->findOrFail($state['employee_id']);
+                                    return $employee->full_name;
+                                })
                                 ->schema([
                                     Section::make('Información')
                                         ->columnSpan(5)
@@ -248,6 +255,7 @@ class PayrollForm
                                                     $detailIndex = array_find($pathParts, fn (string $part) => str_contains($part, 'record-'));
 
                                                     $payrollDetailId = $livewire->data['details'][$detailIndex]['id'];
+                                                    /** @var PayrollDetail $payrollDetail */
                                                     $payrollDetail = PayrollDetail::query()->findOrFail($payrollDetailId);
 
                                                     $payrollDetail->salaryAdjustments()->sync($state);
@@ -306,7 +314,7 @@ class PayrollForm
                                                                 ? $state
                                                                 : $record->payrollDetail->display->salaryAdjustments->get($record->salaryAdjustment->parser_alias, 0);
 
-                                                            return Number::format(parse_float((string)$value) ?? 0, 2);
+                                                            return Number::format(parse_float((string)$value), 2);
                                                         })
                                                         ->placeholder('Ingrese el valor')
                                                         ->afterStateUpdated(function (?string $state, PayrollDetailSalaryAdjustment $record, ViewPayroll $livewire) {

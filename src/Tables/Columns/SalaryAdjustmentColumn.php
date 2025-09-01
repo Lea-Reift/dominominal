@@ -68,6 +68,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
     {
         [, $adjustmentId, $payrollId] = explode('.', $this->name);
 
+        /** @var SalaryAdjustment $adjustment */
         $adjustment = SalaryAdjustment::query()->findOrFail($adjustmentId);
         $payroll = Payroll::query()->with(['biweeklyPayrolls' => ['details' => ['salaryAdjustments']]])->findOrFail($payrollId);
         $this
