@@ -127,6 +127,10 @@ class AddEmployeeAction
             ->schema([
                 CheckboxList::make('employees')
                     ->hiddenLabel()
+                    ->bulkToggleable()
+                    ->searchable()
+                    ->columns(2)
+                    ->columnSpanFull()
                     ->dehydrated(fn (\Filament\Schemas\Components\Component $component) => $component->getContainer()->getParentComponent()->isDisabled())
                     ->disabled(fn (\Filament\Schemas\Components\Component $component) => $component->getContainer()->getParentComponent()->isDisabled())
                     ->options(
@@ -134,10 +138,7 @@ class AddEmployeeAction
                             ->whereNotIn('id', $this->record->employees()->select('employees.id'))
                             ->get()
                             ->pluck('full_name', 'id')
-                    )
-                    ->searchable()
-                    ->columns(2)
-                    ->columnSpanFull(),
+                    ),
             ]);
     }
 
