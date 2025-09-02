@@ -175,7 +175,7 @@ class CompileAppCommand extends Command
 
         if ($upgradeVersion) {
             $this->updateAppSignature();
-            $this->addGitTag();
+            $this->addGitRelease();
         }
 
         $this->info('Programa compilado con exito!!!!');
@@ -233,7 +233,7 @@ class CompileAppCommand extends Command
         foreach ($files as $file) {
             $content = file_get_contents($file);
             $newContent = str_replace($currentVersion, $newVersion, $content);
-            // file_put_contents($file, $newContent);
+            file_put_contents($file, $newContent);
         }
     }
 
@@ -256,7 +256,7 @@ class CompileAppCommand extends Command
         file_put_contents($versionFilePath, json_encode($versionData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
-    protected function addGitTag(): void
+    protected function addGitRelease(): void
     {
         $currentVersion = $this->getCurrentVersion();
 
@@ -269,6 +269,7 @@ class CompileAppCommand extends Command
             'git push origin main',
             'git tag -a ' . $tag . ' -m ""',
             'git push origin ' . $tag,
+            'gh release create '. $tag . ' --latest --generate-notes ./src-tauri/target/release/bundle/nsis/Dominominal_' . $currentVersion . '_x64-setup.exe',
         ];
 
         foreach ($commands as $command) {
