@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Filament\Widgets\SystemVersionWidget;
 use Filament\Pages\Dashboard;
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Filament\Support\Enums\Width;
 use Exception;
 use App\Modules\Payroll\Models\PayrollDetail;
@@ -65,8 +64,7 @@ class MainPanelProvider extends PanelProvider
                 Js::make('prefetch', resource_path('js/prefetch.js')),
             ])
             ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
+                SystemVersionWidget::class,
             ])
             ->topNavigation()
             ->middleware([
