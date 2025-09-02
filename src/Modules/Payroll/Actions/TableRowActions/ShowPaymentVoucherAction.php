@@ -77,7 +77,7 @@ class ShowPaymentVoucherAction
         $record = $this->getDetailFromArguments($arguments);
         $this->checkEmailConfiguration();
 
-        $employeeEmail = $record->employee->email ?? $data['employee_email'];
+        $employeeEmail = $data['employee_email'];
         $pdfOutput = $record->display->renderPDF();
 
         $mailSubject = "Volante de pago {$record->employee->full_name} {$record->payroll->period->format('d/m/Y')}";

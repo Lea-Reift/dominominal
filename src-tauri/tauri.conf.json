@@ -1,7 +1,7 @@
 {
     "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
     "productName": "Dominominal",
-    "version": "0.1.13",
+    "version": "0.1.14",
     "identifier": "com.lea-reift.dominominal",
     "build": {
         "frontendDist": "./resources/app/public",
