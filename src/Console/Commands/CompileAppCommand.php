@@ -233,7 +233,7 @@ class CompileAppCommand extends Command
         foreach ($files as $file) {
             $content = file_get_contents($file);
             $newContent = str_replace($currentVersion, $newVersion, $content);
-            file_put_contents($file, $newContent);
+            // file_put_contents($file, $newContent);
         }
     }
 
