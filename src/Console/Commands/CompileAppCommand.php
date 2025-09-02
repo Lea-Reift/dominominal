@@ -16,7 +16,7 @@ class CompileAppCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'compile {--a|assets} {--p|project} {--t|tauri} {--d|debug}';
+    protected $signature = 'compile {--a|assets} {--p|project} {--t|tauri} {--d|debug} {--x|no-upgrade}';
 
     /**
      * The console command description.
@@ -30,7 +30,6 @@ class CompileAppCommand extends Command
      */
     public function handle()
     {
-        $upgradeVersion = false;
         $this->info('Compilando app para distribución...');
 
         $tauriResourcesAppPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, base_path('src-tauri/resources/app'));
@@ -49,6 +48,7 @@ class CompileAppCommand extends Command
             'artisan',
             'composer.json',
             'composer.lock',
+            'dominominal.version.json',
         ];
 
         $projectFilesConcant = join(',', $projectProductionFiles);
@@ -97,27 +97,17 @@ class CompileAppCommand extends Command
 
         if ($this->option('tauri')) {
             $commands = [...$commands, ...$tauriCompileCommand];
-
-            if (!$this->option('debug')) {
-                $upgradeVersion = true;
-            }
         }
 
         if (empty($commands)) {
-            $upgradeVersion = true;
-
             $commands = [
                 ...$assetsCommands,
                 ...$migrateProjectCommands,
                 ...$tauriCompileCommand,
             ];
-
-            if (!$this->option('debug')) {
-                $upgradeVersion = true;
-            }
         }
 
-        if ($upgradeVersion) {
+        if (!$this->option('no-upgrade')) {
             $this->upgradeAppVersion();
         }
 
@@ -173,7 +163,7 @@ class CompileAppCommand extends Command
 
         $this->newLine();
 
-        if ($upgradeVersion) {
+        if (!$this->option('no-upgrade')) {
             $this->updateAppSignature();
             $this->addGitRelease();
         }
