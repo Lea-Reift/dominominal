@@ -220,6 +220,6 @@ class CompileAppCommand extends Command implements Isolatable
                 });
         }
 
-        $this->info('Tag creada con exito');
+        $this->info('Release creado con exito');
     }
 }
