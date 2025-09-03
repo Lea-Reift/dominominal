@@ -6,155 +6,107 @@ namespace App\Console\Commands;
 
 use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Facades\Process;
+use App\Support\ValueObjects\Command as CommandVO;
+use Illuminate\Contracts\Console\Isolatable;
+use Illuminate\Support\Collection;
+use RuntimeException;
 
-class CompileAppCommand extends Command
+class CompileAppCommand extends Command implements Isolatable
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'compile {--a|assets} {--p|project} {--t|tauri} {--d|debug} {--x|no-upgrade}';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Command description';
-
-    /**
-     * Execute the console command.
-     */
+    protected bool $withGenerationOptions = false;
     public function handle()
     {
         $this->info('Compilando app para distribución...');
 
         $tauriResourcesAppPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, base_path('src-tauri/resources/app'));
 
-        $tauriDebugAppPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, base_path('src-tauri/target/debug/resources/app'));
-        $tauriReleaseAppPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, base_path('src-tauri/target/release/resources/app'));
-
-        $projectProductionFiles = [
-            'bootstrap',
-            'config',
-            'database',
-            'public',
-            'resources',
-            'routes',
-            'src',
-            'artisan',
-            'composer.json',
-            'composer.lock',
-            'dominominal.version.json',
-        ];
-
-        $projectFilesConcant = join(',', $projectProductionFiles);
-
         $envProdPath = base_path('.env.production');
 
-        $commands = [];
-        $assetsCommands = [
-            'npm_build' => 'npm run build',
-            'filament_assets' => 'php artisan filament:assets',
-            'generate_splash' => 'php artisan generate-splash',
-        ];
-
-        $migrateProjectCommands = [
-            'clear_compilation_assets' => 'php artisan compile:clear',
-            'set_env' => "cp {$envProdPath} {$tauriResourcesAppPath}/.env",
-            'copy_project' => "cp -r ./{{$projectFilesConcant}} {$tauriResourcesAppPath}",
-            'add_storage_folders' => "mkdir {$tauriResourcesAppPath}\\storage\\framework\\sessions {$tauriResourcesAppPath}\\storage\\framework\\cache {$tauriResourcesAppPath}\\storage\\framework\\views",
-            'remove_dev_database' => 'rm -f ./database/dominominal.sqlite',
-            'composer_install' => 'composer install --optimize-autoloader --no-dev -a',
-            'copy_project_to_debug' => "xcopy {$tauriResourcesAppPath} {$tauriDebugAppPath} /h /i /c /k /e /r /y",
-            'copy_project_to_release' => "xcopy {$tauriResourcesAppPath} {$tauriReleaseAppPath} /h /i /c /k /e /r /y",
-        ];
+        $commands = collect();
 
         $compilationKeys = config('app.compilation');
         $tauriCompilationFlags = $this->option('debug') ? '--debug --no-bundle' : '';
 
+        $this->withGenerationOptions = $this->option('assets') || $this->option('project') || $this->option('tauri');
+        $basePath = base_path();
+
+        $assetsCommands = [
+            new CommandVO('npm run build'),
+            new CommandVO('php artisan filament:assets'),
+            new CommandVO('php artisan generate-splash'),
+        ];
+
+        $projectProductionFiles = collect()
+            ->merge([
+                'bootstrap',
+                'config',
+                'database',
+                'resources',
+                'routes',
+                'src',
+                'artisan',
+                'composer.json',
+                'composer.lock',
+                'storage',
+                'dominominal.version.json',
+            ])
+            ->map(fn (string $path) => "'{$path}'")
+            ->join(',');
+
+        $migrateProjectCommands = [
+            new CommandVO('php artisan compile:clear'),
+            new CommandVO("git clone --depth=1 file://{$basePath} {$tauriResourcesAppPath}"),
+            new CommandVO(<<<COMMAND
+            powershell -NoProfile -Command "Get-ChildItem -Force | Where-Object { @({$projectProductionFiles}) -notcontains \$_.Name } | Remove-Item -Recurse -Force"
+            COMMAND, $tauriResourcesAppPath),
+            new CommandVO("cp {$envProdPath} {$tauriResourcesAppPath}/.env"),
+            new CommandVO("cp -r {$basePath}/public {$tauriResourcesAppPath}/public"),
+            new CommandVO('composer install --optimize-autoloader --no-dev -a', $tauriResourcesAppPath),
+        ];
+
         $tauriCompileCommand = [
-            'tauri_build' => <<<COMMAND
+            new CommandVO(<<<COMMAND
             powershell -NoProfile -ExecutionPolicy Bypass -Command "& {
                 \$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = '{$compilationKeys['password']}';
                 \$env:TAURI_SIGNING_PRIVATE_KEY = '{$compilationKeys['private_key']}';
                 npx tauri build {$tauriCompilationFlags}
             }"
-            COMMAND,
+            COMMAND),
         ];
 
-
-        if ($this->option('assets')) {
-            $commands = [...$commands, ...$assetsCommands];
-        }
-
-        if ($this->option('project')) {
-            $commands = [...$commands, ...$migrateProjectCommands];
-        }
-
-        if ($this->option('tauri')) {
-            $commands = [...$commands, ...$tauriCompileCommand];
-        }
-
-        if (empty($commands)) {
-            $commands = [
-                ...$assetsCommands,
-                ...$migrateProjectCommands,
-                ...$tauriCompileCommand,
-            ];
-        }
-
-        if (!$this->option('no-upgrade')) {
-            $this->upgradeAppVersion();
-        }
-
-        if (empty(array_diff_assoc($commands, $assetsCommands))) {
-            $commands['copy_to_debug_target'] = "rm -rf {$tauriDebugAppPath}/public && " .
-                "cp -r ./public {$tauriDebugAppPath}/public";
-        }
-
-        $originalPathCommands = [
-            'delete_dir',
-            'create_dir',
-            'tauri_build',
-            'copy_project',
-            'generate_splash',
-            'clear_compilation_assets',
-            'copy_to_debug_target',
-            'filament_assets',
-        ];
+        $commands = $commands
+            ->when($this->option('assets'), fn (Collection $collection) => $collection->merge($assetsCommands))
+            ->when($this->option('project'), fn (Collection $collection) => $collection->merge($migrateProjectCommands))
+            ->when($this->option('tauri'), fn (Collection $collection) => $collection->merge($tauriCompileCommand))
+            ->unless(
+                $this->withGenerationOptions,
+                fn (Collection $collection) => $collection
+                    ->merge($assetsCommands)
+                    ->merge($migrateProjectCommands)
+                    ->merge($tauriCompileCommand)
+            );
 
         $productionEnvVars = $this->parseEnvFile(base_path('.env.production'));
+        $outputCallback = function (string $type, string $output) {
+            $this->line($output);
+        };
 
         try {
-
-            $basePath = base_path();
-            foreach ($commands as $commandKey => $command) {
+            $commands->each(function (CommandVO $command) use ($productionEnvVars, $outputCallback) {
                 $this->newLine();
-                $this->info("Ejecutando: {$command}...");
+                $this->info("Ejecutando: {$command->command}...");
                 $this->newLine();
 
-                $process = Process::timeout(0)
-                    ->unless(
-                        in_array($commandKey, $originalPathCommands),
-                        fn (PendingProcess $process) => $process->path($tauriResourcesAppPath)
-                    )
-                    ->when(
-                        in_array($commandKey, $originalPathCommands),
-                        fn (PendingProcess $process) => $process->path($basePath)
-                    )
+                $process = Process::forever()
+                    ->path($command->path)
                     ->env($productionEnvVars)
-                    ->run($command, function (string $type, string $output) {
-                        $this->line($output);
-                    });
+                    ->run($command->command, $outputCallback);
 
-                if ($process->failed()) {
-                    return Command::FAILURE;
-                }
-            }
+                throw_if($process->failed(), RuntimeException::class, $command->command);
+            });
         } catch (Exception $e) {
             $this->newLine();
             $this->error("El proceso {$e->getMessage()} falló");
@@ -163,7 +115,7 @@ class CompileAppCommand extends Command
 
         $this->newLine();
 
-        if (!$this->option('no-upgrade')) {
+        if (!$this->option('no-upgrade') && !$this->withGenerationOptions) {
             $this->updateAppSignature();
             $this->addGitRelease();
         }
@@ -258,7 +210,7 @@ class CompileAppCommand extends Command
             'git push origin main',
             'git tag -a ' . $tag . ' -m ""',
             'git push origin ' . $tag,
-            'gh release create '. $tag . ' --latest --generate-notes ./src-tauri/target/release/bundle/nsis/Dominominal_' . $currentVersion . '_x64-setup.exe',
+            'gh release create ' . $tag . ' --latest --generate-notes ./src-tauri/target/release/bundle/nsis/Dominominal_' . $currentVersion . '_x64-setup.exe',
         ];
 
         foreach ($commands as $command) {
@@ -268,6 +220,6 @@ class CompileAppCommand extends Command
                 });
         }
 
-        $this->info('Tag creada con exito');
+        $this->info('Release creado con exito');
     }
 }
