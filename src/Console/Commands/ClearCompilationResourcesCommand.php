@@ -36,9 +36,7 @@ class ClearCompilationResourcesCommand extends Command
         foreach ($directories as $directory) {
             $directory = base_path($directory);
             if (is_dir($directory)) {
-
                 exec("rm -rf {$directory}");
-                mkdir($directory);
             }
         }
 
