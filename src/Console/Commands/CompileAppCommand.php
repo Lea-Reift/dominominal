@@ -77,6 +77,10 @@ class CompileAppCommand extends Command implements Isolatable
             COMMAND),
         ];
 
+        if (!$this->option('no-upgrade') && !$this->withGenerationOptions) {
+            $this->upgradeAppVersion();
+        }
+
         $commands = $commands
             ->when($this->option('assets'), fn (Collection $collection) => $collection->merge($assetsCommands))
             ->when($this->option('project'), fn (Collection $collection) => $collection->merge($migrateProjectCommands))
