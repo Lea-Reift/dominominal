@@ -31,7 +31,7 @@ class CompileAppCommand extends Command implements Isolatable
         $tauriCompilationFlags = $this->option('debug') ? '--debug --no-bundle' : '';
 
         $this->withGenerationOptions = $this->option('assets') || $this->option('project') || $this->option('tauri');
-        $baseDir = base_path();
+        $basePath = base_path();
 
         $assetsCommands = [
             new CommandVO('npm run build'),
@@ -39,10 +39,31 @@ class CompileAppCommand extends Command implements Isolatable
             new CommandVO('php artisan generate-splash'),
         ];
 
+        $projectProductionFiles = collect()
+            ->merge([
+                'bootstrap',
+                'config',
+                'database',
+                'resources',
+                'routes',
+                'src',
+                'artisan',
+                'composer.json',
+                'composer.lock',
+                'storage',
+                'dominominal.version.json',
+            ])
+            ->map(fn (string $path) => "'{$path}'")
+            ->join(',');
+
         $migrateProjectCommands = [
             new CommandVO('php artisan compile:clear'),
-            new CommandVO("git clone --depth=1 file://{$baseDir} {$tauriResourcesAppPath}"),
+            new CommandVO("git clone --depth=1 file://{$basePath} {$tauriResourcesAppPath}"),
+            new CommandVO(<<<COMMAND
+            powershell -NoProfile -Command "Get-ChildItem -Force | Where-Object { @({$projectProductionFiles}) -notcontains \$_.Name } | Remove-Item -Recurse -Force"
+            COMMAND, $tauriResourcesAppPath),
             new CommandVO("cp {$envProdPath} {$tauriResourcesAppPath}/.env"),
+            new CommandVO("cp -r {$basePath}/public {$tauriResourcesAppPath}/public"),
             new CommandVO('composer install --optimize-autoloader --no-dev -a', $tauriResourcesAppPath),
         ];
 
@@ -86,7 +107,6 @@ class CompileAppCommand extends Command implements Isolatable
 
                 throw_if($process->failed(), RuntimeException::class, $command->command);
             });
-
         } catch (Exception $e) {
             $this->newLine();
             $this->error("El proceso {$e->getMessage()} falló");
@@ -190,7 +210,7 @@ class CompileAppCommand extends Command implements Isolatable
             'git push origin main',
             'git tag -a ' . $tag . ' -m ""',
             'git push origin ' . $tag,
-            'gh release create '. $tag . ' --latest --generate-notes ./src-tauri/target/release/bundle/nsis/Dominominal_' . $currentVersion . '_x64-setup.exe',
+            'gh release create ' . $tag . ' --latest --generate-notes ./src-tauri/target/release/bundle/nsis/Dominominal_' . $currentVersion . '_x64-setup.exe',
         ];
 
         foreach ($commands as $command) {
