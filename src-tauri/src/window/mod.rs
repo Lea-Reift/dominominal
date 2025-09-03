@@ -13,11 +13,6 @@ pub async fn set_complete() -> Result<(), ()> {
     splash_window.close().unwrap();
     main_window.show().unwrap();
     main_window.set_focus().unwrap();
-
-    tauri::async_runtime::spawn(async move {
-        crate::updater::update().await.expect("error updating app");
-    });
-    
     Ok(())
 }
 

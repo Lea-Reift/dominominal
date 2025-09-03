@@ -41,6 +41,11 @@ pub fn run() {
                 )?;
             }
             init_app_handle(app.handle().clone());
+
+            tauri::async_runtime::block_on(async move {
+                crate::updater::update().await.expect("error updating app");
+            });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![window::set_complete, window::reset_retry_count, window::start_window_load_monitoring, window::store_session_cookies])
