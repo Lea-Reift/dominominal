@@ -87,14 +87,11 @@ pub fn run() {
                 .path()
                 .resource_dir()
                 .expect("Fail getting path")
-                .join("resources/app/storage");
+                .join("resources/app/bootstrap/cache/config.php");
 
             if !std::fs::exists(storage_path).unwrap_or(false) {
                 // Run comprehensive optimization commands
                 let optimization_commands = vec![
-                    ["config:cache"],
-                    ["route:cache"],
-                    ["view:cache"],
                     ["optimize"],
                     ["filament:optimize"],
                 ];
