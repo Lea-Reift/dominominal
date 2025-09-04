@@ -66,7 +66,7 @@ class CompileAppCommand extends Command implements Isolatable
             powershell -NoProfile -Command "Get-ChildItem -Force | Where-Object { @({$projectProductionFiles}) -notcontains \$_.Name } | Remove-Item -Recurse -Force"
             COMMAND, $tauriResourcesAppPath),
             new CommandVO("cp {$envProdPath} {$tauriResourcesAppPath}/.env"),
-            new CommandVO("cp {$basePath}/dominominal.version.json' {$tauriResourcesAppPath}/dominominal.version.json'"),
+            new CommandVO("cp {$basePath}/dominominal.version.json {$tauriResourcesAppPath}/dominominal.version.json"),
             new CommandVO("cp -r {$basePath}/public {$tauriResourcesAppPath}/public"),
             new CommandVO('composer install --optimize-autoloader --no-dev -a', $tauriResourcesAppPath),
         ];
