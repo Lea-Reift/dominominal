@@ -19,3 +19,12 @@ Route::prefix('main/companies/{company}/payrolls/{payroll}/details/export')
                 return $payroll->display->streamPDF();
             });
     });
+
+Route::prefix('main/companies/{company}/payrolls/{payroll}/details/{detail}/export')
+    ->name('filament.main.payrolls.details.show.export.')
+    ->group(function () {
+        Route::name('pdf')
+            ->get('pdf', function (Company $company, Payroll $payroll, PayrollDetail $detail) {
+                return $detail->display->streamPDF();
+            });
+    });
