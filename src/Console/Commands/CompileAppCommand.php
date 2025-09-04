@@ -33,6 +33,10 @@ class CompileAppCommand extends Command implements Isolatable
         $this->withGenerationOptions = $this->option('assets') || $this->option('project') || $this->option('tauri');
         $basePath = base_path();
 
+        if (!$this->option('no-upgrade') && !$this->withGenerationOptions) {
+            $this->upgradeAppVersion();
+        }
+
         $assetsCommands = [
             new CommandVO('npm run build'),
             new CommandVO('php artisan filament:assets'),
@@ -51,7 +55,6 @@ class CompileAppCommand extends Command implements Isolatable
                 'composer.json',
                 'composer.lock',
                 'storage',
-                'dominominal.version.json',
             ])
             ->map(fn (string $path) => "'{$path}'")
             ->join(',');
@@ -63,6 +66,7 @@ class CompileAppCommand extends Command implements Isolatable
             powershell -NoProfile -Command "Get-ChildItem -Force | Where-Object { @({$projectProductionFiles}) -notcontains \$_.Name } | Remove-Item -Recurse -Force"
             COMMAND, $tauriResourcesAppPath),
             new CommandVO("cp {$envProdPath} {$tauriResourcesAppPath}/.env"),
+            new CommandVO("cp {$basePath}/dominominal.version.json {$tauriResourcesAppPath}/dominominal.version.json"),
             new CommandVO("cp -r {$basePath}/public {$tauriResourcesAppPath}/public"),
             new CommandVO('composer install --optimize-autoloader --no-dev -a', $tauriResourcesAppPath),
         ];
@@ -76,10 +80,6 @@ class CompileAppCommand extends Command implements Isolatable
             }"
             COMMAND),
         ];
-
-        if (!$this->option('no-upgrade') && !$this->withGenerationOptions) {
-            $this->upgradeAppVersion();
-        }
 
         $commands = $commands
             ->when($this->option('assets'), fn (Collection $collection) => $collection->merge($assetsCommands))

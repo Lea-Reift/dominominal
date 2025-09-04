@@ -3,9 +3,11 @@ use std::sync::{Arc, Mutex, LazyLock};
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use tokio::sync::broadcast;
 use serde::{Deserialize, Serialize};
+use tokio::time::{self, Duration};
+
 
 #[tauri::command]
-pub async fn set_complete() -> Result<(), ()> {
+pub async fn set_complete() {
     let handler = crate::global::get_app_handle();
     let splash_window: tauri::WebviewWindow = handler.get_webview_window("splashscreen").unwrap();
     let main_window: tauri::WebviewWindow = handler.get_webview_window("app").unwrap();
@@ -13,7 +15,7 @@ pub async fn set_complete() -> Result<(), ()> {
     splash_window.close().unwrap();
     main_window.show().unwrap();
     main_window.set_focus().unwrap();
-    Ok(())
+    start_update_checker().await;
 }
 
 static RETRY_COUNT: LazyLock<Arc<Mutex<u32>>> = LazyLock::new(|| Arc::new(Mutex::new(0)));
@@ -136,6 +138,15 @@ pub async fn store_session_cookies(cookies: Vec<CookieData>) -> Result<(), Strin
     *session_cookies = Some(cookies.clone());
     println!("Stored {} session cookies: {:?}", cookies.len(), cookies);
     Ok(())
+}
+
+pub async fn start_update_checker() {
+    let mut interval = time::interval(Duration::from_secs(10));
+
+    loop {
+        interval.tick().await;
+        crate::updater::update().await.expect("error updating app");
+    }
 }
 
 pub fn get_stored_cookies() -> Option<String> {
