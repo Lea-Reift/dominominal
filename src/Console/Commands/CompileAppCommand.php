@@ -21,7 +21,7 @@ class CompileAppCommand extends Command implements Isolatable
     {
         $this->info('Compilando app para distribución...');
 
-        $tauriResourcesAppPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, base_path('src-tauri/resources/app'));
+        $tauriResourcesAppPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, base_path('tauri/resources/app'));
 
         $envProdPath = base_path('.env.production');
 
@@ -56,7 +56,7 @@ class CompileAppCommand extends Command implements Isolatable
                 'composer.lock',
                 'storage',
             ])
-            ->map(fn (string $path) => "'{$path}'")
+            ->map(fn(string $path) => "'{$path}'")
             ->join(',');
 
         $migrateProjectCommands = [
@@ -82,12 +82,12 @@ class CompileAppCommand extends Command implements Isolatable
         ];
 
         $commands = $commands
-            ->when($this->option('assets'), fn (Collection $collection) => $collection->merge($assetsCommands))
-            ->when($this->option('project'), fn (Collection $collection) => $collection->merge($migrateProjectCommands))
-            ->when($this->option('tauri'), fn (Collection $collection) => $collection->merge($tauriCompileCommand))
+            ->when($this->option('assets'), fn(Collection $collection) => $collection->merge($assetsCommands))
+            ->when($this->option('project'), fn(Collection $collection) => $collection->merge($migrateProjectCommands))
+            ->when($this->option('tauri'), fn(Collection $collection) => $collection->merge($tauriCompileCommand))
             ->unless(
                 $this->withGenerationOptions,
-                fn (Collection $collection) => $collection
+                fn(Collection $collection) => $collection
                     ->merge($assetsCommands)
                     ->merge($migrateProjectCommands)
                     ->merge($tauriCompileCommand)
@@ -169,8 +169,8 @@ class CompileAppCommand extends Command implements Isolatable
 
         $files = [
             base_path('dominominal.version.json'),
-            base_path('src-tauri\tauri.conf.json'),
-            base_path('src-tauri\Cargo.toml'),
+            base_path('tauri\tauri.conf.json'),
+            base_path('tauri\Cargo.toml'),
         ];
 
         preg_match('/(.*?)(\d+)$/', $currentVersion, $matches);
@@ -186,7 +186,7 @@ class CompileAppCommand extends Command implements Isolatable
     protected function updateAppSignature(): void
     {
         $currentVersion = $this->getCurrentVersion();
-        $signatureFilePath = base_path("src-tauri/target/release/bundle/nsis/Dominominal_{$currentVersion}_x64-setup.exe.sig");
+        $signatureFilePath = base_path("tauri/target/release/bundle/nsis/Dominominal_{$currentVersion}_x64-setup.exe.sig");
 
         if (!file_exists($signatureFilePath)) {
             $this->error("Signature file not found: {$signatureFilePath}");
@@ -214,7 +214,7 @@ class CompileAppCommand extends Command implements Isolatable
             'git push origin main',
             'git tag -a ' . $tag . ' -m ""',
             'git push origin ' . $tag,
-            'gh release create ' . $tag . ' --latest --generate-notes ./src-tauri/target/release/bundle/nsis/Dominominal_' . $currentVersion . '_x64-setup.exe',
+            'gh release create ' . $tag . ' --latest --generate-notes ./tauri/target/release/bundle/nsis/Dominominal_' . $currentVersion . '_x64-setup.exe',
         ];
 
         foreach ($commands as $command) {
