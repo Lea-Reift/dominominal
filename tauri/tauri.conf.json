@@ -18,8 +18,7 @@
                 "width": 180,
                 "height": 240,
                 "resizable": false,
-                "visible": true,
-                "alwaysOnTop": true
+                "visible": true
             },
             {
                 "label": "app",
@@ -56,6 +55,7 @@
         ],
         "windows": {
             "nsis": {
+                "installerHooks": "./windows/hooks.nsh",
                 "languages": [
                     "Spanish"
                 ]
