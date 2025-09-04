@@ -56,7 +56,7 @@ class CompileAppCommand extends Command implements Isolatable
                 'composer.lock',
                 'storage',
             ])
-            ->map(fn(string $path) => "'{$path}'")
+            ->map(fn (string $path) => "'{$path}'")
             ->join(',');
 
         $migrateProjectCommands = [
@@ -82,12 +82,12 @@ class CompileAppCommand extends Command implements Isolatable
         ];
 
         $commands = $commands
-            ->when($this->option('assets'), fn(Collection $collection) => $collection->merge($assetsCommands))
-            ->when($this->option('project'), fn(Collection $collection) => $collection->merge($migrateProjectCommands))
-            ->when($this->option('tauri'), fn(Collection $collection) => $collection->merge($tauriCompileCommand))
+            ->when($this->option('assets'), fn (Collection $collection) => $collection->merge($assetsCommands))
+            ->when($this->option('project'), fn (Collection $collection) => $collection->merge($migrateProjectCommands))
+            ->when($this->option('tauri'), fn (Collection $collection) => $collection->merge($tauriCompileCommand))
             ->unless(
                 $this->withGenerationOptions,
-                fn(Collection $collection) => $collection
+                fn (Collection $collection) => $collection
                     ->merge($assetsCommands)
                     ->merge($migrateProjectCommands)
                     ->merge($tauriCompileCommand)
