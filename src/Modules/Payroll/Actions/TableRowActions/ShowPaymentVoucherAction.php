@@ -49,7 +49,14 @@ class ShowPaymentVoucherAction
             ->extraModalFooterActions(fn (array $arguments): array => [
                 Action::make('print_voucher')
                     ->label('Imprimir volante')
-                    ->url(route('filament.main.payrolls.details.show.export.pdf', ['detail' => $this->getDetailFromArguments($arguments)]))
+                    ->url(function () use ($arguments) {
+                        $detail = $this->getDetailFromArguments($arguments);
+                        return route('filament.main.payrolls.details.show.export.pdf', [
+                            'company' => $detail->payroll->company_id,
+                            'payroll' => $detail->payroll_id,
+                            'detail' => $detail->id
+                        ]);
+                    })
                     ->openUrlInNewTab(),
             ])
             ->action(Closure::fromCallable([$this, 'actionCallback']));
