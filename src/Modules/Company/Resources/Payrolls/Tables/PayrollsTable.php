@@ -11,6 +11,7 @@ use Filament\Tables\Table;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Tables\Grouping\Group;
+use App\Modules\Payroll\Models\PayrollDetail;
 
 class PayrollsTable
 {
@@ -44,7 +45,7 @@ class PayrollsTable
                         $record->salaryAdjustments()->sync([]);
                         $record->load('details');
 
-                        $record->details->each(fn (PayrollDetail $detail) => $detail->salaryAdjustments()->sync([])); // @phpstan-ignore-line
+                        $record->details->each(fn (PayrollDetail $detail) => $detail->salaryAdjustments()->sync([]));
                         $record->details()->delete();
                     }),
             ]);
