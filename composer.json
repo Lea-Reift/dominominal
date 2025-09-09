@@ -21,6 +21,7 @@
         "barryvdh/laravel-ide-helper": "^3.5",
         "fakerphp/faker": "^1.23",
         "filament/upgrade": "4.0",
+        "itsgoingd/clockwork": "^5.3",
         "larastan/larastan": "3.x-dev",
         "laravel/boost": "^1.0",
         "laravel/pail": "^1.2.2",
