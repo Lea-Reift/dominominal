@@ -92,7 +92,8 @@ class PayrollDetail extends Model
     public function editableSalaryAdjustmentValues(): HasMany
     {
         return $this->hasMany(PayrollDetailSalaryAdjustment::class)
-            ->whereRelation('salaryAdjustment', 'requires_custom_value', true);
+            ->whereRelation('salaryAdjustment', 'requires_custom_value', true)
+            ->chaperone('payrollDetail');
     }
 
     public function editableSalaryAdjustments(): BelongsToMany

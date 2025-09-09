@@ -59,54 +59,33 @@ class PayrollForm
         return Section::make()
             ->hiddenOn(Operation::View)
             ->columns(2)
-            ->schema([
+            ->schema(fn (Get $get) => [
                 Select::make('type')
                     ->label('Tipo')
                     ->required()
                     ->live()
-                    ->default(SalaryTypeEnum::MONTHLY->value)
+                    ->default(SalaryTypeEnum::MONTHLY)
                     ->options(SalaryTypeEnum::class)
                     ->native(false),
 
                 Flatpickr::make('period')
                     ->label('Periodo')
-                    ->id('month-select')
                     ->format('Y-m-d')
-                    ->monthPicker()
+                    ->default(now())
+                    ->displayFormat($get('type') === SalaryTypeEnum::MONTHLY->value ? 'F-Y' : 'd-m-Y')
+                    ->when(
+                        $get('type') === SalaryTypeEnum::MONTHLY->value,
+                        fn (Flatpickr $picker) => $picker->monthPicker()
+                    )
                     ->unique(
                         modifyRuleUsing: fn (Unique $rule, ?Payroll $record) => $rule
-                            ->unless(
-                                is_null($record),
+                            ->when(
+                                $record !== null,
                                 fn (Unique $rule) => $rule
                                     ->where('company_id', $record->company_id)
                                     ->where('type', SalaryTypeEnum::MONTHLY)
                             )
                     )
-                    ->default(now())
-                    ->visible(fn (Get $get) => $get('type')?->isMonthly())
-                    ->disabled(fn (Get $get) => $get('type')?->isNotMonthly())
-                    ->displayFormat('F-Y')
-                    ->closeOnDateSelection()
-                    ->required(),
-
-                Flatpickr::make('period')
-                    ->id('date-select')
-                    ->label('Periodo')
-                    ->default(now())
-                    ->format('Y-m-d')
-                    ->unique(
-                        ignoreRecord: true,
-                        modifyRuleUsing: fn (Unique $rule, ?Payroll $record) => $rule
-                            ->unless(
-                                is_null($record),
-                                fn (Unique $rule) => $rule
-                                    ->where('company_id', $record->company_id)
-                                    ->where('type', SalaryTypeEnum::BIWEEKLY)
-                            )
-                    )
-                    ->visible(fn (Get $get) => $get('type')?->isBiweekly())
-                    ->disabled(fn (Get $get) => $get('type')?->isNotBiweekly())
-                    ->displayFormat('d-m-Y')
                     ->closeOnDateSelection()
                     ->required(),
 

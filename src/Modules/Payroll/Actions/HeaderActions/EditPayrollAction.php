@@ -52,7 +52,6 @@ class EditPayrollAction
                     $biweeklyPayrolls->each(function (Payroll $biweeklyPayroll) use ($currentMontlyPayrollSalaryAdjustments) {
                         $this->updateDetailSalaryAdjustmentsForEntity($biweeklyPayroll, $currentMontlyPayrollSalaryAdjustments);
                         $biweeklyPayroll->details->each(
-                            // @phpstan-ignore-next-line
                             fn (PayrollDetail $detail) => $this->updateDetailSalaryAdjustmentsForEntity($detail, $currentMontlyPayrollSalaryAdjustments)
                         );
                     });
