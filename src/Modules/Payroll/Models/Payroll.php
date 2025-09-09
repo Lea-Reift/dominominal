@@ -7,6 +7,7 @@ namespace App\Modules\Payroll\Models;
 use App\Enums\SalaryTypeEnum;
 use App\Modules\Company\Models\Company;
 use App\Modules\Company\Models\Employee;
+use App\Modules\Payroll\Traits\IsAClonablePayroll;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -22,9 +23,11 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property int $company_id
  * @property SalaryTypeEnum $type
  * @property Carbon $period
+ * @property string $monthly_payroll_id
  * @property-read Company $company
  * @property-read PayrollDisplay $display
  * @property-read ?Payroll $monthlyPayroll
+ * @property-read Collection<int, PayrollDetail> $details
  * @property-read Collection<int, Payroll> $biweeklyPayrolls
  * @property-read Collection<int, SalaryAdjustment> $salaryAdjustments
  * @property-read Collection<int, SalaryAdjustment> $editableSalaryAdjustments
@@ -35,6 +38,8 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  */
 class Payroll extends Model
 {
+    use IsAClonablePayroll;
+
     protected $fillable = [
         'company_id',
         'type',
@@ -76,7 +81,8 @@ class Payroll extends Model
 
     public function biweeklyPayrolls(): HasMany
     {
-        return $this->hasMany(static::class, 'monthly_payroll_id');
+        return $this->hasMany(static::class, 'monthly_payroll_id')
+            ->chaperone('monthlyPayroll');
     }
 
     public function company(): BelongsTo
@@ -92,7 +98,8 @@ class Payroll extends Model
 
     public function details(): HasMany
     {
-        return $this->hasMany(PayrollDetail::class);
+        return $this->hasMany(PayrollDetail::class)
+            ->chaperone('payroll');
     }
 
     public function salaryAdjustments(): BelongsToMany
