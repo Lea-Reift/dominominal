@@ -32,7 +32,6 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
-use Filament\Support\Assets\Js;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Number;
 
@@ -59,10 +58,7 @@ class MainPanelProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
             ])
-            ->spa()
-            ->assets([
-                Js::make('prefetch', resource_path('js/prefetch.js')),
-            ])
+            ->spa(hasPrefetching: true)
             ->widgets([
                 SystemVersionWidget::class,
             ])
