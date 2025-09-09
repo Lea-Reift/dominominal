@@ -67,7 +67,6 @@ class Payroll extends Model
         });
 
         static::deleting(function (Payroll $payroll) {
-            $payroll->loadMissing(['details.salaryAdjustments']);
             $payroll->details->each(fn (PayrollDetail $detail) => $detail->salaryAdjustments()->detach());
             $payroll->details()->delete();
             $payroll->salaryAdjustments()->detach();

@@ -22,12 +22,6 @@ trait IsAClonablePayroll
             'No se puede replicar una nómina quincenal'
         );
 
-        $this->loadMissing([
-            'salaryAdjustments',
-            'details',
-            'biweeklyPayrolls',
-        ]);
-
         $clonedPayroll->salaryAdjustments()->attach($this->salaryAdjustments->modelKeys());
 
         $this->details

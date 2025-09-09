@@ -23,7 +23,6 @@ class SalaryAdjustmentParser
         protected PayrollDetail $detail,
         array $customVariables = [],
     ) {
-        $this->detail->loadMissing(['salaryAdjustments', 'incomes', 'deductions', 'payroll' => ['salaryAdjustments', 'incomes', 'deductions']]);
         $parsedDeductions = $this->parseDeductions()->keyBy('id');
         $this->detail->salaryAdjustments
             ->transform(

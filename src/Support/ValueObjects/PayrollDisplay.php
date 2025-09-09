@@ -30,17 +30,6 @@ readonly class PayrollDisplay
     public function __construct(
         Payroll $payroll
     ) {
-        $payroll->load([
-            'company',
-            'details' => [
-                'payroll',
-                'employee',
-                'salary',
-                'salaryAdjustments',
-            ],
-            'salaryAdjustments',
-        ]);
-
         if ($payroll->type->isMonthly()) {
             $payroll->period = $payroll->period->endOfMonth();
         }

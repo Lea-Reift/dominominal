@@ -70,7 +70,7 @@ class SalaryAdjustmentColumn extends TextInputColumn
 
         /** @var SalaryAdjustment $adjustment */
         $adjustment = SalaryAdjustment::query()->findOrFail($adjustmentId);
-        $payroll = Payroll::query()->with(['biweeklyPayrolls' => ['details' => ['salaryAdjustments']]])->findOrFail($payrollId);
+        $payroll = Payroll::query()->relations()->findOrFail($payrollId);
         $this
             ->setAdjustment($adjustment)
             ->setPayroll($payroll);

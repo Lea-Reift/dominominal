@@ -298,7 +298,7 @@ class AddEmployeeAction
 
     protected function addEmployeesAction(array $data, Action $action): void
     {
-        $payrollDetails = Employee::query()->whereIn('id', $data['employees'])->with('salary')->get()
+        $payrollDetails = Employee::query()->whereIn('id', $data['employees'])->get()
             ->map(fn (Employee $employee) => new PayrollDetail([
                 'employee_id' => $employee->id,
                 'salary_id' => $employee->salary->id,

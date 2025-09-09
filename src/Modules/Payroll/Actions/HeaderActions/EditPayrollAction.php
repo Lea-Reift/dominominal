@@ -42,7 +42,7 @@ class EditPayrollAction
 
                     $this->updateDetailSalaryAdjustmentsForEntity($editedPayroll, $currentMontlyPayrollSalaryAdjustments);
 
-                    $biweeklyPayrolls = $editedPayroll->biweeklyPayrolls()->with('details')->get();
+                    $biweeklyPayrolls = $editedPayroll->biweeklyPayrolls()->get();
 
                     if ($biweeklyPayrolls->isEmpty()) {
                         return;

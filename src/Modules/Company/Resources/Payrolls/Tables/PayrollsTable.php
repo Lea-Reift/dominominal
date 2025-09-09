@@ -43,8 +43,6 @@ class PayrollsTable
                     ->modalHeading('Borrar Nómina')
                     ->before(function (Payroll $record) {
                         $record->salaryAdjustments()->sync([]);
-                        $record->load('details');
-
                         $record->details->each(fn (PayrollDetail $detail) => $detail->salaryAdjustments()->sync([]));
                         $record->details()->delete();
                     }),

@@ -158,7 +158,7 @@ class PayrollForm
                     AddEmployeeAction::make($this->payroll)->button(),
                 ])
                 ->disabledOn([Operation::Create->value, Operation::Edit->value])
-                ->relationship(modifyQueryUsing: fn (EloquentBuilder $query) => $query->with('editableSalaryAdjustmentValues'))
+                ->relationship()
                 ->addable(false)
                 ->reorderable()
                 ->reorderableWithDragAndDrop()
