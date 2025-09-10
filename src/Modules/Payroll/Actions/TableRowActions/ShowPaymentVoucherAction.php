@@ -25,8 +25,6 @@ class ShowPaymentVoucherAction
     public function __construct(
         protected Payroll $payroll,
     ) {
-        $this->payroll->loadMissing(['details']);
-
         $this->action = Action::make('show_payment_voucher')
             ->label('Mostrar volante de pago')
             ->icon('heroicon-s-inbox-arrow-down')

@@ -129,6 +129,8 @@ class MainPanelProvider extends PanelProvider
 
     public function setSalaryParserDefaultVariables(): void
     {
+        $mainAdjustments = SalaryAdjustment::query()->whereIn('parser_alias', ['AFP', 'SFS'])->pluck('value', 'parser_alias');
+
         SalaryAdjustmentParser::setDefaultVariables([
             'SALARIO' => fn (PayrollDetail $detail) => $detail->salary->amount,
             'SALARIO_QUINCENA' => fn (PayrollDetail $detail) => $detail->getParsedPayrollSalary(),
@@ -142,8 +144,8 @@ class MainPanelProvider extends PanelProvider
                 ->pluck('parser_alias')
                 ->push('0')
                 ->join(' + '),
-            'AFP' => fn () => SalaryAdjustment::query()->where('parser_alias', 'AFP')->value('value'),
-            'SFS' => fn () => SalaryAdjustment::query()->where('parser_alias', 'SFS')->value('value'),
+            'AFP' => $mainAdjustments->get('AFP', 0),
+            'SFS' => $mainAdjustments->get('SFS', 0),
             'SALARIO_BASE_ISR' => fn (PayrollDetail $detail) => '((TOTAL_INGRESOS - AFP - SFS) * ' . ($detail->payroll->type->isMonthly() ? 12 : 24) . ')',
             'RENGLONES_ISR' => function (PayrollDetail $detail) {
                 if ($detail->salaryAdjustments->pluck('parser_alias')->doesntContain('ISR')) {

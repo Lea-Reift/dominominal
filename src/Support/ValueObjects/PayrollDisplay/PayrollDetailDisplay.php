@@ -35,16 +35,6 @@ readonly class PayrollDetailDisplay
     public function __construct(
         PayrollDetail $detail
     ) {
-        $detail->loadMissing([
-            'employee',
-            'salary',
-            'salaryAdjustments',
-            'payroll' => [
-                'salaryAdjustments',
-                'company',
-            ]
-        ]);
-
         $this->name = $detail->employee->full_name;
         $this->company = $detail->payroll->company;
         $this->payroll = $detail->payroll;

@@ -49,10 +49,6 @@ class PayrollDetail extends Model
         'salary_id',
     ];
 
-    protected $with = [
-        'payroll'
-    ];
-
     protected static function boot(): void
     {
         parent::boot();
@@ -159,7 +155,6 @@ class PayrollDetail extends Model
                         ->where('id', '!=', $this->payroll->id)
                         ->whereDate('period', $complementaryPayrollDate->toDateString())
                 )
-                ->with(['salaryAdjustments', 'incomes', 'deductions'])
                 ->first();
         })
             ->shouldCache();
@@ -175,7 +170,6 @@ class PayrollDetail extends Model
             return PayrollDetail::query()
                 ->where('employee_id', $this->employee_id)
                 ->where('payroll_id', $this->payroll->monthly_payroll_id)
-                ->with(['salaryAdjustments', 'incomes', 'deductions'])
                 ->first();
         })
             ->shouldCache();

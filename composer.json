@@ -15,12 +15,15 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1",
+        "roadrunner-php/laravel-bridge": "^6.0",
         "symfony/expression-language": "^7.3"
     },
     "require-dev": {
+        "barryvdh/laravel-debugbar": "^3.16",
         "barryvdh/laravel-ide-helper": "^3.5",
         "fakerphp/faker": "^1.23",
         "filament/upgrade": "4.0",
+        "itsgoingd/clockwork": "^5.3",
         "larastan/larastan": "3.x-dev",
         "laravel/boost": "^1.0",
         "laravel/pail": "^1.2.2",
