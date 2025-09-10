@@ -33,6 +33,7 @@ use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Number;
 
 class MainPanelProvider extends PanelProvider
@@ -102,8 +103,11 @@ class MainPanelProvider extends PanelProvider
                 ->paginated(false)
         );
 
-        $this->setSalaryParserDefaultVariables();
         $this->configureVerifiedEmail();
+
+        if (Schema::hasTable('salary_adjustments')) {
+            $this->setSalaryParserDefaultVariables();
+        }
     }
 
     protected function configureVerifiedEmail(): void

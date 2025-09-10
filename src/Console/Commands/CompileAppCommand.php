@@ -68,6 +68,7 @@ class CompileAppCommand extends Command implements Isolatable
             new CommandVO("cp {$envProdPath} {$tauriResourcesAppPath}/.env"),
             new CommandVO("cp {$basePath}/dominominal.version.json {$tauriResourcesAppPath}/dominominal.version.json"),
             new CommandVO("cp -r {$basePath}/public {$tauriResourcesAppPath}/public"),
+            new CommandVO("robocopy {$basePath}/vendor {$tauriResourcesAppPath}/vendor /E /MT:4"),
             new CommandVO('composer install --optimize-autoloader --no-dev -a', $tauriResourcesAppPath),
         ];
 
@@ -109,7 +110,8 @@ class CompileAppCommand extends Command implements Isolatable
                     ->env($productionEnvVars)
                     ->run($command->command, $outputCallback);
 
-                throw_if($process->failed(), RuntimeException::class, $command->command);
+                $processFailed = $process->failed() && !str_starts_with($command->command, 'robocopy');
+                throw_if($processFailed, RuntimeException::class, $command->command);
             });
         } catch (Exception $e) {
             $this->newLine();
