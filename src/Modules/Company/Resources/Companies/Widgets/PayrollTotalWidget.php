@@ -65,7 +65,7 @@ class PayrollTotalWidget extends StatsOverviewWidget
             Stat::make('Total Salario Bruto', Number::dominicanCurrency($totalRowDisplay->rawSalary)),
             Stat::make('Total Ingresos', Number::dominicanCurrency($totalRowDisplay->incomesTotal)),
             Stat::make('Total Deducciones', Number::dominicanCurrency($totalRowDisplay->deductionsTotal)),
-            Stat::make('Total Salario Neto', Number::dominicanCurrency($totalRowDisplay->rawSalary)),
+            Stat::make('Total Salario Neto', Number::dominicanCurrency($totalRowDisplay->netSalary)),
             $this->getAdjustmentsStats()
         ];
     }
