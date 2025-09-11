@@ -8,6 +8,7 @@ use App\Modules\Payroll\Models\Payroll;
 use App\Modules\Payroll\Models\PayrollDetail;
 use InvalidArgumentException;
 use App\Modules\Payroll\Models\SalaryAdjustment;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 /**
  * @mixin Payroll
@@ -41,18 +42,21 @@ trait IsAClonablePayroll
                 $clonedDetail->salaryAdjustments()->sync($adjustments);
             });
 
-        if ($this->biweeklyPayrolls->isNotEmpty()) {
-            $this->biweeklyPayrolls->each(function (Payroll $biweeklyPayroll) use ($clonedPayroll) {
-                $clonedBiweeklyPayroll = $biweeklyPayroll
-                    ->replicate()
-                    ->unsetRelations()
-                    ->fill(['monthly_payroll_id' => $clonedPayroll->id]);
+        $this->biweeklyPayrolls
+            ->whenNotEmpty(
+                fn (EloquentCollection $biweeklyPayrolls) => $biweeklyPayrolls
+                    ->each(function (Payroll $biweeklyPayroll) use ($clonedPayroll) {
+                        $clonedBiweeklyPayroll = $biweeklyPayroll
+                            ->replicate()
+                            ->unsetRelations()
+                            ->fill(['monthly_payroll_id' => $clonedPayroll->id]);
 
-                $clonedBiweeklyPayroll->save();
+                        $clonedBiweeklyPayroll->save();
+                        $clonedBiweeklyPayroll->refresh();
 
-                $biweeklyPayroll->cloneInto($clonedBiweeklyPayroll, checkIfPayrollIsBiweekly: false);
-            });
-        }
+                        $biweeklyPayroll->cloneInto($clonedBiweeklyPayroll, checkIfPayrollIsBiweekly: false);
+                    })
+            );
 
         return $clonedPayroll->fresh([
             'salaryAdjustments',
