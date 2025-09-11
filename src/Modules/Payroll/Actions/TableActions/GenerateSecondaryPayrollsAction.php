@@ -14,7 +14,6 @@ use Filament\Support\Enums\Alignment;
 use Filament\Notifications\Notification;
 use App\Modules\Payroll\Exceptions\DuplicatedPayrollException;
 use App\Enums\SalaryTypeEnum;
-use App\Modules\Company\Models\Employee;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Modules\Payroll\Models\SalaryAdjustment;
@@ -147,8 +146,8 @@ class GenerateSecondaryPayrollsAction
                 ->hiddenLabel()
                 ->bulkToggleable()
                 ->hint(function () use ($disableSecondaryPayrolls) {
-                    $hasEmployeesWithMonthlySalary = $this->record->employees
-                        ->filter(fn (Employee $employee) => $employee->salary->type->isMonthly())
+                    $hasEmployeesWithMonthlySalary = $this->record->details
+                        ->filter(fn (PayrollDetail $detail) => $detail->salary->type->isMonthly())
                         ->isNotEmpty();
 
                     return match (true) {

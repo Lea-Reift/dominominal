@@ -11,9 +11,8 @@ use Filament\Tables\Table;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Tables\Grouping\Group;
-use App\Modules\Payroll\Models\PayrollDetail;
 
-class PayrollsTable
+class PayrollTable
 {
     public static function configure(Table $table): Table
     {
@@ -40,12 +39,7 @@ class PayrollsTable
             ])
             ->recordActions([
                 DeleteAction::make()
-                    ->modalHeading('Borrar Nómina')
-                    ->before(function (Payroll $record) {
-                        $record->salaryAdjustments()->sync([]);
-                        $record->details->each(fn (PayrollDetail $detail) => $detail->salaryAdjustments()->sync([]));
-                        $record->details()->delete();
-                    }),
+                    ->modalHeading('Borrar Nómina'),
             ]);
     }
 }

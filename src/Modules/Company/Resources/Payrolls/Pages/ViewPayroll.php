@@ -41,7 +41,7 @@ class ViewPayroll extends ViewRecord
                 ->label('Copiar nómina')
                 ->visible($this->record->type->isMonthly())
                 ->icon(Heroicon::ClipboardDocument)
-                ->form([
+                ->schema([
                     Flatpickr::make('period')
                         ->label('Periodo')
                         ->id('month-select')
@@ -71,7 +71,7 @@ class ViewPayroll extends ViewRecord
                 ->modalWidth(Width::Medium)
                 ->databaseTransaction()
                 ->beforeReplicaSaved(fn (Payroll $replica) => $replica->unsetRelations())
-                ->afterReplicaSaved(fn (Payroll $replica) => $this->record->cloneInto($replica))
+                ->after(fn (Payroll $replica) => $this->record->cloneInto($replica))
                 ->successRedirectUrl(fn (Payroll $replica) => ViewPayroll::getUrl([
                     'company' => $replica->company_id,
                     'record' => $replica->id,

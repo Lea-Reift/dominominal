@@ -8,7 +8,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use App\Modules\Company\Resources\Payrolls\Schemas\PayrollForm;
-use App\Modules\Company\Resources\Payrolls\Tables\PayrollsTable;
+use App\Modules\Company\Resources\Payrolls\Tables\PayrollTable;
 use App\Modules\Payroll\Models\Payroll;
 use App\Modules\Company\Resources\Companies\CompanyResource;
 use App\Modules\Company\Resources\Payrolls\Pages\ViewPayroll;
@@ -33,7 +33,7 @@ class PayrollResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return PayrollsTable::configure($table);
+        return PayrollTable::configure($table);
     }
 
     public static function getParentResourceRegistration(): ?ParentResourceRegistration
