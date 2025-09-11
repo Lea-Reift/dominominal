@@ -112,7 +112,8 @@ class AddEmployeeAction
         return match (true) {
             isset($page->mountedActions[0]['activeTab']) => $page->mountedActions[0]['activeTab'],
             $this->addEmployeesTab->isVisible() => $this->addEmployeesTab->getKey(false),
-            default => $this->createEmployeeTab->getKey(false)
+            $this->createEmployeeTab->isVisible() => $this->createEmployeeTab->getKey(false),
+            $this->importRawEmployeeTab->isVisible() => $this->importRawEmployeeTab->getKey(false),
         };
     }
 
@@ -161,6 +162,7 @@ class AddEmployeeAction
             ->label('Importar Empleados')
             ->key('import_raw_employee_tab')
             ->disabled(fn () => $this->activeTab() !== $key)
+            ->dehydrated(fn (Tab $component) => !$component->isDisabled())
             ->schema([
                 Section::make([])
                     ->heading('Importar por texto')
@@ -179,9 +181,10 @@ class AddEmployeeAction
                         'x-on:backend-collapse.window' => 'isCollapsed = true',
                     ])
                     ->collapsible(),
-                Section::make([])
+                Section::make()
                     ->heading('Generar empleados')
-                    ->dehydrated(fn () => $this->activeTab() !== $key)
+                    ->disabled(fn () => $this->activeTab() !== $key)
+                    ->dehydrated(fn (Section $component) => !$component->isDisabled())
                     ->schema([
                         $this->employeeRepeater(),
                     ]),
