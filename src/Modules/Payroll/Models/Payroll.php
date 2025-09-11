@@ -67,7 +67,10 @@ class Payroll extends Model
         });
 
         static::deleting(function (Payroll $payroll) {
-            $payroll->details->each(fn (PayrollDetail $detail) => $detail->salaryAdjustments()->detach());
+            PayrollDetailSalaryAdjustment::query()
+                ->whereRelation('payrollDetail.payroll', 'id', $payroll->id)
+                ->delete();
+
             $payroll->details()->delete();
             $payroll->salaryAdjustments()->detach();
         });
