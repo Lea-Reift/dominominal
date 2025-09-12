@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace App\Modules\Company\Resources\Payrolls\Schemas;
 
 use App\Modules\Company\Resources\Payrolls\Pages\ViewPayroll;
+use App\Modules\Payroll\Actions\TableActions\AddEmployeeAction;
+use App\Modules\Payroll\Actions\TableActions\GenerateSecondaryPayrollsAction;
 use App\Modules\Payroll\Models\Payroll;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Modules\Payroll\Models\PayrollDetailSalaryAdjustment;
 use App\Modules\Payroll\Models\SalaryAdjustment;
+use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -21,6 +25,7 @@ use Filament\Support\RawJs;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Support\Fluent;
 use Illuminate\Support\Number;
+use Illuminate\Support\Str;
 
 class PayrollInfolist extends Fluent
 {
@@ -74,6 +79,37 @@ class PayrollInfolist extends Fluent
             ->relationship()
             ->addable(false)
             ->columnSpanFull()
+            ->itemLabel(fn (array $state) => $this->payroll->employees->findOrFail($state['employee_id'])->full_name)
+            ->afterLabel([
+                GenerateSecondaryPayrollsAction::make($this->payroll)->button(),
+                AddEmployeeAction::make($this->payroll)->button(),
+            ])
+            ->deleteAction(
+                fn (Action $action) => $action
+                    ->button()
+                    ->label('Remover empleado')
+                    ->action(function (mixed $arguments, Repeater $component, ViewPayroll $livewire) {
+                        $detailId = Str::after($arguments['item'], '-');
+                        $items = $component->getRawState();
+                        /** @var Payroll $payroll */
+                        $payroll = $component->getModelInstance();
+                        $payrollDetail = $payroll->details->findOrFail($detailId);
+                        unset($items[$arguments['item']]);
+
+                        $component->rawState($items);
+
+                        $component->callAfterStateUpdated();
+                        $component->partiallyRender();
+                        $payrollDetail->delete();
+
+                        $livewire->dispatch('updatePayrollData');
+
+                        return Notification::make('edit_payroll_details')
+                            ->title('Datos guardados')
+                            ->success()
+                            ->send();
+                    })
+            )
             ->columns([
                 'default' => 2,
                 'lg' => 4,
@@ -123,7 +159,7 @@ class PayrollInfolist extends Fluent
                     ->columnSpan(2)
                     ->live()
                     ->partiallyRenderAfterStateUpdated()
-                    ->afterStateUpdated(function (array $state, PayrollDetail $record, ViewPayroll $livewire) {
+                    ->afterStateUpdated(function (array $state, CheckboxList $component, PayrollDetail $record, ViewPayroll $livewire) {
                         $recordAdjustments = $this->payroll->salaryAdjustments
                             ->whereIn('id', $state)
                             ->mapWithKeys(fn (SalaryAdjustment $adjustment) => [
@@ -134,10 +170,13 @@ class PayrollInfolist extends Fluent
                                 ]
                             ]);
 
+                        $statePath = $component->getStatePath();
+
                         $record->salaryAdjustments()->sync($recordAdjustments);
 
                         $record->refresh();
                         $livewire->dispatch('updatePayrollData');
+                        $livewire->refreshFormData([str($statePath)->after('.')->beforeLast('.')->toString()]);
                     }),
 
                 Grid::make()
@@ -146,15 +185,19 @@ class PayrollInfolist extends Fluent
                     ->columnSpan(3)
                     ->partiallyRenderAfterStateUpdated()
                     ->schema(fn (PayrollDetail $record) => [
-                        ...$record->salaryAdjustments->where('requires_custom_value', false)
-                            ->map(
-                                fn (SalaryAdjustment $adjustment) =>
-                                TextEntry::make('display.netSalary')
-                                    ->state($record->display->salaryAdjustments->get($adjustment->parser_alias, 0))
-                                    ->label($adjustment->name)
-                                    ->afterLabel($adjustment->type->getLabel())
-                            )
-                            ->toArray(),
+                        Grid::make()
+                            ->columns(3)
+                            ->schema(
+                                $record->salaryAdjustments->where('requires_custom_value', false)
+                                    ->map(
+                                        fn (SalaryAdjustment $adjustment) =>
+                                        TextEntry::make('display.netSalary')
+                                            ->state($record->display->salaryAdjustments->get($adjustment->parser_alias, 0))
+                                            ->label($adjustment->name)
+                                            ->afterLabel($adjustment->type->getLabel())
+                                    )
+                                    ->toArray()
+                            ),
                         Repeater::make('editableSalaryAdjustmentValues')
                             ->relationship(
                                 modifyQueryUsing: fn (EloquentBuilder $query) => $query
@@ -165,8 +208,6 @@ class PayrollInfolist extends Fluent
                             ->grid(3)
                             ->columnSpanFull()
                             ->hiddenLabel()
-                            ->partiallyRenderAfterStateUpdated()
-
                             ->itemLabel(fn (array $state, PayrollDetail $record) => $record->salaryAdjustments->find($state['salary_adjustment_id'])->name)
                             ->deletable(false)
                             ->addable(false)
