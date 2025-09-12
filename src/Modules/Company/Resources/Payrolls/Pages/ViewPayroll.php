@@ -31,8 +31,6 @@ class ViewPayroll extends ViewRecord
     protected static string $resource = PayrollResource::class;
     protected static ?string $navigationLabel = PayrollResource::class;
 
-    protected $listeners = ['updatePayrollData' => '$refresh'];
-
     protected function fillForm(): void
     {
         parent::fillForm();

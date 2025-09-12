@@ -109,7 +109,7 @@ class PayrollDetail extends Model
 
     public function display(): Attribute
     {
-        return Attribute::get(fn () => new PayrollDetailDisplay($this))->shouldCache();
+        return Attribute::get(fn () => new PayrollDetailDisplay($this));
     }
 
     public function newEloquentBuilder($query): PayrollDetailBuilder
