@@ -162,16 +162,21 @@ class PayrollDetail extends Model
 
     public function monthlyDetail(): Attribute
     {
-        return Attribute::get(function () {
+        $attributeCallback = function () {
             if ($this->payroll->monthly_payroll_id === null) {
                 return null;
             }
 
             return PayrollDetail::query()
                 ->where('employee_id', $this->employee_id)
-                ->where('payroll_id', $this->payroll->monthly_payroll_id)
+                ->whereHas(
+                    'payroll',
+                    fn (Builder $query) => $query
+                        ->where('id', $this->payroll->monthly_payroll_id)
+                )
                 ->first();
-        })
-            ->shouldCache();
+        };
+
+        return Attribute::get($attributeCallback)->shouldCache();
     }
 }
