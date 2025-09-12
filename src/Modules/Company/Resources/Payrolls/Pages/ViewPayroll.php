@@ -75,8 +75,7 @@ class ViewPayroll extends ViewRecord
                 ->successRedirectUrl(fn (Payroll $replica) => ViewPayroll::getUrl([
                     'company' => $replica->company_id,
                     'record' => $replica->id,
-                ]))
-            ,
+                ])),
             ActionGroup::make([])
                 ->hiddenLabel(false)
                 ->button()
