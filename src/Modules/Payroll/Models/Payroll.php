@@ -67,6 +67,10 @@ class Payroll extends Model
         });
 
         static::deleting(function (Payroll $payroll) {
+
+            $biweeklyPayrolls = $payroll->biweeklyPayrolls
+                ->each(fn (Payroll $biweeklyPayroll) => $biweeklyPayroll->delete());
+
             PayrollDetailSalaryAdjustment::query()
                 ->whereRelation('payrollDetail.payroll', 'id', $payroll->id)
                 ->delete();
