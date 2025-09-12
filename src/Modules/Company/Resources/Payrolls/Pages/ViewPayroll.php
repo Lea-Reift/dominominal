@@ -33,6 +33,23 @@ class ViewPayroll extends ViewRecord
 
     protected $listeners = ['updatePayrollData' => '$refresh'];
 
+    protected function fillForm(): void
+    {
+        parent::fillForm();
+
+        // Build form data with payroll details and their salary adjustments
+        $formData = $this->record->toArray();
+        $formData['details'] = [];
+
+        foreach ($this->record->details as $detail) {
+            $formData['details'][$detail->id] = [
+                'salaryAdjustments' => $detail->salaryAdjustments->pluck('id')->toArray()
+            ];
+        }
+
+        $this->form->fill($formData);
+    }
+
     protected function getHeaderActions(): array
     {
         return [

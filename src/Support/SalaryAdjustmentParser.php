@@ -23,6 +23,7 @@ class SalaryAdjustmentParser
         protected PayrollDetail $detail,
         array $customVariables = [],
     ) {
+        $this->detail->refresh();
         $parsedDeductions = $this->parseDeductions()->keyBy('id');
         $this->detail->salaryAdjustments
             ->transform(
