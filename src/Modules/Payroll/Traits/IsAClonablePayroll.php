@@ -49,7 +49,10 @@ trait IsAClonablePayroll
                         $clonedBiweeklyPayroll = $biweeklyPayroll
                             ->replicate()
                             ->unsetRelations()
-                            ->fill(['monthly_payroll_id' => $clonedPayroll->id]);
+                            ->fill([
+                                'monthly_payroll_id' => $clonedPayroll->id,
+                                'period' => $biweeklyPayroll->period->addMonth()
+                            ]);
 
                         $clonedBiweeklyPayroll->save();
                         $clonedBiweeklyPayroll->refresh();
