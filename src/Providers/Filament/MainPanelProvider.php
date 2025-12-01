@@ -150,7 +150,8 @@ class MainPanelProvider extends PanelProvider
                 ->join(' + '),
             'AFP' => $mainAdjustments->get('AFP', 0),
             'SFS' => $mainAdjustments->get('SFS', 0),
-            'SALARIO_BASE_ISR' => fn (PayrollDetail $detail) => '((TOTAL_INGRESOS - AFP - SFS) * ' . ($detail->payroll->type->isMonthly() ? 12 : 24) . ')',
+            'DEPENDIENTES_ADICIONALES' => fn (PayrollDetail $detail) => $detail->deductions->firstWhere('parser_alias', 'DEPENDIENTES_ADICIONALES')?->detailSalaryAdjustmentValue?->custom_value ?? 0,
+            'SALARIO_BASE_ISR' => fn (PayrollDetail $detail) => '((TOTAL_INGRESOS - AFP - SFS - DEPENDIENTES_ADICIONALES) * ' . ($detail->payroll->type->isMonthly() ? 12 : 24) . ')',
             'RENGLONES_ISR' => function (PayrollDetail $detail) {
                 if ($detail->salaryAdjustments->pluck('parser_alias')->doesntContain('ISR')) {
                     return array_fill(0, 4, '0');
