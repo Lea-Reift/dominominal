@@ -26,5 +26,7 @@ _ide_helper.php
 /public/splashscreen.html
 /.claude
 /public/js
+/public/fonts
 rr.exe
 .rr.yaml
+.ddev
