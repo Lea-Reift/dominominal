@@ -35,6 +35,7 @@ class SalaryAdjustment extends Model
         'requires_custom_value',
         'ignore_in_deductions',
         'is_absolute_adjustment',
+        'ignore_in_isr',
     ];
 
     protected $casts = [

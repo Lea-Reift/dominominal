@@ -140,7 +140,7 @@ class SalaryAdjustmentParser
             $missingVariables = $compositeVariables->map(fn (string $formula, string $key) => "{$key} = {$formula}");
 
             throw new InvalidArgumentException(
-                'Las siguientes variables no pudieron despejarse porque sus fórmulas contienen valores inexistentes: ' . $missingVariables->join('; ')
+                "Las siguientes variables no pudieron despejarse porque sus fórmulas contienen valores inexistentes: {$missingVariables->join('; ')}. Variables Declaradas:{$parsedVariables->union($finalVariables)->toPrettyJson()} "
             );
         }
 

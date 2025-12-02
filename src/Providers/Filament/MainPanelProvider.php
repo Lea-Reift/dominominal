@@ -22,6 +22,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Collection;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use DirectoryIterator;
 use Filament\Tables\Table;
@@ -151,7 +152,14 @@ class MainPanelProvider extends PanelProvider
             'AFP' => $mainAdjustments->get('AFP', 0),
             'SFS' => $mainAdjustments->get('SFS', 0),
             'DEPENDIENTES_ADICIONALES' => fn (PayrollDetail $detail) => $detail->deductions->firstWhere('parser_alias', 'DEPENDIENTES_ADICIONALES')?->detailSalaryAdjustmentValue?->custom_value ?? 0,
-            'SALARIO_BASE_ISR' => fn (PayrollDetail $detail) => '((TOTAL_INGRESOS - AFP - SFS - DEPENDIENTES_ADICIONALES) * ' . ($detail->payroll->type->isMonthly() ? 12 : 24) . ')',
+            'SALARIO_BASE_ISR' => fn (PayrollDetail $detail) => '((TOTAL_INGRESOS -'.$detail->salaryAdjustments
+                ->where('ignore_in_isr', true)
+                ->pluck('parser_alias')
+                ->whenEmpty(
+                    fn () => 0,
+                    fn (Collection $adjustments) => $adjustments
+                        ->join(' - '),
+                ).') * ' . ($detail->payroll->type->isMonthly() ? 12 : 24) . ')',
             'RENGLONES_ISR' => function (PayrollDetail $detail) {
                 if ($detail->salaryAdjustments->pluck('parser_alias')->doesntContain('ISR')) {
                     return array_fill(0, 4, '0');

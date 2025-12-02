@@ -65,7 +65,7 @@ class SalaryAdjustmentResource extends Resource
                     ->helperText('Este sera el valor utilizado en las formulas de este y los demás ajustes')
                     ->required()
                     ->maxLength(255),
-                Grid::make(3)
+                Grid::make(4)
                     ->schema([
                         ToggleButtons::make('requires_custom_value')
                             ->label('¿Requiere valor modificado?')
@@ -80,8 +80,8 @@ class SalaryAdjustmentResource extends Resource
                         ToggleButtons::make('ignore_in_deductions')
                             ->label('Ignorar en deducciones')
                             ->helperText('El valor se incluira en el calculo de deducciones del seguro social')
-                            ->visible(fn (?SalaryAdjustment $record) => $record?->type->isIncome())
-                            ->disabled(fn (?SalaryAdjustment $record) => $record?->type->isDeduction())
+                            ->visible(fn (Get $get) => !is_null($get('value_type')) && $get('value_type') !== SalaryAdjustmentValueTypeEnum::FORMULA->value)
+                            ->disabled(fn (Get $get) => !is_null($get('value_type')) && $get('value_type') === SalaryAdjustmentValueTypeEnum::FORMULA->value)
                             ->required()
                             ->boolean()
                             ->grouped(),
@@ -89,6 +89,12 @@ class SalaryAdjustmentResource extends Resource
                             ->label('¿Es un ajuste absoluto?')
                             ->helperText('Los ajustes absolutos se obtienen de la nómina mensual (si existe)')
                             ->required()
+                            ->boolean()
+                            ->grouped(),
+                        ToggleButtons::make('ignore_in_isr')
+                            ->label('¿Se debe restar del salario total para el ISR?')
+                            ->required()
+                            ->default(false)
                             ->boolean()
                             ->grouped(),
                     ]),
