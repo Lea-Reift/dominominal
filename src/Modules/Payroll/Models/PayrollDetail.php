@@ -9,6 +9,7 @@ use App\Modules\Company\Models\Employee;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Modules\Company\Models\Salary;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -18,8 +19,8 @@ use App\Support\ValueObjects\PayrollDisplay\PayrollDetailDisplay;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use App\Enums\SalaryDistributionFormatEnum;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Contracts\Database\Eloquent\Builder as EloquentBuilderContract;
 
 /**
  * @property int $id
@@ -136,47 +137,52 @@ class PayrollDetail extends Model
             : $secondBiweekSalary;
     }
 
-    public function complementaryDetail(): Attribute
+    public function complementaryDetail(): HasOne
     {
-        return Attribute::get(function () {
-            if ($this->payroll->monthly_payroll_id === null) {
-                return null;
-            }
+        $relation = $this->hasOne(self::class, 'employee_id', 'employee_id');
 
-            $complementaryPayrollDate = $this->payroll->period->clone();
-            $complementaryPayrollDate->setDay($complementaryPayrollDate->day !== 14 ? 14 : 28);
+        if (!$this->payroll) {
+            return $relation->whereRaw('1=2');
+        }
 
-            return PayrollDetail::query()
-                ->where('employee_id', $this->employee_id)
-                ->whereHas(
-                    'payroll',
-                    fn (Builder $query) => $query
-                        ->where('monthly_payroll_id', $this->payroll->monthly_payroll_id)
-                        ->where('id', '!=', $this->payroll->id)
-                        ->whereDate('period', $complementaryPayrollDate->toDateString())
-                )
-                ->first();
-        })
-            ->shouldCache();
+        $complementaryPayrollDate = $this->payroll->period->clone();
+        $complementaryPayrollDate->setDay($complementaryPayrollDate->day !== 14 ? 14 : 28);
+
+        return $relation
+            ->whereHas(
+                'payroll',
+                fn (EloquentBuilderContract $query) => $query
+                    ->where('monthly_payroll_id', $this->payroll->monthly_payroll_id)
+                    ->whereDate('period', $complementaryPayrollDate)
+            );
     }
 
-    public function monthlyDetail(): Attribute
+    public function monthlyDetail(): HasOne
     {
-        $attributeCallback = function () {
-            if ($this->payroll->monthly_payroll_id === null) {
-                return null;
-            }
-
-            return PayrollDetail::query()
-                ->where('employee_id', $this->employee_id)
-                ->whereHas(
-                    'payroll',
-                    fn (Builder $query) => $query
-                        ->where('id', $this->payroll->monthly_payroll_id)
-                )
-                ->first();
-        };
-
-        return Attribute::get($attributeCallback)->shouldCache();
+        return $this->hasOne(self::class, 'employee_id', 'employee_id')
+            ->when(
+                $this->payroll,
+                fn (EloquentBuilderContract $query) => $query
+                    ->whereHas(
+                        'payroll',
+                        fn (EloquentBuilderContract $query) => $query
+                            ->where('id', $this->payroll->monthly_payroll_id)
+                    ),
+                fn (EloquentBuilderContract $query) => $query->whereRaw('1=2')
+            );
     }
+
+    /**
+     * @return HasMany<self>
+     */
+    public function biweeklyDetails(): HasMany
+    {
+        return $this->hasMany(self::class, 'employee_id', 'employee_id')
+            ->whereHas(
+                'payroll',
+                fn (EloquentBuilderContract $query) => $query
+                    ->where('monthly_payroll_id', $this->payroll->id)
+            );
+    }
+
 }
