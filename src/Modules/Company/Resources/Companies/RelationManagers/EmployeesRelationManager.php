@@ -67,6 +67,7 @@ class EmployeesRelationManager extends RelationManager
                     ->icon(Heroicon::DocumentText)
                     ->modalHeading('Generar Comprobante de Pago Manual')
                     ->modalWidth('4xl')
+                    ->closeModalByClickingAway(false)
                     ->steps([
                         Step::make('Datos del Comprobante')
                             ->schema([
