@@ -5,6 +5,14 @@ declare(strict_types=1);
 namespace App\Providers\Filament;
 
 use App\Filament\Widgets\SystemVersionWidget;
+use App\Modules\Company\Models\Company;
+use App\Modules\Company\Resources\Companies\CompanyResource;
+use App\Modules\Company\Resources\Companies\Pages\ViewCompany;
+use App\Modules\Payroll\Resources\SalaryAdjustments\SalaryAdjustmentResource;
+use App\Support\Pages\Settings;
+use Filament\Navigation\NavigationBuilder;
+use Filament\Navigation\NavigationGroup;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Support\Enums\Width;
 use Exception;
@@ -79,6 +87,30 @@ class MainPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
+            ->navigation(
+                fn (NavigationBuilder $builder) => $builder
+
+                    ->items([
+                        ...SalaryAdjustmentResource::getNavigationItems(),
+                        ...Settings::getNavigationItems()
+                    ])
+                    ->groups([
+                        NavigationGroup::make('Compañias')
+                            ->icon('heroicon-o-building-office-2')
+                            ->items(
+                                Company::all()
+                                    ->map(
+                                        fn (Company $company) => NavigationItem::make($company->name)
+                                            ->url(ViewCompany::getUrl(parameters: [$company]))
+                                    )
+                                    ->prepend(
+                                        NavigationItem::make('Ver Todas')
+                                            ->url(CompanyResource::getUrl())
+                                    )
+                                    ->all()
+                            )
+                    ])
+            )
             ->maxContentWidth(Width::Full);
 
 

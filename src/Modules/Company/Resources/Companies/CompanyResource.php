@@ -23,6 +23,8 @@ use App\Modules\Company\Resources\Companies\RelationManagers\PayrollsRelationMan
 
 class CompanyResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $model = Company::class;
 
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-building-office-2';
