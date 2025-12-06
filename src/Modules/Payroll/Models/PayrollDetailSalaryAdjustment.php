@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
  * @property float $custom_value
+ * @property int $salary_adjustment_id
  * @property-read SalaryAdjustment $salaryAdjustment
  * @property-read PayrollDetail $payrollDetail
  */

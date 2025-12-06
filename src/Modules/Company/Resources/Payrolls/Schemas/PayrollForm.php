@@ -21,6 +21,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Support\Enums\Operation;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Number;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Unique;
@@ -38,6 +39,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Support\RawJs;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Support\Facades\DB;
+use BcMath\Number as BcMathNumber;
 
 class PayrollForm
 {
@@ -265,7 +267,18 @@ class PayrollForm
                                     /** @var PayrollDetail $payrollDetail */
                                     $payrollDetail = PayrollDetail::query()->findOrFail($payrollDetailId);
 
+                                    $currentAdjustments = $payrollDetail->salaryAdjustments()->get();
+
                                     $payrollDetail->salaryAdjustments()->sync($state);
+
+                                    SalaryAdjustment::query()
+                                        ->whereIn('id', $state)
+                                        ->get()
+                                        ->merge($currentAdjustments)
+                                        ->each(
+                                            fn (SalaryAdjustment $adjustment) => $this
+                                                ->normalizePayrollsSalaryAdjustments($payrollDetail, $adjustment, isActivating: true)
+                                        );
 
                                     $livewire->dispatch('updatePayrollData');
                                     $livewire->refreshFormData([str($statePath)->after('.')->beforeLast('.')->toString()]);
@@ -348,40 +361,12 @@ class PayrollForm
                                                 }
                                             }
 
+
                                             DB::transaction(function () use ($record, $state, $livewire) {
+                                                $this->normalizePayrollsSalaryAdjustments($record->payrollDetail, $record->salaryAdjustment, $state);
+
                                                 $record->update(['custom_value' => $state]);
 
-                                                if ($record->payrollDetail->payroll->biweeklyPayrolls()->exists()) {
-                                                    PayrollDetailSalaryAdjustment::query()
-                                                        ->where('salary_adjustment_id', $record->salary_adjustment_id)
-                                                        ->whereHas('payrollDetail.payroll.monthlyPayroll', fn (EloquentBuilder $query) => $query->where('id', $record->payrollDetail->payroll_id))
-                                                        ->update([
-                                                            'custom_value' => $state / 2
-                                                        ]);
-                                                    return;
-                                                }
-
-                                                $monthlyPayrollId = $record->payrollDetail->payroll->monthly_payroll_id;
-                                                if (!$monthlyPayrollId) {
-                                                    return;
-                                                };
-
-                                                $biweeklyPayrollsTotalValue = PayrollDetailSalaryAdjustment::query()
-                                                    ->where('salary_adjustment_id', $record->salary_adjustment_id)
-                                                    ->whereHas('payrollDetail.payroll.monthlyPayroll', fn (EloquentBuilder $query) => $query->where('id', $monthlyPayrollId))
-                                                    ->numericAggregate('sum', ['custom_value']);
-
-                                                PayrollDetailSalaryAdjustment::query()
-                                                    ->where('salary_adjustment_id', $record->salary_adjustment_id)
-                                                    ->whereHas(
-                                                        'payrollDetail',
-                                                        fn (EloquentBuilder $query) => $query
-                                                            ->where('employee_id', $record->payrollDetail->employee_id)
-                                                            ->where('payroll_id', $monthlyPayrollId)
-                                                    )
-                                                    ->update([
-                                                        'custom_value' => $biweeklyPayrollsTotalValue,
-                                                    ]);
                                                 $livewire->refreshFormData(['details', 'details_display_section']);
                                             });
 
@@ -426,5 +411,135 @@ class PayrollForm
     public static function configure(Schema $schema): Schema
     {
         return new self($schema)->schema();
+    }
+
+    protected function normalizePayrollsSalaryAdjustments(
+        PayrollDetail $detail,
+        SalaryAdjustment $adjustment,
+        ?float $value = null,
+        bool $isActivating = false,
+    ): void {
+
+        $payrollIsMonthly = $this->payroll->type->isMonthly();
+
+        if ($payrollIsMonthly) {
+            $biweeklyPayrollDetails = $detail->biweeklyDetails()
+                ->whereRelation(
+                    'salaryAdjustments',
+                    'salary_adjustment_id',
+                    $adjustment->id
+                )
+                ->get();
+
+            if ($biweeklyPayrollDetails->isEmpty()) {
+                return;
+            }
+
+            if ($biweeklyPayrollDetails->count() === 1) {
+                PayrollDetailSalaryAdjustment::query()
+                    ->where('salary_adjustment_id', $adjustment->id)
+                    ->where('payroll_detail_id', $biweeklyPayrollDetails->first()->id)
+                    ->update([
+                        'custom_value' => $value,
+                    ]);
+            }
+
+            if ($biweeklyPayrollDetails->count() === 2) {
+                PayrollDetailSalaryAdjustment::query()
+                    ->where('salary_adjustment_id', $adjustment->id)
+                    ->whereIn('payroll_detail_id', $biweeklyPayrollDetails->pluck('id'))
+                    ->update([
+                        'custom_value' => (float) new BcMathNumber((string)$value)->div(2, 2)->value,
+                    ]);
+            }
+
+            return;
+        }
+
+        $monthlyPayrollDetail = $detail
+            ->monthlyDetail()
+            ->whereRelation(
+                'salaryAdjustments',
+                'salary_adjustment_id',
+                $adjustment->id
+            )
+            ->first();
+
+        if (!$monthlyPayrollDetail) {
+            return;
+        }
+
+        $currentMonthlyValue = PayrollDetailSalaryAdjustment::query()
+            ->where('salary_adjustment_id', $adjustment->id)
+            ->where('payroll_detail_id', $monthlyPayrollDetail->id)
+            ->value('custom_value');
+
+        $complementaryPayrollDetail = $detail->complementaryDetail()
+            ->whereRelation(
+                'salaryAdjustments',
+                'salary_adjustment_id',
+                $adjustment->id
+            )
+            ->first();
+
+        if (!$complementaryPayrollDetail) {
+            PayrollDetailSalaryAdjustment::query()
+                ->where('salary_adjustment_id', $adjustment->id)
+                ->where('payroll_detail_id', $monthlyPayrollDetail->id)
+                ->update([
+                    'custom_value' => $value ?: $currentMonthlyValue,
+                ]);
+
+            if ($value === null) {
+                PayrollDetailSalaryAdjustment::query()
+                    ->where('salary_adjustment_id', $adjustment->id)
+                    ->where('payroll_detail_id', $detail->id)
+                    ->update([
+                        'custom_value' => $value ?: $currentMonthlyValue,
+                    ]);
+
+            }
+
+            return;
+        }
+
+        if ($isActivating) {
+            $detailHasAdjustment = PayrollDetailSalaryAdjustment::query()
+                ->where('salary_adjustment_id', $adjustment->id)
+                ->where('payroll_detail_id', $detail->id)
+                ->exists();
+
+            PayrollDetailSalaryAdjustment::query()
+                ->where('salary_adjustment_id', $adjustment->id)
+                ->when(
+                    $detailHasAdjustment,
+                    fn (Builder $query) => $query->whereIn('payroll_detail_id', [$detail->id, $complementaryPayrollDetail->id]),
+                    fn (Builder $query) => $query->where('payroll_detail_id', $complementaryPayrollDetail->id),
+                )
+                ->update([
+                    'custom_value' => $detailHasAdjustment
+                     ? (float) new BcMathNumber((string)$currentMonthlyValue)->div(2, 2)->value
+                     : $currentMonthlyValue
+                ]);
+
+            return;
+        }
+
+        $currentValue = PayrollDetailSalaryAdjustment::query()
+            ->where('salary_adjustment_id', $adjustment->id)
+            ->where('payroll_detail_id', $detail->id)
+            ->value('custom_value');
+
+        $newMonthlyValue = new BcMathNumber((string)$currentMonthlyValue)
+            ->sub((string)$currentValue ?? 0, 2)
+            ->add((string)$value, 2);
+
+        PayrollDetailSalaryAdjustment::query()
+            ->where('salary_adjustment_id', $adjustment->id)
+            ->where('payroll_detail_id', $monthlyPayrollDetail->id)
+            ->update([
+                'custom_value' => (float) $newMonthlyValue->value,
+            ]);
+
     }
 }

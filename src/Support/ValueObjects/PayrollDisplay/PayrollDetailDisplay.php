@@ -35,6 +35,8 @@ readonly class PayrollDetailDisplay
     public function __construct(
         PayrollDetail $detail
     ) {
+        $detail->load(['monthlyDetail']);
+
         $this->name = $detail->employee->full_name;
         $this->company = $detail->payroll->company;
         $this->payroll = $detail->payroll;
@@ -58,25 +60,28 @@ readonly class PayrollDetailDisplay
             });
 
 
-        $monthlyPayrollDetail = $detail->monthlyDetail;
+        $monthlyPayrollDetail = $detail->monthlyDetail()->first();
+
+        $complementaryDetail = $detail->complementaryDetail()->with('salaryAdjustments')->first();
         if (!is_null($monthlyPayrollDetail)) {
             $monthlyPayrollDetailDisplay = $monthlyPayrollDetail->display;
+
             $incomes
                 ->transform(
-                    fn (string $value, string $key) =>
+                    fn (float $value, string $key) =>
                     $monthlyPayrollDetailDisplay->incomes->has($key) &&
                         $detail->salaryAdjustments->keyBy('parser_alias')->get($key)->is_absolute_adjustment &&
-                        !$detail->complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($key)
+                        !$complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($key)
                         ? $monthlyPayrollDetailDisplay->incomes->get($key)
                         : $value
                 );
 
             $deductions
                 ->transform(
-                    fn (string $value, string $key) =>
+                    fn (float $value, string $key) =>
                     $monthlyPayrollDetailDisplay->deductions->has($key) &&
                         $detail->salaryAdjustments->keyBy('parser_alias')->get($key)->is_absolute_adjustment &&
-                        !$detail->complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($key)
+                        !$complementaryDetail?->salaryAdjustments->keyBy('parser_alias')->has($key)
                         ? $monthlyPayrollDetailDisplay->deductions->get($key)
                         : $value
                 );
