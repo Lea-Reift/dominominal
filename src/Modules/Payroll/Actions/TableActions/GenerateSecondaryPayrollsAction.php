@@ -16,7 +16,6 @@ use App\Modules\Payroll\Exceptions\DuplicatedPayrollException;
 use App\Enums\SalaryTypeEnum;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use App\Modules\Payroll\Models\PayrollDetail;
-use App\Modules\Payroll\Models\SalaryAdjustment;
 use App\Modules\Company\Resources\Payrolls\Pages\ViewPayroll;
 
 class GenerateSecondaryPayrollsAction
@@ -84,7 +83,8 @@ class GenerateSecondaryPayrollsAction
 
         throw_if(
             condition: Payroll::query()->where(['period' => $period, 'company_id' => $this->record->company_id])->exists(),
-            exception: DuplicatedPayrollException::make($period)
+            exception: DuplicatedPayrollException::class,
+            parameters: $period,
         );
 
         /** @var Payroll $payroll */
@@ -96,6 +96,8 @@ class GenerateSecondaryPayrollsAction
                 'monthly_payroll_id' => $this->record->id,
             ]))
             ->save();
+
+        $clonableAdjustments = $this->record->salaryAdjustments->where('requires_custom_value', false);
 
         // SalaryAdjustments
         $payroll->salaryAdjustments()->sync($this->record->salaryAdjustments);
@@ -122,15 +124,7 @@ class GenerateSecondaryPayrollsAction
 
             $newDetail->save();
 
-            $adjustments = $detail->salaryAdjustments
-                ->mapWithKeys(fn (SalaryAdjustment $adjustment) => [
-                    $adjustment->id => [
-                        'custom_value' => $adjustment->detailSalaryAdjustmentValue?->custom_value !== null
-                            ? $adjustment->detailSalaryAdjustmentValue->custom_value / 2
-                            : null
-                    ]
-                ]);
-            $newDetail->salaryAdjustments()->sync($adjustments);
+            $newDetail->salaryAdjustments()->sync($clonableAdjustments);
         }
 
         return $payroll->fresh();
@@ -162,9 +156,7 @@ class GenerateSecondaryPayrollsAction
                 ])
                 ->required()
                 ->gridDirection('row')
-                ->default(
-                    fn () => $existingSecondaryPayrollsDates->toArray()
-                )
+                ->default(fn () => $existingSecondaryPayrollsDates->toArray())
                 ->columns(2)
                 ->disabled($disableSecondaryPayrolls)
                 ->dehydrated(!$disableSecondaryPayrolls)

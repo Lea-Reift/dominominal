@@ -85,10 +85,13 @@ class EditPayrollAction
     protected function updateMonthlyPayroll(Payroll $editedPayroll): void
     {
         $monthlyPayrollId = Payroll::query()
-            ->whereDate('period', $editedPayroll->period->setDay(match (true) {
-                $editedPayroll->period->month === 2 => 28,
-                default => 30,
-            }))
+            ->whereDate(
+                'period',
+                $editedPayroll->period->clone()->setDay(match (true) {
+                    $editedPayroll->period->month === 2 => 28,
+                    default => 30,
+                })
+            )
             ->value('id');
 
         $editedPayroll->update(['monthly_payroll_id' => $monthlyPayrollId]);
