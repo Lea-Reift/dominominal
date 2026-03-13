@@ -88,7 +88,6 @@ class PayrollForm
                                     ->where('type', SalaryTypeEnum::MONTHLY)
                             )
                     )
-                    ->closeOnDateSelection()
                     ->required(),
 
                 Fieldset::make('Ajustes Salariales')

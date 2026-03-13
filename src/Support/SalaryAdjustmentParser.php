@@ -21,7 +21,6 @@ class SalaryAdjustmentParser
 
     public function __construct(
         protected PayrollDetail $detail,
-        array $customVariables = [],
     ) {
         $parsedDeductions = $this->parseDeductions()->keyBy('id');
         $this->detail->salaryAdjustments
@@ -31,7 +30,7 @@ class SalaryAdjustmentParser
                     : $salaryAdjustment
             );
 
-        $this->parseVariablesFromPayrollDetail($customVariables);
+        $this->parseVariablesFromPayrollDetail();
     }
 
     public function variables(): Collection
@@ -39,14 +38,19 @@ class SalaryAdjustmentParser
         return collect($this->variables)->except('DETALLE');
     }
 
-    public static function make(PayrollDetail $detail, array $customVariables = []): self
+    public static function make(PayrollDetail $detail): self
     {
-        return new self(detail: $detail, customVariables: $customVariables);
+        return new self(detail: $detail);
     }
 
     public static function setDefaultVariables(array $defaultVariables): array
     {
         return static::$defaultVariables = array_merge(static::$defaultVariables, $defaultVariables);
+    }
+
+    public static function getDefaultvariables(): array
+    {
+        return static::$defaultVariables;
     }
 
     protected function parse(string $formula): float
@@ -56,7 +60,7 @@ class SalaryAdjustmentParser
         return floatval($parser->evaluate($formula, $this->variables));
     }
 
-    public function parseVariablesFromPayrollDetail(array $customVariables): self
+    public function parseVariablesFromPayrollDetail(): self
     {
         $defaultVariables = Arr::map(static::$defaultVariables, fn (mixed $variable) => is_callable($variable) ? $variable($this->detail) : $variable);
 
@@ -69,16 +73,15 @@ class SalaryAdjustmentParser
 
                 $value = match ($adjustment->value_type) {
                     SalaryAdjustmentValueTypeEnum::PERCENTAGE => (floatval($value) * $this->detail->salary->amount) / 100,
+                    SalaryAdjustmentValueTypeEnum::FORMULA => $adjustment->formula,
                     default => $value,
                 };
 
                 return [$adjustment->parser_alias => is_numeric($value) ? floatval($value) : ($value ?? 0)];
             })
             ->toBase()
-
-            // Add custom and default variables
+            // Add default variables
             ->merge($defaultVariables)
-            ->merge($customVariables)
             // Sort variable in parsing order
             ->pipe(fn (Collection $adjustments) => $this->sortVariables($adjustments))
 
