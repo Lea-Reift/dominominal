@@ -64,7 +64,6 @@ class ViewPayroll extends ViewRecord
                         )
                         ->default(now())
                         ->displayFormat('F-Y')
-                        ->closeOnDateSelection()
                         ->required(),
                 ])
                 ->modalHeading("Replicar nómina de {$this->getHeading()}")
