@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Resources\SalaryAdjustments;
 
+use App\Support\SalaryAdjustmentParser;
+use Filament\Forms\Components\RichEditor;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
@@ -13,7 +15,6 @@ use App\Enums\SalaryAdjustmentTypeEnum;
 use App\Enums\SalaryAdjustmentValueTypeEnum;
 use App\Modules\Payroll\Models\SalaryAdjustment;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
 use Filament\Forms\Components\ToggleButtons;
@@ -98,13 +99,20 @@ class SalaryAdjustmentResource extends Resource
                             ->boolean()
                             ->grouped(),
                     ]),
-                Textarea::make('value')
+                RichEditor::make('value')
                     ->label('Valor')
                     ->required(fn (Get $get) => !is_null($get('requires_custom_value')) && !((bool)$get('requires_custom_value')))
                     ->visible(fn (Get $get) => !is_null($get('requires_custom_value')) && !((bool)$get('requires_custom_value')))
                     ->disabled(fn (Get $get) => !is_null($get('requires_custom_value')) && ((bool)$get('requires_custom_value')))
                     ->columnSpanFull()
-                    ->autosize(),
+                    ->mergeTags(
+                        collect(SalaryAdjustmentParser::getDefaultvariables())
+                            ->keys()
+                            ->all()
+                    )
+                    ->toolbarButtons(['mergeTags'])
+                    ->activePanel('mergeTags')
+                    ->json(),
             ]);
     }
 
@@ -132,8 +140,8 @@ class SalaryAdjustmentResource extends Resource
                         fn (SalaryAdjustment $record, TextColumn $component) => isset($record->value)
                             ? match ($record->value_type) {
                                 SalaryAdjustmentValueTypeEnum::ABSOLUTE => Number::currency((float) $record->value),
-                                SalaryAdjustmentValueTypeEnum::PERCENTAGE => $record->value . '%',
-                                SalaryAdjustmentValueTypeEnum::FORMULA => $record->value,
+                                SalaryAdjustmentValueTypeEnum::PERCENTAGE => "{$record->value}%",
+                                SalaryAdjustmentValueTypeEnum::FORMULA => $record->formula,
                             }
                         : $component->getDefaultState()
                     ),
