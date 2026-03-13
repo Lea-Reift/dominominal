@@ -166,7 +166,9 @@ class MainPanelProvider extends PanelProvider
 
     public function setSalaryParserDefaultVariables(): void
     {
-        $mainAdjustments = SalaryAdjustment::query()->whereIn('parser_alias', ['AFP', 'SFS'])->pluck('value', 'parser_alias');
+        $mainAdjustments = SalaryAdjustment::query()->whereIn('parser_alias', ['AFP', 'SFS'])
+            ->pluck('value', 'parser_alias')
+            ->map(fn (string $formula) => new SalaryAdjustmentRichEditorValue($formula)->value());
 
         SalaryAdjustmentParser::setDefaultVariables([
             'SALARIO' => fn (PayrollDetail $detail) => $detail->salary->amount,

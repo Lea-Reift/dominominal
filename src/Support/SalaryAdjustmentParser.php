@@ -49,6 +49,11 @@ class SalaryAdjustmentParser
         return static::$defaultVariables = array_merge(static::$defaultVariables, $defaultVariables);
     }
 
+    public static function getDefaultvariables(): array
+    {
+        return static::$defaultVariables;
+    }
+
     protected function parse(string $formula): float
     {
         $parser = new ExpressionLanguage();

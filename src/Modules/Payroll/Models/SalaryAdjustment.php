@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Payroll\Models;
 
 use App\Casts\SalaryAdjustmentvalueCast;
+use App\Support\ValueObjects\SalaryAdjustmentRichEditorValue;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\SalaryAdjustmentTypeEnum;
@@ -27,6 +29,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  */
 class SalaryAdjustment extends Model
 {
+    protected SalaryAdjustmentRichEditorValue $rawFormula;
+
     protected $fillable = [
         'type',
         'name',
@@ -61,5 +65,19 @@ class SalaryAdjustment extends Model
     public function payrollDetails(): BelongsToMany
     {
         return $this->belongsToMany(PayrollDetail::class);
+    }
+
+    public function formula(): Attribute
+    {
+        return Attribute::get(fn () => $this->extractFormulaFromRichEditorFormat());
+    }
+
+    protected function extractFormulaFromRichEditorFormat(): string
+    {
+        if (!isset($this->rawFormula)) {
+            $this->rawFormula = new SalaryAdjustmentRichEditorValue($this->value);
+        }
+
+        return $this->rawFormula->value();
     }
 }
