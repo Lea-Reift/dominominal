@@ -10,12 +10,12 @@ use App\Modules\Company\Resources\Companies\CompanyResource;
 use App\Modules\Company\Resources\Companies\Pages\ViewCompany;
 use App\Modules\Payroll\Resources\SalaryAdjustments\SalaryAdjustmentResource;
 use App\Support\Pages\Settings;
+use App\Support\ValueObjects\SalaryAdjustmentRichEditorValue;
 use Filament\Navigation\NavigationBuilder;
 use Filament\Navigation\NavigationGroup;
 use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Support\Enums\Width;
-use Exception;
 use App\Modules\Payroll\Models\PayrollDetail;
 use App\Support\SalaryAdjustmentParser;
 use Filament\Http\Middleware\Authenticate;
@@ -145,23 +145,21 @@ class MainPanelProvider extends PanelProvider
 
     protected function configureVerifiedEmail(): void
     {
-        try {
-
+        rescue(function () {
             /** @var EloquentCollection<int, Setting> */
             $emailSettings = Setting::query()->getSettings('email');
             $emailSetting = $emailSettings->where('name', 'username')->first();
             $verifiedSetting = $emailSettings->where('name', 'is_verified')->first();
 
-            $hasEmail = $emailSetting && $emailSetting->value;
-            $isVerified = $verifiedSetting && $verifiedSetting->value;
+            $hasEmail = (bool)$emailSetting?->value;
+            $isVerified = (bool)$verifiedSetting?->value;
 
             if ($hasEmail && $isVerified) {
                 config([
                     'mail.from.address' => $emailSetting->value,
                 ]);
             }
-        } catch (Exception) {
-        }
+        });
     }
 
     public function setSalaryParserDefaultVariables(): void
