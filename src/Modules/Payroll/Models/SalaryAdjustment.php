@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Models;
 
+use App\Casts\SalaryAdjustmentvalueCast;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\SalaryAdjustmentTypeEnum;
@@ -44,6 +45,7 @@ class SalaryAdjustment extends Model
         'requires_custom_value' => 'boolean',
         'ignore_in_deductions' => 'boolean',
         'is_absolute_adjustment' => 'boolean',
+        'value' => SalaryAdjustmentvalueCast::class
     ];
 
     public function payrolls(): BelongsToMany
