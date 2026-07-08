@@ -35,7 +35,7 @@ pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
         .path()
         .resource_dir()
         .expect("Fail getting path")
-        .join("resources/app/public");
+        .join("./app/public");
 
     let (mut receiver, child) = crate::commands::run_php_command(
         [
@@ -72,7 +72,7 @@ pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
                 .timeout(tokio::time::Duration::from_secs(3))
                 .build()
                 .expect("Failed to create HTTP client");
-            let mut request = client.get("http://127.0.0.1:8000/main");
+            let mut request = client.get("http://127.0.0.1:8000");
             
             // Add stored cookies if available
             if let Some(cookies) = crate::window::get_stored_cookies() {
