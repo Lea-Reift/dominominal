@@ -39,7 +39,7 @@ pub fn run_artisan_command(
 
     let realpath: PathBuf = handler
         .path()
-        .resolve("./resources/app", BaseDirectory::Resource)
+        .resolve("./app", BaseDirectory::Resource)
         .expect("Fail getting route");
 
     args.insert(0, "artisan");
