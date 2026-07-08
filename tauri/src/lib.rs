@@ -57,7 +57,7 @@ pub fn run() {
         .path()
         .app_local_data_dir()
         .expect("Fail getting path")
-        .join("dominominal.sqlite");
+        .join("justix.sqlite");
 
     let laravel_information: LaravelInformation = LaravelInformation {
         database_path: Some(database_path),
