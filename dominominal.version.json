@@ -1,9 +1,9 @@
 {
-    "version": "0.1.31",
+    "version": "0.1.32",
     "platforms": {
         "windows-x86_64": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUbDc5OEU0K1NrTFRiY2J2VWZ0Mi9vcllrQndncElMMmJtaEdoclRKWjBiNUxGVTRwM3dHcGdMN3J0b3dTaE5RZzFJb2FOQlljbU1QZjJLWHBGQ3FmRDBkTENVZFZQYXdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY1MDM2NDI4CWZpbGU6RG9taW5vbWluYWxfMC4xLjMxX3g2NC1zZXR1cC5leGUKTjkzSWsxMS9FcFRFeTRNdXMvV2hTbHpBa1VWQ0V0QVZmV1dhUHROZTBNbTFKVVErVmVrVFgzUE9BUUlhYkJ1MVQrTExkRXBua2FhWFpvTFdNclRjQUE9PQo=",
-            "url": "https://github.com/Lea-Reift/dominominal/releases/download/v0.1.31/Dominominal_0.1.31_x64-setup.exe"
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUbDc5OEU0K1NrTGZqNXlpeWYzTHFpOEFhcXpkbUljbnlnQmxWckJxZDc4RmZhaG5jalBQcUhTeHFHMTVmSXl5S1ppeUExZ1Z1SjVjTVBBbE5GNXBhNDYvU0ZiUzh1VXcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0MjQ0MzYwCWZpbGU6RG9taW5vbWluYWxfMC4xLjMyX3g2NC1zZXR1cC5leGUKRUZ6aTNpdndmRGJ0NStYMTduK2t6VUVFQVo2V3o4SWlvR1Q2b3JWeFVBSzRmV2ZjUkR0cDduYTZJT1pKRHlSaTZSc1FaZmxVcittL0tDeC9IbTByRGc9PQo=",
+            "url": "https://github.com/Lea-Reift/dominominal/releases/download/v0.1.32/Dominominal_0.1.32_x64-setup.exe"
         }
     }
 }
