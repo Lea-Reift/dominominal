@@ -1,5 +1,5 @@
 php-version: 8.4
-extensions: "bcmath,brotli,bz2,calendar,ctype,curl,dom,exif,fileinfo,filter,gd,iconv,intl,libxml,mbregex,mbstring,mysqli,mysqlnd,openssl,pdo,pdo_sqlite,phar,session,simplexml,sqlite3,tokenizer,xml,xmlwriter,zip,zlib"
+extensions: "bcmath,brotli,bz2,calendar,ctype,curl,dom,exif,fileinfo,filter,gd,iconv,intl,libxml,mbregex,mbstring,mysqli,mysqlnd,openssl,pdo,pdo_sqlite,phar,session,simplexml,sqlite3,tokenizer,xml,xmlwriter,xmlreader,zip,zlib"
 sapi:
   - cli
 verbosity: 256
