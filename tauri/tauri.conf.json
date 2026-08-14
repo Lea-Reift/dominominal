@@ -41,7 +41,7 @@
             "nsis"
         ],
         "resources": {
-            "./resources/app": "./app"
+            "./resources/app": "./"
         },
         "externalBin": [
             "resources/php"
