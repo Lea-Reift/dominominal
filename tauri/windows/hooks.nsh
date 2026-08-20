@@ -9,10 +9,8 @@
     ${Else}
       MessageBox MB_ICONEXCLAMATION "Error limpiando cache. Debe limpiarse manualmente"
     ${EndIf}
-
-    ${If} ${Not} ${FileExists} "$INSTDIR\app\config\settings.php"
+    ${IfNot} ${FileExists} "$INSTDIR\app\config\settings.php"
       ExecWait '$INSTDIR\php.exe $INSTDIR\app\artisan db:restore' $0
-
        ${If} $0 == 0
          DetailPrint "App migrada con exito"
        ${Else}
