@@ -1,7 +1,7 @@
 !macro NSIS_HOOK_POSTINSTALL
-  ${If} ${FileExists} "$INSTDIR\resources\app\artisan"
+  ${If} ${FileExists} "$INSTDIR\app\artisan"
     DetailPrint "Limpiando cache..."
-    ExecWait '$INSTDIR\php.exe $INSTDIR\resources\app\artisan optimize:clear' $0
+    ExecWait '$INSTDIR\php.exe $INSTDIR\app\artisan optimize:clear' $0
 
     ; Check wether installation process exited successfully (code 0) or not
     ${If} $0 == 0
@@ -10,8 +10,8 @@
       MessageBox MB_ICONEXCLAMATION "Error limpiando cache. Debe limpiarse manualmente"
     ${EndIf}
 
-    ${If} ${Not} ${FileExists} "$INSTDIR\resources\app\config\settings.php"
-      ExecWait '$INSTDIR\php.exe $INSTDIR\resources\app\artisan db:restore' $0
+    ${If} ${Not} ${FileExists} "$INSTDIR\app\config\settings.php"
+      ExecWait '$INSTDIR\php.exe $INSTDIR\app\artisan db:restore' $0
 
        ${If} $0 == 0
          DetailPrint "App migrada con exito"
