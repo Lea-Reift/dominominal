@@ -9,5 +9,15 @@
     ${Else}
       MessageBox MB_ICONEXCLAMATION "Error limpiando cache. Debe limpiarse manualmente"
     ${EndIf}
+
+    ${If} ${Not} ${FileExists} "$INSTDIR\resources\app\config\settings.php"
+      ExecWait '$INSTDIR\php.exe $INSTDIR\resources\app\artisan db:restore' $0
+
+       ${If} $0 == 0
+         DetailPrint "App migrada con exito"
+       ${Else}
+         MessageBox MB_ICONEXCLAMATION "No se pudo migrar la DB"
+      ${EndIf}
+    ${EndIf}
   ${EndIf}
 !macroend
