@@ -19,10 +19,10 @@ pub fn prepare_database(database_path: &PathBuf) {
     let connection = sqlite::open(database_path).expect("Error opening database");
 
     let mut statement = connection
-                .prepare(
-                    "SELECT EXISTS(SELECT name FROM sqlite_master WHERE TYPE ='table' AND name = 'migrations') AS has_migrations_table"
-                )
-                .unwrap();
+        .prepare(
+            "SELECT EXISTS(SELECT name FROM sqlite_master WHERE TYPE ='table' AND name = 'migrations') AS has_migrations_table"
+        )
+        .unwrap();
 
     statement.next().unwrap();
 
