@@ -1,13 +1,8 @@
-use std::{
-    path::PathBuf, sync::Mutex
-};
+use std::{path::PathBuf, sync::Mutex};
 use tauri::{Manager, State};
-use tauri_plugin_shell::{
-    process::{CommandChild, CommandEvent},
-};
+use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 
 use crate::window::set_complete;
-
 
 #[derive(Default)]
 pub struct LaravelInformation {
@@ -38,9 +33,7 @@ pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
         .join("./app/public");
 
     let (mut receiver, child) = crate::commands::run_php_command(
-        [
-            "-S", "127.0.0.1:8000",
-        ].to_vec(),
+        ["-S", "127.0.0.1:8000"].to_vec(),
         Some(
             resources_path
                 .canonicalize()
@@ -65,7 +58,7 @@ pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
     // Wait for main page to be ready before showing window
     tauri::async_runtime::spawn(async move {
         tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
-        
+
         // Check if main page is accessible
         loop {
             let client = reqwest::Client::builder()
@@ -73,12 +66,12 @@ pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
                 .build()
                 .expect("Failed to create HTTP client");
             let mut request = client.get("http://127.0.0.1:8000");
-            
+
             // Add stored cookies if available
             if let Some(cookies) = crate::window::get_stored_cookies() {
                 request = request.header("Cookie", cookies);
             }
-            
+
             if let Ok(response) = request.send().await {
                 if response.status().is_success() {
                     break;
@@ -86,7 +79,7 @@ pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
             }
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
-        
+
         let _ = set_complete().await;
     });
 

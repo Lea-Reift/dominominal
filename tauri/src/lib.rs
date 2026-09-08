@@ -3,9 +3,7 @@ use std::{
     sync::{Mutex, MutexGuard},
 };
 
-use tauri::{
-    App, AppHandle, Manager, RunEvent, State,
-};
+use tauri::{App, AppHandle, Manager, RunEvent, State};
 
 mod commands;
 mod database;
@@ -21,6 +19,7 @@ use crate::global::init_app_handle;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app: App = tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
@@ -48,7 +47,12 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![window::set_complete, window::reset_retry_count, window::start_window_load_monitoring, window::store_session_cookies])
+        .invoke_handler(tauri::generate_handler![
+            window::set_complete,
+            window::reset_retry_count,
+            window::start_window_load_monitoring,
+            window::store_session_cookies
+        ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 
@@ -78,9 +82,12 @@ pub fn run() {
             let laravel_state: State<'_, Mutex<LaravelInformation>> = server::laravel_state();
             let laravel_information: MutexGuard<'_, LaravelInformation> =
                 laravel_state.lock().expect("Failure getting information");
-            let database_path: PathBuf = laravel_information.database_path.clone().expect("Missing database path");
+            let database_path: PathBuf = laravel_information
+                .database_path
+                .clone()
+                .expect("Missing database path");
             drop(laravel_information);
-            
+
             database::prepare_database(&database_path);
 
             let storage_path: std::path::PathBuf = handler
@@ -91,13 +98,11 @@ pub fn run() {
 
             if !std::fs::exists(storage_path).unwrap_or(false) {
                 // Run comprehensive optimization commands
-                let optimization_commands = vec![
-                    ["optimize"],
-                    ["filament:optimize"],
-                ];
+                let optimization_commands = vec![["optimize"], ["filament:optimize"]];
 
                 for cmd in optimization_commands {
-                    let (mut receiver, _) = commands::run_artisan_command(cmd.to_vec(), &database_path);
+                    let (mut receiver, _) =
+                        commands::run_artisan_command(cmd.to_vec(), &database_path);
                     tauri::async_runtime::block_on(async move {
                         println!("Running artisan {}...", cmd.join(" "));
                         receiver.recv().await;
@@ -106,7 +111,8 @@ pub fn run() {
                 }
             }
 
-            let laravel_server: Option<tauri_plugin_shell::process::CommandChild> = Some(server::start_laravel_server(&database_path));
+            let laravel_server: Option<tauri_plugin_shell::process::CommandChild> =
+                Some(server::start_laravel_server(&database_path));
 
             let laravel_state: State<'_, Mutex<LaravelInformation>> = server::laravel_state();
             let mut laravel_information: MutexGuard<'_, LaravelInformation> =
@@ -128,4 +134,3 @@ pub fn run() {
         _ => {}
     });
 }
-
