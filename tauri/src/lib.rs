@@ -15,6 +15,7 @@ mod window;
 use server::LaravelInformation;
 
 use crate::global::init_app_handle;
+use crate::server::extract_server;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -40,8 +41,9 @@ pub fn run() {
             }
             init_app_handle(app.handle().clone());
 
+            extract_server();
             tauri::async_runtime::block_on(async move {
-                crate::updater::update().await.expect("error updating app");
+                updater::update().await.expect("error updating app");
             });
 
             Ok(())
@@ -81,15 +83,17 @@ pub fn run() {
             let laravel_state: State<'_, Mutex<LaravelInformation>> = server::laravel_state();
             let laravel_information: MutexGuard<'_, LaravelInformation> =
                 laravel_state.lock().expect("Failure getting information");
+
             let database_path: PathBuf = laravel_information
                 .database_path
                 .clone()
                 .expect("Missing database path");
+
             drop(laravel_information);
 
             database::prepare_database(&database_path);
 
-            let storage_path: std::path::PathBuf = handler
+            let storage_path: PathBuf = handler
                 .path()
                 .resource_dir()
                 .expect("Fail getting path")

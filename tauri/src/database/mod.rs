@@ -2,7 +2,8 @@ use std::path::PathBuf;
 use tauri::Manager;
 
 pub fn migrate_app(database_path: &PathBuf) {
-    let (mut receiver, _) = crate::commands::run_artisan_command(["migrate", "--force"].to_vec(), database_path);
+    let (mut receiver, _) =
+        crate::commands::run_artisan_command(["migrate", "--force"].to_vec(), database_path);
 
     tauri::async_runtime::block_on(async move {
         println!("Running artisan migrate...");
@@ -38,6 +39,7 @@ pub fn prepare_database(database_path: &PathBuf) {
             "SELECT COUNT(migration) as migrations_count FROM migrations ORDER BY id DESC LIMIT 1",
         )
         .unwrap();
+
     statement.next().unwrap();
     let migrations_count: i64 = statement.read::<i64, _>("migrations_count").unwrap();
 
