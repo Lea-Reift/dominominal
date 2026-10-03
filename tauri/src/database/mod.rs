@@ -17,6 +17,7 @@ pub fn prepare_database(database_path: &PathBuf) {
         let _ = std::fs::File::create_new(&database_path);
     }
 
+    println!("{}", database_path.to_str().unwrap());
     let connection = sqlite::open(database_path).expect("Error opening database");
 
     let mut statement = connection

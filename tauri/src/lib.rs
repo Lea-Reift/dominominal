@@ -15,7 +15,6 @@ mod window;
 use server::LaravelInformation;
 
 use crate::global::init_app_handle;
-use crate::server::extract_server;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -41,7 +40,6 @@ pub fn run() {
             }
             init_app_handle(app.handle().clone());
 
-            extract_server();
             tauri::async_runtime::block_on(async move {
                 updater::update().await.expect("error updating app");
             });
