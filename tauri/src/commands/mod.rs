@@ -1,7 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
-use tauri::{async_runtime::Receiver, path::BaseDirectory, Manager};
-use tauri::path::BaseDirectory::Resource;
+use tauri::{async_runtime::Receiver, path::BaseDirectory::Resource, Manager};
 use tauri_plugin_shell::{
     process::{Command, CommandChild, CommandEvent},
     ShellExt,
@@ -10,7 +9,7 @@ pub fn run_ephpm_command(
     args: Vec<&str>,
     database_path: &PathBuf,
 ) -> (Receiver<CommandEvent>, CommandChild) {
-    let handler = crate::global::get_app_handle();
+     let handler = crate::global::get_app_handle();
     let php: Command = handler.shell().sidecar("ephpm").unwrap();
 
     let realpath: PathBuf = handler
@@ -62,7 +61,7 @@ pub fn run_ephpm_command(
     path = '{database_real_path_string}'
     ");
 
-    fs::write("./ephpm.toml", toml).expect("TODO: panic message");
+    std::fs::write("./ephpm.toml", toml).expect("TODO: panic message");
     
     php.args(args.clone())
         // .env("EPHPM_SERVER__LISTEN", "0.0.0.0:8000")

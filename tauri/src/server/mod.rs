@@ -1,7 +1,6 @@
 use std::{path::PathBuf, sync::Mutex};
 use tauri::{Manager, State};
-use tauri_plugin_shell::process::{Command, CommandChild, CommandEvent};
-use tauri_plugin_shell::ShellExt;
+use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use crate::window::set_complete;
 
 #[derive(Default)]
@@ -26,16 +25,13 @@ pub fn kill_laravel_server() {
 
 pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
     let handler = crate::global::get_app_handle();
-    let _resources_path = handler
+    let resources_path = handler
         .path()
         .resource_dir()
         .expect("Fail getting path")
-        .join("./app/public");
+        .join("ephpm.toml");
 
-    let (mut receiver, child) = crate::commands::run_ephpm_command(
-        ["serve"].to_vec(),
-        database_path
-    );
+    let (mut receiver, child) = crate::commands::run_ephpm_command([].to_vec(),database_path);
 
     // let (mut receiver, child) = crate::commands::run_php_command(
     //     ["-S", "127.0.0.1:8000"].to_vec(),
