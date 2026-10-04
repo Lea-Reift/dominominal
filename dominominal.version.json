@@ -2,7 +2,7 @@
     "version": "0.1.46",
     "platforms": {
         "windows-x86_64": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUbDc5OEU0K1NrTFdEZ0F1amZ1eWRBK0ZkQ2Y1Y2o1T1M2OUxGc0lJMnVrdzNFL3RhQ0dDKzByN29oclFoRmhFc2xXWUREaWRpRTM3dEVIZmpDc0ErclpNdC9YOW5FWGc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxMTQ4MzA3CWZpbGU6RG9taW5vbWluYWxfMC4xLjQ2X3g2NC1zZXR1cC5leGUKMG5MQ09tWC9JdjFwRmFnc29vcDgyZW9UbDhsSEkxdExVaS9LcjJsWWNseXN5dUJlZm1HWU5OSEJ5cURZWEpta0Mxc3lSUlBXNVdiRlRoUytkd1hvQ2c9PQo=",
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUbDc5OEU0K1NrTGJyS1dqamJUUzRCQjZhWUJsYlFCT0cwSmR0cGNRWlFWZmdxYkl0VzlOaG1yb000YXZkZ3hpczdYTEs4eEN0NmliRUVmZWFCUnZDdlkvekVlakxNREFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxMTUxNjQ0CWZpbGU6RG9taW5vbWluYWxfMC4xLjQ2X3g2NC1zZXR1cC5leGUKdERQcmVYblg1TXJOVWQvRTZDNGlLZzg1MVJDay93elVTOUt6RU5QTml0bVhNSE9lcksvSUM5VVZod3lOMEpvcStxaXdTa0pMa0NKT0xtY2N6cTdFQXc9PQo=",
             "url": "https://github.com/Lea-Reift/dominominal/releases/download/v0.1.46/Dominominal_0.1.46_x64-setup.exe"
         }
     }
