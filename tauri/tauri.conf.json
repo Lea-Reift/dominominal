@@ -41,10 +41,10 @@
             "nsis"
         ],
         "resources": {
-            "./resources/app": "./app"
+            "./resources/app": "./resources/app"
         },
         "externalBin": [
-            "resources/php"
+            "resources/ephpm"
         ],
         "icon": [
             "icons/32x32.png",

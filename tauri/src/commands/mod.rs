@@ -1,53 +1,39 @@
-use std::path::PathBuf;
-use tauri::{
-    async_runtime::Receiver, path::BaseDirectory, Manager
-};
+use std::{fs, path::PathBuf};
+use tauri::{async_runtime::Receiver, path::BaseDirectory::Resource, Manager};
 use tauri_plugin_shell::{
     process::{Command, CommandChild, CommandEvent},
     ShellExt,
 };
-
-pub fn run_php_command(
+pub fn run_ephpm_command(
     args: Vec<&str>,
-    directory: Option<PathBuf>,
     database_path: &PathBuf,
 ) -> (Receiver<CommandEvent>, CommandChild) {
     let handler = crate::global::get_app_handle();
-    let php: Command = handler.shell().sidecar("php").unwrap();
-    let realpath = match directory {
-        None => handler
-            .path()
-            .resolve("./resources/app", BaseDirectory::Resource)
-            .expect("Fail getting route"),
-        _ => directory.unwrap(),
-    };
+    let ephpm: Command = handler.shell().sidecar("ephpm").unwrap();
 
-    return php
-        .args(args.clone())
-        .env("DB_DATABASE", database_path.to_str().unwrap())
-        .current_dir(realpath.to_str().expect("Failure getting path"))
+    let realpath: PathBuf = handler
+        .path()
+        .resolve("resources/app", Resource)
+        .expect("Fail getting route");
+
+    ephpm.args(args.clone())
+        .current_dir(realpath.to_owned())
         .spawn()
-        .expect(&format!("Failure running php command: {:?}", args));
+        .expect(&format!("Failure running command: {:?}", args))
+}
+
+pub fn run_php_command(
+    mut args: Vec<&str>,
+    database_path: &PathBuf,
+) -> (Receiver<CommandEvent>, CommandChild) {
+    args.insert(0, "php");
+    run_ephpm_command(args, database_path)
 }
 
 pub fn run_artisan_command(
     mut args: Vec<&str>,
     database_path: &PathBuf,
 ) -> (Receiver<CommandEvent>, CommandChild) {
-    let handler = crate::global::get_app_handle();
-    let php: Command = handler.shell().sidecar("php").unwrap();
-
-    let realpath: PathBuf = handler
-        .path()
-        .resolve("./app", BaseDirectory::Resource)
-        .expect("Fail getting route");
-
     args.insert(0, "artisan");
-
-    return php
-        .args(args.clone())
-        .env("DB_DATABASE", database_path.to_str().unwrap())
-        .current_dir(realpath.to_str().expect("Failure getting path"))
-        .spawn()
-        .expect(&format!("Failure running artisan command: {:?}", args));
+    run_php_command(args, database_path)
 }

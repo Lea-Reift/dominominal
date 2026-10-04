@@ -30,6 +30,8 @@ sqlite = "0.37.0"
 reqwest = "0.12"
 tokio = { version = "1", features = ["time"] }
 ctrlc = "3.5"
+dunce = "1.0.5"
+
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2"

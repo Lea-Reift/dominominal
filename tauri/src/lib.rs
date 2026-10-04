@@ -41,7 +41,7 @@ pub fn run() {
             init_app_handle(app.handle().clone());
 
             tauri::async_runtime::block_on(async move {
-                crate::updater::update().await.expect("error updating app");
+                updater::update().await.expect("error updating app");
             });
 
             Ok(())
@@ -81,34 +81,38 @@ pub fn run() {
             let laravel_state: State<'_, Mutex<LaravelInformation>> = server::laravel_state();
             let laravel_information: MutexGuard<'_, LaravelInformation> =
                 laravel_state.lock().expect("Failure getting information");
+
             let database_path: PathBuf = laravel_information
                 .database_path
                 .clone()
                 .expect("Missing database path");
+
             drop(laravel_information);
 
             database::prepare_database(&database_path);
 
-            let storage_path: std::path::PathBuf = handler
-                .path()
-                .resource_dir()
-                .expect("Fail getting path")
-                .join("resources/app/bootstrap/cache/config.php");
+            // Config does not need cache anymore as worker loads it from the beginning
 
-            if !std::fs::exists(storage_path).unwrap_or(false) {
-                // Run comprehensive optimization commands
-                let optimization_commands = vec![["optimize"], ["filament:optimize"]];
-
-                for cmd in optimization_commands {
-                    let (mut receiver, _) =
-                        commands::run_artisan_command(cmd.to_vec(), &database_path);
-                    tauri::async_runtime::block_on(async move {
-                        println!("Running artisan {}...", cmd.join(" "));
-                        receiver.recv().await;
-                        println!("Artisan {} done!", cmd.join(" "));
-                    });
-                }
-            }
+            // let storage_path: PathBuf = handler
+            //     .path()
+            //     .resource_dir()
+            //     .expect("Fail getting path")
+            //     .join("resources/app/bootstrap/cache/config.php");
+            //
+            // if !std::fs::exists(storage_path).unwrap_or(false) {
+            //     // Run comprehensive optimization commands
+            //     let optimization_commands = vec![["optimize"], ["filament:optimize"]];
+            //
+            //     for cmd in optimization_commands {
+            //         let (mut receiver, _) =
+            //             commands::run_artisan_command(cmd.to_vec(), &database_path);
+            //         tauri::async_runtime::block_on(async move {
+            //             println!("Running artisan {}...", cmd.join(" "));
+            //             receiver.recv().await;
+            //             println!("Artisan {} done!", cmd.join(" "));
+            //         });
+            //     }
+            // }
 
             let laravel_server: Option<tauri_plugin_shell::process::CommandChild> =
                 Some(server::start_laravel_server(&database_path));
