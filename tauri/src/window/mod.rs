@@ -43,7 +43,7 @@ pub async fn start_window_load_monitoring() -> Result<(), ()> {
         let mut retry_count = 0u32;
 
         loop {
-            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+            tokio::time::sleep(Duration::from_secs(2)).await;
 
             // Check if we should stop monitoring
             if rx.try_recv().is_ok() {
@@ -52,7 +52,7 @@ pub async fn start_window_load_monitoring() -> Result<(), ()> {
 
             // Try to get response from server with stored cookies
             let client = reqwest::Client::builder()
-                .timeout(tokio::time::Duration::from_secs(3))
+                .timeout(Duration::from_secs(3))
                 .build()
                 .expect("Failed to create HTTP client");
             let mut request = client.get("http://127.0.0.1:8000/main");
@@ -98,7 +98,7 @@ pub async fn start_window_load_monitoring() -> Result<(), ()> {
 
     // Auto-stop monitoring after 30 seconds (timeout)
     tauri::async_runtime::spawn(async move {
-        tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
+        tokio::time::sleep(Duration::from_secs(30)).await;
         let _ = tx.send(());
     });
 
@@ -111,7 +111,7 @@ async fn handle_window_reload() {
     let _ = main_window.eval("window.location.reload()");
 
     // Wait a bit longer after reload
-    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+    tokio::time::sleep(Duration::from_secs(3)).await;
 }
 
 async fn show_error_dialog_and_exit() {
