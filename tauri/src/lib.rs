@@ -91,26 +91,28 @@ pub fn run() {
 
             database::prepare_database(&database_path);
 
-            let storage_path: PathBuf = handler
-                .path()
-                .resource_dir()
-                .expect("Fail getting path")
-                .join("resources/app/bootstrap/cache/config.php");
+            // Config does not need cache anymore as worker loads it from the beginning
 
-            if !std::fs::exists(storage_path).unwrap_or(false) {
-                // Run comprehensive optimization commands
-                let optimization_commands = vec![["optimize"], ["filament:optimize"]];
-
-                for cmd in optimization_commands {
-                    let (mut receiver, _) =
-                        commands::run_artisan_command(cmd.to_vec(), &database_path);
-                    tauri::async_runtime::block_on(async move {
-                        println!("Running artisan {}...", cmd.join(" "));
-                        receiver.recv().await;
-                        println!("Artisan {} done!", cmd.join(" "));
-                    });
-                }
-            }
+            // let storage_path: PathBuf = handler
+            //     .path()
+            //     .resource_dir()
+            //     .expect("Fail getting path")
+            //     .join("resources/app/bootstrap/cache/config.php");
+            //
+            // if !std::fs::exists(storage_path).unwrap_or(false) {
+            //     // Run comprehensive optimization commands
+            //     let optimization_commands = vec![["optimize"], ["filament:optimize"]];
+            //
+            //     for cmd in optimization_commands {
+            //         let (mut receiver, _) =
+            //             commands::run_artisan_command(cmd.to_vec(), &database_path);
+            //         tauri::async_runtime::block_on(async move {
+            //             println!("Running artisan {}...", cmd.join(" "));
+            //             receiver.recv().await;
+            //             println!("Artisan {} done!", cmd.join(" "));
+            //         });
+            //     }
+            // }
 
             let laravel_server: Option<tauri_plugin_shell::process::CommandChild> =
                 Some(server::start_laravel_server(&database_path));
