@@ -1027,6 +1027,7 @@ name = "dominominal-desktop"
 version = "0.1.44"
 dependencies = [
  "ctrlc",
+ "dunce",
  "log",
  "reqwest 0.12.22",
  "serde",
