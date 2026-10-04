@@ -25,23 +25,16 @@ pub fn kill_laravel_server() {
 
 pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
     let handler = crate::global::get_app_handle();
-    let resources_path = handler
+    let ephpm_config_path = handler
         .path()
         .resource_dir()
         .expect("Fail getting path")
         .join("ephpm.toml");
 
-    let (mut receiver, child) = crate::commands::run_ephpm_command([].to_vec(),database_path);
-
-    // let (mut receiver, child) = crate::commands::run_php_command(
-    //     ["-S", "127.0.0.1:8000"].to_vec(),
-    //     Some(
-    //         resources_path
-    //             .canonicalize()
-    //             .expect("Failure canonizing app"),
-    //     ),
-    //     database_path,
-    // );
+    let (mut receiver, child) = crate::commands::run_ephpm_command(
+        ["serve", "-c", ephpm_config_path.canonicalize().expect("crashed").to_str().expect("crashed")].to_vec(),
+        database_path
+    );
 
     tauri::async_runtime::spawn(async move {
         while let Some(event) = receiver.recv().await {
@@ -84,13 +77,12 @@ pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
         let _ = set_complete().await;
     });
 
-    return child;
+    child
 }
 
 pub fn laravel_state() -> State<'static, Mutex<LaravelInformation>> {
     let handler = crate::global::get_app_handle();
-    let state: State<'_, Mutex<LaravelInformation>> = handler
+    handler
         .try_state::<Mutex<LaravelInformation>>()
-        .expect("State not found");
-    return state;
+        .expect("State not found")
 }
