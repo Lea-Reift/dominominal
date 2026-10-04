@@ -41,7 +41,7 @@ pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
     let database_real_path_string = database_real_path.to_str().expect("failed");
     let justix_real_path = dunce::canonicalize(realpath).expect("failed");
     let justix_real_path_string = justix_real_path.to_str().unwrap_or("failed");
-    
+
     let toml = format!("\
     [server]
     listen = \"0.0.0.0:8000\"
