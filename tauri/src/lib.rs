@@ -76,7 +76,7 @@ pub fn run() {
         });
     });
 
-    app.run(|handler: &AppHandle, event: RunEvent| match event {
+    app.run(|_handler: &AppHandle, event: RunEvent| match event {
         RunEvent::Ready => {
             let laravel_state: State<'_, Mutex<LaravelInformation>> = server::laravel_state();
             let laravel_information: MutexGuard<'_, LaravelInformation> =
