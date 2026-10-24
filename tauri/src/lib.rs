@@ -91,6 +91,13 @@ pub fn run() {
 
             database::prepare_database(&database_path);
 
+            let (mut receiver, _) =
+                commands::run_artisan_command(["settings:json",].to_vec(), &database_path);
+
+            tauri::async_runtime::block_on(async move {
+                receiver.recv().await;
+            });
+
             // Config does not need cache anymore as worker loads it from the beginning
 
             // let storage_path: PathBuf = handler
