@@ -37,8 +37,6 @@ pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
         .resolve("resources/app", Resource)
         .expect("Fail getting route");
 
-    let database_real_path = dunce::canonicalize(database_path).expect("failed");
-    let database_real_path_string = database_real_path.to_str().expect("failed");
     let justix_real_path = dunce::canonicalize(realpath).expect("failed");
     let justix_real_path_string = justix_real_path.to_str().unwrap_or("failed");
 
@@ -62,9 +60,6 @@ pub fn start_laravel_server(database_path: &PathBuf) -> CommandChild {
 
     [php.worker]
     script = \"vendor/bin/ephpm-octane-worker\"
-
-    [db.sqlite]
-    path = '{database_real_path_string}'
     ");
 
     fs::write(ephpm_config_path.clone(), toml).expect("TODO: panic message");

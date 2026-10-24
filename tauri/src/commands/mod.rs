@@ -17,6 +17,7 @@ pub fn run_ephpm_command(
         .expect("Fail getting route");
 
     ephpm.args(args.clone())
+        .env("DB_DATABASE", database_path.to_owned())
         .current_dir(realpath.to_owned())
         .spawn()
         .expect(&format!("Failure running command: {:?}", args))
